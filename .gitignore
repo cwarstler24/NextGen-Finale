@@ -23,6 +23,7 @@ htmlcov/
 # Virtual environments
 venv/
 cs-backend-venv/
+myvenv/
 .venv/
 env/
 ENV/

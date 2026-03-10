@@ -1,3 +1,6 @@
-pytest>=9.0
+pytest
+requests
+pytest-cov
+httpx
 FastAPI==0.135.1
 "uvicorn[standard]"==0.41.0

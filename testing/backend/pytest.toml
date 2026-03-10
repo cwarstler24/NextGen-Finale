@@ -3,5 +3,11 @@
 minversion = "9.0"
 addopts = ["-ra", "-q"]
 testpaths = [
-    "."
+    "testing/backend/tests",
+]
+python_files = [
+    "test_*.py"
+]
+python_functions = [
+    "test_*"
 ]
