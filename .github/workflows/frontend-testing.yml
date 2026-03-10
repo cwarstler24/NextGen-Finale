@@ -1,0 +1,30 @@
+name: Frontend Tests
+
+on:
+  pull_request:
+    paths:
+      - 'main/frontend/**'
+      - '.github/workflows/frontend-tests.yml'
+  push:
+    branches: [ main ]
+
+jobs:
+  vitest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: main/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install
+        run: npm ci
+
+      - name: Run Vitest
+        run: npm run test
