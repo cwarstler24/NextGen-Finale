@@ -1,12 +1,14 @@
 <script setup>
-import { useRouter } from 'vue-router'
-const router = useRouter()
+import { useRouter } from 'vue-router';
+const router = useRouter();
+import { onMounted } from 'vue';
 </script>
+<style src="../styles/ProductView.css" scoped></style>
 
 <template>
         <section class="page product-page">
                 <div class="product-breadcrumbs">
-                        <span>Home</span> / <span>Signature Meals</span> / <span class="current">Product Name</span>
+                    <span>Home</span> / <span class="current">{{ $route.params.product }}</span>
                 </div>
 
                 <div class="product-grid">

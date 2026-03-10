@@ -4,11 +4,11 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const goToBurgerPage = () => {
-  router.push({ name: 'burger' })
+  router.push({ name: 'product' , params: { product: 'Burger' }})
 }
 
 const goToFriesPage = () => {
-  router.push({ name: 'fries' })
+  router.push({ name: 'product' , params: { product: 'Fries' }})
 }
 </script>
 <style src="../styles/mainview.css" scoped></style>
