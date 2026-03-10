@@ -1,0 +1,32 @@
+/* Styles for MainView component */
+.product-card {
+    color: red;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    /* Ensures solid background for product images */
+    position: relative;
+    overflow: hidden;
+}
+
+.products-row {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+}
+.product-image {
+    background-color: #fff;
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    background-clip: padding-box;
+    /* Ensures solid background for transparent PNGs */
+}
