@@ -24,8 +24,8 @@ export default [
     },
     rules: {
       indent: ["error", 4, { SwitchCase: 1 }],
-      "vue/script-indent": ["error", 4, { baseIndent: 1, switchCase: 1 }],
-      "vue/html-indent": ["error", 4, { baseIndent: 1, attribute: 1, closeBracket: 0 }],
+      "vue/script-indent": ["error", 4, { baseIndent: 0, switchCase: 1 }],
+      "vue/html-indent": ["error", 4, { baseIndent: 0, attribute: 1, closeBracket: 0 }],
       "vue/html-self-closing": [
         "error",
         {
