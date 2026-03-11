@@ -165,6 +165,23 @@ span.hover:hover {
     background: #ffffff;
 }
 
+.checkbox-group {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.checkbox-option {
+    display: flex !important;
+    align-items: center;
+    gap: 0.65rem;
+    font-weight: 400 !important;
+}
+
+.checkbox-option input {
+    margin: 0;
+}
+
 .customization {
     display: flex;
     flex-direction: row;

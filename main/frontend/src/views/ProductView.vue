@@ -1,7 +1,9 @@
 <script setup>
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import FriesOptionsComp from '../components/FriesOptionsComp.vue';
+
 const router = useRouter();
-import { ref, computed } from 'vue';
 
 // Get product from route params
 const product = computed(() => {
@@ -28,21 +30,41 @@ const productData = computed(() => {
             return {
                 name: 'Classic Burger Combo',
                 description: 'A crave-worthy mix of crisp, golden bites with fresh toppings. Balanced, filling, and perfect for a quick lunch or family night in.',
-                price: '$12.99',
+                price: '.99',
             };
         case 'fries':
             return {
                 name: 'Crispy Fries Combo',
                 description: 'Golden, crispy fries seasoned to perfection. A deliciously satisfying side that pairs perfectly with any meal.',
-                price: '$8.99',
+                price: '0.50',
             };
         default:
             return {
                 name: 'Unknown Product',
                 description: 'No description available.',
-                price: '$0.00',
+                price: '0',
             };
     };
+});
+
+const totalPrice = computed(() => {
+    const base = parseFloat(productData.value.price.replace('$', '')) || 0;
+    let optionTotal = 0;
+
+    for (let i = 0; i < selectedOptions.value.length; i++) {
+        const optionKey = `option${i + 1}`;
+        const selectedValue = selectedOptions.value[i];
+        const selectedValues = Array.isArray(selectedValue) ? selectedValue : [selectedValue];
+
+        for (const value of selectedValues) {
+            const idx = productOptions.value[optionKey]?.indexOf(value);
+            if (idx !== undefined && idx >= 0) {
+                optionTotal += productOptions.value[`${optionKey}Price`][idx] || 0;
+            }
+        }
+    }
+
+    return `${(base + optionTotal).toFixed(2)}`;
 });
 
 const productOptions = computed(() => {
@@ -52,23 +74,49 @@ const productOptions = computed(() => {
                 optionNames: ['Bun', 'Patty', 'Toppings'],
                 option1: ['Regular', 'Pretzel', 'None'],
                 option2: ['Regular', 'Vegan', 'Dirt', 'None'],
-                option3: ['Lettuce', 'Tomato','Pickles','Mustard','Katchup','Mayo']
+                option3: ['Lettuce', 'Tomato','Pickles','Mustard','Katchup','Mayo'],
+                option1Price: [1,1.5,0],
+                option2Price: [3,4,1,0],
+                option3Price: [0.5,0.5,0.5,0,0,0]
             };
         case 'fries':
             return {
                 optionNames: ['Size', 'Type', 'Seasoning'],
                 option1: ['Small', 'Medium', 'Large'],
                 option2: ['Shoe-Lace', 'Curly', 'Sweet Potato'],
-                option3: ['Salt','Cajun','Sugar']
+                option3: ['Salt','Cajun','Sugar'],
+                option1Price: [.5,1,2],
+                option2Price: [0,0.5,1],
+                option3Price: [0,0.5,0.5]
             };
         default:
             return {
-                sides: [],
-                proteins: [],
-                sauces: [],
+                optionNames: [],
+                option1: [],
+                option2: [],
+                option3: [],
+                option1Price: [],
+                option2Price: [],
+                option3Price: [],
             };
     }
 });
+
+const selectedOptions = ref([]);
+
+watch(
+  productOptions,
+  (options) => {
+    selectedOptions.value = (options.optionNames || []).map((_, idx) => {
+      if (product.value === 'fries' && idx === 2) {
+        return [];
+      }
+
+      return options[`option${idx + 1}`]?.[0] ?? null;
+    });
+  },
+  { immediate: true }
+);
 
 const selectedIndex = ref(0);
 
@@ -80,6 +128,9 @@ const goMainPage = () => {
   router.push({ name: 'main' });
 };
 
+function getOptionPrice(n) {
+  return productOptions[`option${n}Price`];
+}
 </script>
 <style src="../styles/ProductView.css" scoped></style>
 <template>
@@ -112,7 +163,7 @@ const goMainPage = () => {
             <p class="product-description">{{ productData.description }}</p>
         </div>
         <div class="price-tag">
-            <span class="price">{{ productData.price }}</span>
+            <span class="price">${{ totalPrice }}</span>
         </div>
     </div>
 
@@ -127,22 +178,25 @@ const goMainPage = () => {
 
                 <div class="details-grid" name="product-customization">
                     <div class="customization card">
-                        <h3>Customize your order</h3>
-                        <p class="section-description">
-                        Choose from popular add-ons and sides to make this meal yours.
-                        </p>
-                        <div name="options" class="option-grid">
-                            <label v-for="(name, idx) in productOptions.optionNames" :key="name">
-                                {{ name }}
-                                <select>
-                                    <option v-for="opt in productOptions[`option${idx+1}`]" :key="opt" :value="opt">
-                                    {{ opt }}
-                                    </option>
-                                </select>
-                            </label>
-                        </div>
+                        <FriesOptionsComp
+                          v-if="product === 'fries'"
+                          v-model="selectedOptions"
+                          :product-options="productOptions"
+                        />
+                        <template v-else>
+                            <h3>Customize your order</h3>
+                            <div name="options" class="option-grid">
+                                <label v-for="(name, idx) in productOptions.optionNames" :key="name">
+                                    {{ name }}
+                                    <select v-model="selectedOptions[idx]">
+                                        <option v-for="(opt, optIdx) in productOptions[`option${idx+1}`]" :key="opt" :value="opt">
+                                        {{ opt }} <span v-if="productOptions[`option${idx+1}Price`][optIdx] > 0"> +{{ productOptions[`option${idx+1}Price`][optIdx] }}</span>
+                                        </option>
+                                    </select>
+                                </label>
+                            </div>
+                        </template>
                     </div>
-
                 </div>
         </section>
 </template>
