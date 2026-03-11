@@ -1,13 +1,16 @@
+import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  test: {
-    environment: 'jsdom',
-    include: ['testing/frontend/tests/**/*.test.{ts,js,tsx,jsx}'],
-    globals: true,
-    reporters: ['default'],
-    coverage: {
-      enabled: false
-    }
-  },
+    plugins: [vue()],
+    test: {
+        environment: 'jsdom',
+        include: ['testing/frontend/tests/**/*.test.{ts,js,tsx,jsx}'],
+        setupFiles: ['testing/frontend/setupTests.ts'],
+        globals: true,
+        reporters: ['default'],
+        coverage: {
+            enabled: false
+        }
+    },
 });
