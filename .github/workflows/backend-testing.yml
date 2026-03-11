@@ -5,7 +5,7 @@ on:
     paths:
       - 'testing/backend/**'
       - 'main/backend/**'
-      - '.github/workflows/backend-tests.yml'
+      - '.github/workflows/backend-testing.yml'
   push:
     branches:
 
@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.14'
 
       - name: Install dependencies
         run: |
@@ -30,4 +30,7 @@ jobs:
           python -m pip install -r ../../requirements.txt
 
       - name: Run Pytest
-        run: pytest
+        run: |
+          echo "::group::Pytest Results"
+          pytest -o addopts="-ra -vv --tb=short --color=yes"
+          echo "::endgroup::"
