@@ -14,7 +14,6 @@ on:
       - '.pylintrc'
   push:
     branches:
-      - main
 
 jobs:
   eslint:
