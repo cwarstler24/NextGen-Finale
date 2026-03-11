@@ -22,6 +22,34 @@ export default [
         ...globals.node,
       },
     },
+    rules: {
+      indent: ["error", 4, { SwitchCase: 1 }],
+      "vue/script-indent": ["error", 4, { baseIndent: 1, switchCase: 1 }],
+      "vue/html-indent": ["error", 4, { baseIndent: 1, attribute: 1, closeBracket: 0 }],
+      "vue/html-self-closing": [
+        "error",
+        {
+          html: {
+            void: "any",
+            normal: "any",
+            component: "any",
+          },
+          svg: "any",
+          math: "any",
+        },
+      ],
+      "vue/max-attributes-per-line": [
+        "error",
+        {
+          singleline: {
+            max: 8,
+          },
+          multiline: {
+            max: 1,
+          },
+        },
+      ],
+    },
   },
   {
     files: ["testing/frontend/**/*.{js,mjs,cjs,ts}"],
