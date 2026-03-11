@@ -1,0 +1,62 @@
+name: Lint
+
+on:
+  pull_request:
+    paths:
+      - 'main/frontend/**'
+      - 'main/backend/**'
+      - 'testing/frontend/**'
+      - 'testing/backend/**'
+      - '.github/workflows/lint.yml'
+      - 'package.json'
+      - 'requirements.txt'
+      - 'eslint.config.js'
+      - '.pylintrc'
+  push:
+    branches:
+      - main
+
+jobs:
+  eslint:
+    name: Frontend ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: |
+          echo "::group::ESLint Results"
+          npm run lint:frontend -- --format=stylish
+          echo "::endgroup::"
+
+  pylint:
+    name: Backend Pylint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run Pylint
+        run: |
+          echo "::group::Pylint Results"
+          pylint --output-format=colorized --score=y "main/backend/" "testing/backend/"
+          echo "::endgroup::"

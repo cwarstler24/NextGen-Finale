@@ -2,3 +2,4 @@ pytest
 requests
 pytest-cov
 httpx
+pylint

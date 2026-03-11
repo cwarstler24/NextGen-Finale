@@ -3,10 +3,11 @@ name: Frontend Tests
 on:
   pull_request:
     paths:
+      - 'testing/frontend/**'
       - 'main/frontend/**'
-      - '.github/workflows/frontend-tests.yml'
+      - '.github/workflows/frontend-testing.yml'
   push:
-    branches: [ main ]
+    branches:
 
 jobs:
   vitest:
@@ -18,13 +19,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install
+      - name: Install dependencies
         run: npm ci
 
       - name: Run Vitest
-        run: npm run test
+        run: |
+          echo "::group::Vitest Results"
+          npm run test -- --reporter=verbose
+          echo "::endgroup::"
