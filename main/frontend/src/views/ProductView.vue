@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import BurgerOptionsComp from '../components/BurgerOptionsComp.vue';
 import FriesOptionsComp from '../components/FriesOptionsComp.vue';
 
 const router = useRouter();
@@ -103,6 +104,17 @@ const productOptions = computed(() => {
     }
 });
 
+const customizationComponent = computed(() => {
+    switch (product.value) {
+        case 'burger':
+            return BurgerOptionsComp;
+        case 'fries':
+            return FriesOptionsComp;
+        default:
+            return null;
+    }
+});
+
 const selectedOptions = ref([]);
 
 watch(
@@ -183,13 +195,14 @@ const addToCart = () => {
 
     <div class="details-grid" name="product-customization">
         <div class="customization card">
-            <FriesOptionsComp
-                v-if="product"
+            <component
+                :is="customizationComponent"
+                v-if="customizationComponent"
                 v-model="selectedOptions"
                 :product-options="productOptions"
             />
             <template v-else>
-                <h3>Customize your order</h3>
+                <h3>Customize your order (Default)</h3>
                 <div name="options" class="option-grid">
                     <label v-for="(name, idx) in productOptions.optionNames" :key="name">
                         {{ name }}
