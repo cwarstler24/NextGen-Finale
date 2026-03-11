@@ -28,15 +28,15 @@ const productData = computed(() => {
     switch (product.value) {
         case 'burger':
             return {
-                name: 'Classic Burger Combo',
+                name: 'Classic Burger',
                 description: 'A crave-worthy mix of crisp, golden bites with fresh toppings. Balanced, filling, and perfect for a quick lunch or family night in.',
-                price: '.99',
+                price: '.0',
             };
         case 'fries':
             return {
-                name: 'Crispy Fries Combo',
+                name: 'Crispy Fries',
                 description: 'Golden, crispy fries seasoned to perfection. A deliciously satisfying side that pairs perfectly with any meal.',
-                price: '0.50',
+                price: '0.0',
             };
         default:
             return {
@@ -68,6 +68,7 @@ const totalPrice = computed(() => {
 });
 
 const productOptions = computed(() => {
+    // TODO replace with API data
     switch (product.value) {
         case 'burger':
             return {
@@ -128,6 +129,12 @@ const goMainPage = () => {
   router.push({ name: 'main' });
 };
 
+const addToCart = () => {
+    // TODO implement add to cart functionality
+    // For now, show an alert with the selected options and total price
+    alert(`Added to cart:\nProduct: ${productData.value.name}\nOptions: ${selectedOptions.value.map((opt, idx) => `${productOptions.value.optionNames[idx]}: ${opt}`).join(', ')}\nTotal Price: $${totalPrice.value}`);
+    };
+
 function getOptionPrice(n) {
   return productOptions[`option${n}Price`];
 }
@@ -169,7 +176,7 @@ function getOptionPrice(n) {
 
 
     <div class="product-actions">
-        <button class="primary" type="button">
+        <button class="primary" type="button" @click="addToCart">
             Add to Cart
         </button>
     </div>
@@ -179,7 +186,7 @@ function getOptionPrice(n) {
                 <div class="details-grid" name="product-customization">
                     <div class="customization card">
                         <FriesOptionsComp
-                          v-if="product === 'fries'"
+                          v-if="product"
                           v-model="selectedOptions"
                           :product-options="productOptions"
                         />

@@ -6,8 +6,8 @@
         <RouterLink to="/" class="brand-name"> The Frying Saucer </RouterLink>
       </span>
       <div class="nav-links">
-        <RouterLink to="/burger">Burger</RouterLink>
-        <RouterLink to="/fries">Fries</RouterLink>
+        <RouterLink to="/product/Burger">Burger</RouterLink>
+        <RouterLink to="/product/Fries">Fries</RouterLink>
       </div>
     </nav>
 
