@@ -2,8 +2,10 @@
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import FriesOptionsComp from '../components/FriesOptionsComp.vue';
+import { useCart } from '../composables/useCart';
 
 const router = useRouter();
+const { addItem } = useCart();
 
 // Get product from route params
 const product = computed(() => {
@@ -30,25 +32,25 @@ const productData = computed(() => {
             return {
                 name: 'Classic Burger',
                 description: 'A crave-worthy mix of crisp, golden bites with fresh toppings. Balanced, filling, and perfect for a quick lunch or family night in.',
-                price: '.0',
+                price: 0,
             };
         case 'fries':
             return {
                 name: 'Crispy Fries',
                 description: 'Golden, crispy fries seasoned to perfection. A deliciously satisfying side that pairs perfectly with any meal.',
-                price: '0.0',
+                price: 0,
             };
         default:
             return {
                 name: 'Unknown Product',
                 description: 'No description available.',
-                price: '0',
+                price: 0,
             };
     };
 });
 
 const totalPrice = computed(() => {
-    const base = parseFloat(productData.value.price.replace('$', '')) || 0;
+    const base = Number(productData.value.price) || 0;
     let optionTotal = 0;
 
     for (let i = 0; i < selectedOptions.value.length; i++) {
@@ -71,6 +73,31 @@ const productOptions = computed(() => {
     // TODO replace with API data
     switch (product.value) {
         case 'burger':
+            // create JSON of burger
+            var burgerOptions = {
+                // array of bun objects 
+                buns: [
+                    { id: 101, name: 'Regular', price: 1, quantity: 5 },
+                    { id: 102, name: 'Pretzel', price: 1.5, quantity: 3 },
+                    { id: 103, name: 'None', price: 0, quantity: 10 },
+                ],
+                patties: [
+                    { id: 201, name: 'Regular', price: 3, quantity: 10 },
+                    { id: 202, name: 'Vegan', price: 4, quantity: 5 },
+                    { id: 203, name: 'Dirt', price: 1, quantity: 2 },
+                    { id: 204, name: 'None', price: 0, quantity: 10 },
+                ],
+                toppings: [
+                    { id: 301, name: 'Lettuce', price: 0.5, quantity: 20 },
+                    { id: 302, name: 'Tomato', price: 0.5, quantity: 15 },
+                    { id: 303, name: 'Pickles', price: 0.5, quantity: 10 },
+                    { id: 304, name: 'Mustard', price: 0, quantity: 25 },
+                    { id: 305, name: 'Ketchup', price: 0, quantity: 30 },
+                    { id: 306, name: 'Mayo', price: 0, quantity: 20 },
+                ]
+            };
+            return burgerOptions;
+        /* old format 
             return {
                 optionNames: ['Bun', 'Patty', 'Toppings'],
                 option1: ['Regular', 'Pretzel', 'None'],
@@ -80,7 +107,28 @@ const productOptions = computed(() => {
                 option2Price: [3,4,1,0],
                 option3Price: [0.5,0.5,0.5,0,0,0]
             };
+            */
         case 'fries':
+            var friesOptions = {
+                // array of size objects
+                sizes: [
+                    { id: 401, name: 'Small', price: 0.5, quantity: 10 },
+                    { id: 402, name: 'Medium', price: 1, quantity: 15 },
+                    { id: 403, name: 'Large', price: 2, quantity: 5 },
+                ],
+                types: [
+                    { id: 501, name: 'Shoe-Lace', price: 0, quantity: 10 },
+                    { id: 502, name: 'Curly', price: 0.5, quantity: 10 },
+                    { id: 503, name: 'Sweet Potato', price: 1, quantity: 5 },
+                ],
+                seasonings: [
+                    { id: 601, name: 'Salt', price: 0, quantity: 20 },
+                    { id: 602, name: 'Cajun', price: 0.5, quantity: 15 },
+                    { id: 603, name: 'Sugar', price: 0.5, quantity: 10 },
+                ]
+            };
+            return friesOptions;
+        /* old format
             return {
                 optionNames: ['Size', 'Type', 'Seasoning'],
                 option1: ['Small', 'Medium', 'Large'],
@@ -90,15 +138,10 @@ const productOptions = computed(() => {
                 option2Price: [0,0.5,1],
                 option3Price: [0,0.5,0.5]
             };
+        */
         default:
             return {
                 optionNames: [],
-                option1: [],
-                option2: [],
-                option3: [],
-                option1Price: [],
-                option2Price: [],
-                option3Price: [],
             };
     }
 });
@@ -130,9 +173,21 @@ const goMainPage = () => {
 };
 
 const addToCart = () => {
-    // TODO implement add to cart functionality
-    // For now, show an alert with the selected options and total price
-    alert(`Added to cart:\nProduct: ${productData.value.name}\nOptions: ${selectedOptions.value.map((opt, idx) => `${productOptions.value.optionNames[idx]}: ${opt}`).join(', ')}\nTotal Price: $${totalPrice.value}`);
+    addItem({
+        id: product.value,
+        name: productData.value.name,
+        image: productImages.value[0],
+        unitPrice: Number(totalPrice.value),
+        quantity: 1,
+        options: productOptions.value.optionNames.map((name, index) => ({
+            name,
+            value: Array.isArray(selectedOptions.value[index])
+                ? [...selectedOptions.value[index]].sort((left, right) => left.localeCompare(right))
+                : selectedOptions.value[index] ?? null,
+        })),
+    });
+
+    router.push({ name: 'cart' });
 };
 
 </script>
