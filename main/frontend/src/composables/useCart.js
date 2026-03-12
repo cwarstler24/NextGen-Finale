@@ -16,6 +16,7 @@ function normalizeOptionValue(value) {
 
 function normalizeOptions(options = []) {
     return options.map((option) => ({
+        id: normalizeOptionValue(option.id),
         name: String(option.name ?? ''),
         value: normalizeOptionValue(option.value),
     }));
@@ -36,6 +37,7 @@ function createItemSignature(item) {
     return JSON.stringify({
         id: item.id,
         options: item.options.map((option) => ({
+            id: option.id,
             name: option.name,
             value: option.value,
         })),
