@@ -83,32 +83,32 @@ const userData = {
 
     <div name="userData" class="card checkout-customer">
         <h1>Customer Information</h1>
-        <form @submit.prevent="purchase" class="checkout-form">
+        <form class="checkout_form" @submit.prevent="purchase">
             <div class="form-group">
                 <div class="input">
                     <label for="name">Name: </label>
-                    <input v-model="userData.name" type="text" id="name" required />
+                    <input v-model="userData.name" type="text" required />
                 </div>
                 <div class="input">
                     <label for="email">Email: </label>
-                    <input v-model="userData.email" type="email" id="email" required />
+                    <input v-model="userData.email" type="email" required />
                 </div>
                 <div class="input">
                     <label for="shipping_address">Shipping Address: </label>
-                    <input v-model="userData.shipping_address" type="text" id="shipping_address" required />
+                    <input v-model="userData.shipping_address" type="text" required />
                 </div>
                 <div class="input">
                     <label for="billing_address">Billing Address: </label>
-                    <input v-model="userData.billing_address" type="text" id="billing_address" required />
+                    <input v-model="userData.billing_address" type="text" required />
                 </div>
             </div>
 
             <div class="checkout-actions">
-                <button class="secondary" type="button" @click="emptyCart" :disabled="cartEntries.length === 0">
-                    Clear Cart
-                </button>
                 <button class="primary" type="submit" :disabled="cartEntries.length === 0">
                     Checkout
+                </button>
+                <button class="secondary" type="button" :disabled="cartEntries.length === 0" @click="emptyCart">
+                    Clear
                 </button>
             </div>
         </form>
