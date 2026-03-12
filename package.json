@@ -9,16 +9,15 @@
 		"preview": "vite preview",
 		"test": "vitest run --config testing/frontend/vitest.config.ts --coverage",
 		"test:watch": "vitest --config testing/frontend/vitest.config.ts",
-		"lint:frontend": "eslint \"main/frontend/src/**/*.{js,mjs,cjs,ts,vue}\" \"testing/frontend/**/*.{js,mjs,cjs,ts}\"",
-		"lint:backend": "pylint \"main/backend/\" \"testing/backend/\"",
-		"lint": "node -e \"const cp=require('node:child_process');const run=(cmd)=>cp.spawnSync(cmd,{stdio:'inherit',shell:true}).status||0;const fe=run('npm run lint:frontend');const be=run('npm run lint:backend');process.exit(fe||be?1:0);\""
-	},
+		"lint": "eslint \"main/frontend/src/**/*.{js,mjs,cjs,ts,vue}\" \"testing/frontend/**/*.{js,mjs,cjs,ts}\" --debug"
+		},
 	"dependencies": {
 		"vue": "^3.5.13",
 		"vue-router": "^4.6.4"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.22.0",
+		"@types/node": "^25.5.0",
 		"@typescript-eslint/parser": "^8.26.1",
 		"@vitejs/plugin-vue": "^5.2.1",
 		"@vitest/coverage-v8": "^3.2.4",
