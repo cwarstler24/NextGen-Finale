@@ -1,5 +1,3 @@
-import os
-import json
 import sys
 from pathlib import Path
 
@@ -7,195 +5,330 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from main.backend.db_pool import get_db_cursor, db_pool
 from main.utilities.logger import LoggerFactory
 
-# Set up IBM DB2 connection through the virtual environment
-# Dynamically find the clidriver paths in the virtual environment
-venv_path = project_root / "myvenv" / "Lib" / "site-packages" / "clidriver"
-clidriver_bin = venv_path / "bin"
-clidriver_crt = clidriver_bin / "amd64.VC12.CRT"
+logger = LoggerFactory.get_general_logger()
 
-# Add the bin directory to DLL search path
-os.add_dll_directory(str(clidriver_bin))
-# Add CRT directory to PATH environment variable
-os.environ["PATH"] = str(clidriver_crt) + ";" + os.environ.get("PATH", "")
-import ibm_db
 
-# Load credentials from JSON file
-credentials_path = Path(__file__).parent.parent.parent / "credentials.json"
-with open(credentials_path, "r") as f:
-    credentials = json.load(f)
+def test_database_connection():
+    """
+    Test if we can connect to the database and query basic system info.
 
-# Build connection string dynamically
-conn_str = (
-    f"DATABASE={credentials['database']};"
-    f"HOSTNAME={credentials['hostname']};"
-    f"PORT={credentials['port']};"
-    f"PROTOCOL={credentials['protocol']};"
-    f"AUTHENTICATION={credentials['authentication']};"
-    f"UID={credentials['uid']};"
-    f"PWD={credentials['pwd']};"
-)
- 
-try:
-    conn = ibm_db.connect(conn_str,"", "")
-except Exception as e:
-    print("SQLSTATE:", ibm_db.conn_error())
-    print("Message :", ibm_db.conn_errormsg())
-    conn=None
- 
-if conn:
-    print("SUCCESS: Connection to database established.")
-    
-    # Create a DBI connection for easier database operations
-    import ibm_db_dbi
-    dbi_conn = ibm_db_dbi.Connection(conn)
-    cursor = dbi_conn.cursor()
-    logger = LoggerFactory.get_general_logger()
-    
+    Returns:
+        bool: True if connection successful, False otherwise
+    """
     try:
-        # Check if table already exists by trying to select from it
-        print("\n--- Checking if table exists ---")
-        logger.info("Checking if table exists")
-        table_exists = False
-        try:
-            cursor.execute("SELECT 1 FROM TEST_TABLE FETCH FIRST 1 ROW ONLY")
-            cursor.fetchone()
-            table_exists = True
-            print("Table 'TEST_TABLE' already exists.")
-            logger.info("Table 'TEST_TABLE' already exists")
-        except Exception as check_error:
-            # Table doesn't exist (or other error)
-            print("Table does not exist.")
-            logger.info("Table does not exist")
-        
-        # Create table only if it doesn't exist
-        if not table_exists:
-            print("\n--- Creating test table ---")
-            logger.info("Creating test table")
-            create_table_sql = """
-            CREATE TABLE TEST_TABLE (
-                ID INTEGER NOT NULL,
-                NAME VARCHAR(50),
-                DESCRIPTION VARCHAR(100),
-                PRIMARY KEY (ID)
-            )
-            """
-            cursor.execute(create_table_sql)
-            print("Table 'TEST_TABLE' created successfully.")
-            logger.info("Table 'TEST_TABLE' created successfully")
-        
-        # Get the actual z/OS dataset name (DSN) for the table
-        print("\n--- Table Dataset Information ---")
-        logger.info("Retrieving table dataset information")
-        try:
-            # Query to get the tablespace and dataset information
+        with get_db_cursor() as cursor:
+            # Try a simple query to verify connection
+            cursor.execute("SELECT CURRENT SERVER FROM SYSIBM.SYSDUMMY1")
+            server_name = cursor.fetchone()[0].strip()
+
+            cursor.execute("SELECT CURRENT SCHEMA FROM SYSIBM.SYSDUMMY1")
+            current_schema = cursor.fetchone()[0].strip()
+
+            cursor.execute("SELECT USER FROM SYSIBM.SYSDUMMY1")
+            user = cursor.fetchone()[0].strip()
+
+            print("✓ Database connection successful!")
+            print(f"  Server: {server_name}")
+            print(f"  User: {user}")
+            print(f"  Current Schema: {current_schema}")
+            return True
+
+    except (ConnectionError, OSError, RuntimeError) as e:
+        print(f"✗ Database connection failed: {e}")
+        logger.error(f"Connection test failed: {e}")
+        return False
+
+
+def check_schema_exists(schema_name: str):
+    """
+    Check if a schema/database exists.
+
+    Args:
+        schema_name (str): The schema name to check
+
+    Returns:
+        bool: True if schema exists, False otherwise
+    """
+    try:
+        with get_db_cursor() as cursor:
+            # Check if schema exists in catalog (z/OS uses SYSIBM.SYSSCHEMAAUTH
+            # or we can check SYSTABLES)
             cursor.execute("""
-                SELECT T.CREATOR, T.NAME, T.TSNAME, TS.DBNAME
-                FROM SYSIBM.SYSTABLES T
-                LEFT JOIN SYSIBM.SYSTABLESPACE TS ON T.TSNAME = TS.NAME
-                WHERE T.NAME = 'TEST_TABLE'
+                SELECT DISTINCT CREATOR
+                FROM SYSIBM.SYSTABLES
+                WHERE CREATOR = ?
+                FETCH FIRST 1 ROW ONLY
+            """, (schema_name.upper(),))
+            result = cursor.fetchone()
+
+            if result:
+                print(f"✓ Schema '{schema_name}' exists")
+                return True
+            print(f"✗ Schema '{schema_name}' not found")
+
+            # Show available schemas
+            print("\nAvailable schemas (with tables):")
+            cursor.execute("""
+                SELECT DISTINCT CREATOR
+                FROM SYSIBM.SYSTABLES
+                WHERE TYPE IN ('T', 'V')
+                ORDER BY CREATOR
+                FETCH FIRST 30 ROWS ONLY
             """)
-            table_info = cursor.fetchone()
-            
-            if table_info:
-                creator = table_info[0].strip()
-                table_name = table_info[1].strip()
-                tablespace = table_info[2].strip() if table_info[2] else 'N/A'
-                database = table_info[3].strip() if table_info[3] else 'N/A'
-                
-                print(f"Creator/Schema: {creator}")
-                print(f"Table Name: {table_name}")
-                print(f"Tablespace: {tablespace}")
-                print(f"Database: {database}")
-                print(f"Qualified Table Name: {creator}.{table_name}")
-                
-                # Try to get the actual dataset name(s) from tablespace
-                try:
-                    cursor.execute("""
-                        SELECT VCATNAME, NAME, DBNAME
-                        FROM SYSIBM.SYSTABLESPACE
-                        WHERE NAME = ?
-                    """, (tablespace,))
-                    ts_info = cursor.fetchone()
-                    if ts_info:
-                        vcat = ts_info[0].strip() if ts_info[0] else 'N/A'
-                        ts_name = ts_info[1].strip() if ts_info[1] else 'N/A'
-                        db_name = ts_info[2].strip() if ts_info[2] else 'N/A'
-                        print(f"\nTablespace Details:")
-                        print(f"  VCAT: {vcat}")
-                        print(f"  Database.Tablespace: {db_name}.{ts_name}")
-                        
-                        # The actual DSN pattern is typically: VCAT.DSNDBxxx.DBNAMExx.TSNAMExx.I0001.A001
-                        print(f"\nLikely DSN pattern: {vcat}.DSNDB{database[-3:]}.{tablespace}.*.I0001.A001")
-                        print(f"Or look for datasets matching: {vcat}.DSNDB*.{tablespace}.*")
-                except Exception as ts_error:
-                    print(f"\nCould not retrieve tablespace details: {ts_error}")
-                
-                # Try alternate approach to get dataset info
-                try:
-                    cursor.execute("""
-                        SELECT *
-                        FROM SYSIBM.SYSTABLEPART
-                        WHERE TSNAME = ?
-                    """, (tablespace,))
-                    part_info = cursor.fetchall()
-                    if part_info:
-                        print(f"\nTablespace partition info found ({len(part_info)} partitions)")
-                except Exception as part_error:
-                    pass
-                    
+            schemas = cursor.fetchall()
+            for s in schemas:
+                print(f"  - {s[0].strip()}")
+
+            return False
+
+    except (ConnectionError, OSError, RuntimeError) as e:
+        print(f"✗ Error checking schema: {e}")
+        logger.error(f"Schema check failed: {e}")
+        return False
+
+
+def check_table_exists(schema_name: str, table_to_check: str):
+    """
+    Check if a table exists in the specified schema.
+
+    Args:
+        schema_name (str): The schema name (can be empty to search all schemas)
+        table_to_check (str): The table name
+
+    Returns:
+        bool: True if table exists, False otherwise
+    """
+    try:
+        with get_db_cursor() as cursor:
+            # Check if table exists
+            if schema_name:
+                cursor.execute("""
+                    SELECT NAME, CREATOR, TYPE, COLCOUNT
+                    FROM SYSIBM.SYSTABLES
+                    WHERE CREATOR = ? AND NAME = ?
+                """, (schema_name.upper(), table_to_check.upper()))
             else:
-                print("Could not find table in system catalog")
-                
-        except Exception as e:
-            print(f"Could not retrieve table information: {e}")
-            print("Table created as: TEST_TABLE")
-        
-        # Check if table has data and print it
-        print("\n--- Checking table contents ---")
-        select_sql = "SELECT * FROM TEST_TABLE"
-        cursor.execute(select_sql)
-        rows = cursor.fetchall()
-        
-        if rows:
-            print(f"Table has {len(rows)} row(s):")
-            print(f"{'ID':<5} {'NAME':<20} {'DESCRIPTION':<30}")
-            print("-" * 60)
-            for row in rows:
-                print(f"{row[0]:<5} {row[1]:<20} {row[2]:<30}")
-        else:
-            print("Table is empty - seeding initial data...")
-            # Seed data only if table is empty
-            seed_data = [
-                (1, 'Item One', 'First test item AAAA'),
-                (2, 'Item Two', 'Second test item BBBB'),
-                (3, 'Item Three', 'Third test item CCCC')
-            ]
-            insert_sql = "INSERT INTO TEST_TABLE (ID, NAME, DESCRIPTION) VALUES (?, ?, ?)"
-            for data in seed_data:
-                cursor.execute(insert_sql, data)
-            dbi_conn.commit()
-            print(f"Seeded {len(seed_data)} rows successfully.")
-            
-            # Display the seeded data
+                # Search all schemas
+                cursor.execute("""
+                    SELECT NAME, CREATOR, TYPE, COLCOUNT
+                    FROM SYSIBM.SYSTABLES
+                    WHERE NAME = ?
+                """, (table_to_check.upper(),))
+
+            result = cursor.fetchone()
+
+            if result:
+                name = result[0].strip()
+                creator = result[1].strip()
+                table_type = result[2].strip()
+                col_count = result[3]
+
+                print(f"✓ Table '{creator}.{name}' exists")
+                print(f"  Type: {table_type}")
+                print(f"  Columns: {col_count}")
+                return True
+            if schema_name:
+                print(f"✗ Table '{schema_name}.{table_to_check}' not found")
+            else:
+                print(f"✗ Table '{table_to_check}' not found in any schema")
+
+            # Show available tables
+            if schema_name:
+                print(f"\nAvailable tables in schema '{schema_name}':")
+                cursor.execute("""
+                    SELECT NAME, TYPE, COLCOUNT
+                    FROM SYSIBM.SYSTABLES
+                    WHERE CREATOR = ? AND TYPE IN ('T', 'V')
+                    ORDER BY NAME
+                    FETCH FIRST 30 ROWS ONLY
+                """, (schema_name.upper(),))
+            else:
+                print(
+                    f"\nTables matching '{table_to_check[:3]}%' in any schema:")
+                cursor.execute("""
+                    SELECT CREATOR, NAME, TYPE, COLCOUNT
+                    FROM SYSIBM.SYSTABLES
+                    WHERE NAME LIKE ? AND TYPE IN ('T', 'V')
+                    ORDER BY CREATOR, NAME
+                    FETCH FIRST 30 ROWS ONLY
+                """, (table_to_check[:3].upper() + '%',))
+
+            tables = cursor.fetchall()
+
+            if tables:
+                for t in tables:
+                    if schema_name:
+                        t_name = t[0].strip()
+                        t_type = t[1].strip()
+                        t_cols = t[2]
+                        print(f"  - {t_name} ({t_type}, {t_cols} columns)")
+                    else:
+                        t_creator = t[0].strip()
+                        t_name = t[1].strip()
+                        t_type = t[2].strip()
+                        t_cols = t[3]
+                        print(
+                            f"  - {t_creator}.{t_name} ({t_type}, {t_cols} columns)")
+            else:
+                if schema_name:
+                    print(f"  (No tables found in schema '{schema_name}')")
+                else:
+                    print("  (No tables found)")
+
+            return False
+
+    except (ConnectionError, OSError, RuntimeError) as e:
+        print(f"✗ Error checking table: {e}")
+        logger.error(f"Table check failed: {e}")
+        return False
+
+
+def query_table(schema_name: str, table_name_to_query: str):
+    """
+    Query and display all rows from a specified table.
+
+    Args:
+        schema_name (str): The database schema name
+        table_name_to_query (str): The table name to query
+    """
+    try:
+        with get_db_cursor() as cursor:
+            # Construct the fully qualified table name
+            qualified_table = f"{schema_name}.{table_name_to_query}" if schema_name else table_name_to_query
+
+            logger.info(
+                f"\n--- Querying table: {qualified_table} ---",
+                also_print=True)
+
+            # Query all rows from the table
+            select_sql = f"SELECT * FROM {qualified_table}"
             cursor.execute(select_sql)
             rows = cursor.fetchall()
-            print(f"\n{'ID':<5} {'NAME':<20} {'DESCRIPTION':<30}")
-            print("-" * 60)
+
+            if not rows:
+                print(
+                    f"\n✓ Query successful - Table '{qualified_table}' is empty (0 rows).")
+                return
+
+            # Get column information
+            columns = [desc[0] for desc in cursor.description]
+
+            # Print table header
+            print("\n✓ Query successful")
+            print(f"Table: {qualified_table}")
+            print(f"Total rows: {len(rows)}\n")
+
+            # Calculate column widths
+            col_widths = []
+            for i, col_name in enumerate(columns):
+                max_width = len(col_name)
+                for row in rows:
+                    cell_value = str(row[i]) if row[i] is not None else 'NULL'
+                    max_width = max(max_width, len(cell_value))
+                col_widths.append(min(max_width, 50))  # Cap at 50 chars
+
+            # Print column headers
+            header = " | ".join([col.ljust(col_widths[i])
+                                for i, col in enumerate(columns)])
+            print(header)
+            print("-" * len(header))
+
+            # Print rows
             for row in rows:
-                print(f"{row[0]:<5} {row[1]:<20} {row[2]:<30}")
-        
-        # Delete the table
-        #print("\n--- Dropping test table ---")
-        #drop_table_sql = "DROP TABLE TEST_TABLE"
-        #cursor.execute(drop_table_sql)
-        #print("Table 'TEST_TABLE' dropped successfully.")
-        
-    except Exception as e:
-        print(f"Error during database operations: {e}")
-        dbi_conn.rollback()
+                row_str = " | ".join([
+                    str(row[i]).ljust(col_widths[i]) if row[i] is not None else 'NULL'.ljust(col_widths[i])
+                    for i in range(len(columns))
+                ])
+                print(row_str)
+
+            print("\n--- Query completed successfully ---")
+
+    except (ConnectionError, OSError, RuntimeError) as e:
+        qualified_table = f"{schema_name}.{table_name_to_query}" if schema_name else table_name_to_query
+        print(f"\n✗ Error querying table '{qualified_table}': {e}")
+        logger.error(f"Query failed: {e}")
+        raise
+
+
+if __name__ == "__main__":
+    """
+    Interactive DB2 table viewer.
+    Prompts user for schema and table name, then displays table contents.
+    """
+    print("=" * 60)
+    print("=== DB2 Table Viewer ===")
+    print("=" * 60)
+    print(f"Connection pool status: {db_pool.get_pool_status()}\n")
+
+    try:
+        # Step 1: Test database connection
+        print("STEP 1: Testing database connection...")
+        print("-" * 60)
+        if not test_database_connection():
+            print("\nCannot proceed without database connection.")
+            sys.exit(1)
+
+        print("\n" + "=" * 60)
+
+        # Prompt for schema/database
+        schema = input(
+            "\nEnter the schema/database name (e.g., USER02) or press Enter to skip: ").strip().upper()
+
+        # Step 2: Check if schema exists (only if provided)
+        if schema:
+            print(f"\nSTEP 2: Checking if schema '{schema}' exists...")
+            print("-" * 60)
+            if not check_schema_exists(schema):
+                response = input(
+                    f"\nSchema '{schema}' not verified. Continue anyway? (y/n): ").strip().lower()
+                if response != 'y':
+                    print("Exiting.")
+                    sys.exit(1)
+        else:
+            print("\nSTEP 2: Schema check skipped (no schema provided)")
+            print("-" * 60)
+
+        print("\n" + "=" * 60)
+
+        # Prompt for table name
+        table_name = input(
+            "\nEnter the table name (e.g., CUSTOMER): ").strip().upper()
+
+        if not table_name:
+            print("Error: Table name cannot be empty.")
+            sys.exit(1)
+
+        # Step 3: Check if table exists
+        print(
+            f"\nSTEP 3: Checking if table '{
+                schema +
+                '.' if schema else ''}{table_name}' exists...")
+        print("-" * 60)
+
+        if not check_table_exists(schema, table_name):
+            response = input(
+                "\nTable not verified. Attempt query anyway? (y/n): ").strip().lower()
+            if response != 'y':
+                print("Exiting.")
+                sys.exit(1)
+
+        print("\n" + "=" * 60)
+
+        # Step 4: Query and display the table
+        qualified_name = f"{schema}.{table_name}" if schema else table_name
+        print(f"\nSTEP 4: Querying table '{qualified_name}'...")
+        print("-" * 60)
+        query_table(schema, table_name)
+
+    except KeyboardInterrupt:
+        print("\n\nOperation cancelled by user.")
+    except (ConnectionError, OSError, RuntimeError) as e:
+        print(f"\n✗ Failed to query table: {e}")
     finally:
-        cursor.close()
-        dbi_conn.close()  # This also closes the underlying ibm_db connection
-        print("\n--- Connection closed ---")
+        # Show final pool status
+        print("\n" + "=" * 60)
+        print(f"Final pool status: {db_pool.get_pool_status()}")
+        print("=" * 60)
