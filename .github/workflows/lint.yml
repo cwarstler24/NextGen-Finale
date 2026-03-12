@@ -34,7 +34,7 @@ jobs:
       - name: Run ESLint
         run: |
           echo "::group::ESLint Results"
-          npm run lint:frontend -- --format=stylish
+          npm run lint:frontend --format=stylish
           echo "::endgroup::"
 
   pylint:
