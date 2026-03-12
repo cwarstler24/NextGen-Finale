@@ -23,27 +23,39 @@ class _SmartLogger:
     def __init__(self, name):
         self._logger = logging.getLogger(name)
 
-    def debug(self, msg, *args, **kwargs):
+    def debug(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         if self._logger.isEnabledFor(logging.DEBUG):
             self._logger.debug(msg, *args, stacklevel = 2, **kwargs)
 
-    def info(self, msg, *args, **kwargs):
+    def info(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         if self._logger.isEnabledFor(logging.INFO):
             self._logger.info(msg, *args, stacklevel = 2, **kwargs)
 
-    def warning(self, msg, *args, **kwargs):
+    def warning(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         if self._logger.isEnabledFor(logging.WARNING):
             self._logger.warning(msg, *args, stacklevel = 2, **kwargs)
 
-    def error(self, msg, *args, **kwargs):
+    def error(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         if self._logger.isEnabledFor(logging.ERROR):
             self._logger.error(msg, *args, stacklevel = 2, **kwargs)
 
-    def critical(self, msg, *args, **kwargs):
+    def critical(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         self._logger.critical(msg, *args, stacklevel = 2, **kwargs)
 
     #Allows traceback
-    def exception(self, msg, *args, **kwargs):
+    def exception(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         self._logger.exception(msg, *args, stacklevel = 2, **kwargs)
 
 #Create singleton Logger factory to ensure only one Logger is allocated.
