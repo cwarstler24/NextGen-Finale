@@ -18,14 +18,14 @@ class BurgerItemToppingDAO(DatabaseAccessObject):
     Handles BURGER_ITEM_TOPPINGS table operations.
     Note: This table has a composite primary key, so we use TOPPING_ID as the key.
     '''
-    
+
     def __init__(self):
         '''
-        Initialize the BurgerItemToppingDAO for the BURGER_ITEM_TOPPINGS table.
+        Initialize the BurgerItemToppingDAO for the TBBURGER_TOPPINGS table.
         '''
         # This is a join table - using TOPPING_ID as key, but queries will typically use both columns
-        super().__init__(table_name="BURGER_ITEM_TOPPINGS", primary_key="TOPPING_ID")
-    
+        super().__init__(table_name="TBBURGER_TOPPINGS", primary_key="TOPPING_ID")
+
     def _row_to_dict(self, row: tuple) -> dict[str, Any]:
         '''
         Convert a BURGER_ITEM_TOPPINGS table row to a dictionary.
@@ -40,7 +40,7 @@ class BurgerItemToppingDAO(DatabaseAccessObject):
             "TOPPING_ID": row[0],
             "BURGER_ORDER_ID": row[1]
         }
-    
+
     def _build_insert_sql(self, entry: dict[str, Any]) -> tuple[str, list]:
         '''
         Build INSERT SQL for creating a new burger-topping association.
@@ -52,7 +52,7 @@ class BurgerItemToppingDAO(DatabaseAccessObject):
             tuple[str, list]: SQL string and list of parameter values
         '''
         sql = f"""
-            INSERT INTO {self._table_name} 
+            INSERT INTO {self._table_name}
             (TOPPING_ID, BURGER_ORDER_ID) 
             VALUES (?, ?)
         """
@@ -61,7 +61,7 @@ class BurgerItemToppingDAO(DatabaseAccessObject):
             entry.get("BURGER_ORDER_ID")
         ]
         return (sql, values)
-    
+
     def _build_update_sql(self, updates: dict[str, Any]) -> tuple[str, list]:
         '''
         Build UPDATE SQL SET clause for modifying a burger-topping association.

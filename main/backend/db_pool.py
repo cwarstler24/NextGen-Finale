@@ -36,10 +36,10 @@ class DB2ConnectionPool:
     Manages a pool of reusable database connections to avoid the overhead
     of creating new connections for each request.
     """
-    
+
     _instance = None
     _lock = threading.Lock()
-    
+
     def __new__(cls):
         """Singleton pattern to ensure only one pool exists"""
         if cls._instance is None:
@@ -47,13 +47,19 @@ class DB2ConnectionPool:
                 if cls._instance is None:
                     cls._instance = super(DB2ConnectionPool, cls).__new__(cls)
                     cls._instance._initialized = False
+        else:
+            # Ensure _initialized exists on existing instance
+            if not hasattr(cls._instance, '_initialized'):
+                cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         """Initialize the connection pool (only once due to singleton)"""
-        if self._initialized:
+        # Use getattr with default to avoid AttributeError on first
+        # instantiation
+        if getattr(self, '_initialized', False):
             return
-            
+
         self.logger = LoggerFactory.get_general_logger()
         self._initialized = True
         self._pool = Queue()
@@ -63,19 +69,19 @@ class DB2ConnectionPool:
         self._min_connections = 2
         self._max_connections = 10
         self._current_size = 0
-        
+
         # Load credentials and build connection string
         self._load_credentials()
-        
+
         # Create minimum number of connections
         self._initialize_pool()
-        
+
     def _load_credentials(self):
         """Load database credentials from credentials.json"""
         credentials_path = project_root / "credentials.json"
-        with open(credentials_path, "r") as f:
+        with open(credentials_path, "r", encoding="utf-8") as f:
             credentials = json.load(f)
-        
+
         self._conn_str = (
             f"DATABASE={credentials['database']};"
             f"HOSTNAME={credentials['hostname']};"
@@ -84,9 +90,10 @@ class DB2ConnectionPool:
             f"AUTHENTICATION={credentials['authentication']};"
             f"UID={credentials['uid']};"
             f"PWD={credentials['pwd']};"
+            f"CURRENTSCHEMA=SKYFAL;"
         )
         self.logger.info("Database credentials loaded successfully")
-    
+
     def _create_connection(self):
         """Create a new DB2 connection"""
         try:
@@ -94,38 +101,42 @@ class DB2ConnectionPool:
             conn = ibm_db.connect(self._conn_str, "", "")
             # Wrap it in ibm_db_dbi for thread-safe operations
             dbi_conn = ibm_db_dbi.Connection(conn)
-            
+
             with self._connections_lock:
                 self._all_connections.append(dbi_conn)
                 self._current_size += 1
-            
-            self.logger.info(f"Created new DB2 connection (pool size: {self._current_size})")
+
+            self.logger.info(
+                f"Created new DB2 connection (pool size: {
+                    self._current_size})")
             return dbi_conn
-            
+
         except Exception as e:
             self.logger.error(f"Failed to create DB2 connection: {e}")
             # Create error response for connection failure
-            error_response = ResponseCode("DB_CONNECTION_FAILED", data=str(e))
+            ResponseCode("DB_CONNECTION_FAILED", data=str(e))
             raise
-    
+
     def _initialize_pool(self):
         """Initialize the pool with minimum connections"""
-        self.logger.info(f"Initializing connection pool with {self._min_connections} connections")
+        self.logger.info(
+            f"Initializing connection pool with {
+                self._min_connections} connections")
         for _ in range(self._min_connections):
             conn = self._create_connection()
             self._pool.put(conn)
-    
+
     def get_connection(self, timeout=5):
         """
         Get a connection from the pool. Creates a new one if pool is empty
         and max connections not reached.
-        
+
         Args:
             timeout (int): Seconds to wait for a connection from the pool
-            
+
         Returns:
             ibm_db_dbi.Connection: A database connection
-            
+
         Raises:
             Exception: If unable to get a connection
         """
@@ -134,32 +145,30 @@ class DB2ConnectionPool:
             conn = self._pool.get(timeout=timeout)
             self.logger.debug("Retrieved connection from pool")
             return conn
-            
-        except Empty:
+
+        except Empty as exc:
             # Pool is empty, create new connection if under max limit
             with self._connections_lock:
                 if self._current_size < self._max_connections:
                     self.logger.info("Pool empty, creating new connection")
                     return self._create_connection()
-                else:
-                    # Create error response for pool exhaustion
-                    error_response = ResponseCode(
-                        "DB_CONNECTION_POOL_EXHAUSTED",
-                        data={
-                            "max_connections": self._max_connections,
-                            "current_size": self._current_size,
-                            "pool_available": self._pool.qsize()
-                        }
-                    )
-                    raise Exception(
-                        f"Connection pool exhausted. Max connections ({self._max_connections}) reached. "
-                        f"Please return connections to the pool."
-                    )
-    
+                # Create error response for pool exhaustion
+                ResponseCode(
+                    "DB_CONNECTION_POOL_EXHAUSTED",
+                    data={
+                        "max_connections": self._max_connections,
+                        "current_size": self._current_size,
+                        "pool_available": self._pool.qsize()
+                    }
+                )
+                raise RuntimeError(
+                    f"Connection pool exhausted. Max connections ({
+                        self._max_connections}) reached. Please return connections to the pool.") from exc
+
     def return_connection(self, conn):
         """
         Return a connection to the pool for reuse.
-        
+
         Args:
             conn (ibm_db_dbi.Connection): The connection to return
         """
@@ -169,31 +178,33 @@ class DB2ConnectionPool:
                 conn.rollback()
                 self._pool.put(conn)
                 self.logger.debug("Connection returned to pool")
-            except Exception as e:
+            except (ibm_db.DatabaseError, ValueError) as e:
                 self.logger.error(f"Error returning connection to pool: {e}")
                 # Connection might be corrupted, remove it
                 self._remove_connection(conn)
-    
+
     def _remove_connection(self, conn):
         """Remove a connection from the pool permanently"""
         try:
             conn.close()
-        except:
+        except (ibm_db.DatabaseError, AttributeError):
             pass
-        
+
         with self._connections_lock:
             if conn in self._all_connections:
                 self._all_connections.remove(conn)
                 self._current_size -= 1
-        
-        self.logger.info(f"Removed connection from pool (pool size: {self._current_size})")
-    
+
+        self.logger.info(
+            f"Removed connection from pool (pool size: {
+                self._current_size})")
+
     @contextmanager
     def get_cursor(self):
         """
         Context manager for getting a cursor. Automatically handles
         connection acquisition and return.
-        
+
         Usage:
             with pool.get_cursor() as cursor:
                 cursor.execute("SELECT * FROM table")
@@ -216,31 +227,31 @@ class DB2ConnectionPool:
                 cursor.close()
             if conn:
                 self.return_connection(conn)
-    
+
     def close_all(self):
         """Close all connections in the pool. Should be called on application shutdown."""
         self.logger.info("Closing all database connections")
-        
+
         # Close connections in the pool
         while not self._pool.empty():
             try:
                 conn = self._pool.get_nowait()
                 conn.close()
-            except:
+            except (ibm_db.DatabaseError, AttributeError):
                 pass
-        
+
         # Close any connections that might be in use
         with self._connections_lock:
             for conn in self._all_connections:
                 try:
                     conn.close()
-                except:
+                except (ibm_db.DatabaseError, AttributeError):
                     pass
             self._all_connections.clear()
             self._current_size = 0
-        
+
         self.logger.info("All database connections closed")
-    
+
     def get_pool_status(self):
         """Get current pool statistics"""
         return {
@@ -259,7 +270,7 @@ db_pool = DB2ConnectionPool()
 def get_db_cursor():
     """
     Get a database cursor with automatic connection management.
-    
+
     Usage:
         with get_db_cursor() as cursor:
             cursor.execute("SELECT * FROM table")

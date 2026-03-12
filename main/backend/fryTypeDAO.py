@@ -17,20 +17,20 @@ class FryTypeDAO(DatabaseAccessObject):
     DAO for managing Fry Types (ingredient lookup) in the database.
     Handles FRY_TYPES table operations.
     '''
-    
+
     def __init__(self):
         '''
-        Initialize the FryTypeDAO for the FRY_TYPES table.
+        Initialize the FryTypeDAO for the TBFRY_TYPES table.
         '''
-        super().__init__(table_name="FRY_TYPES", primary_key="FRY_TYPE_ID")
-    
+        super().__init__(table_name="TBFRY_TYPES", primary_key="FRY_TYPE_ID")
+
     def _row_to_dict(self, row: tuple) -> dict[str, Any]:
         '''
         Convert a FRY_TYPES table row to a dictionary.
-        
+
         Args:
             row (tuple): A DB2 result row from the FRY_TYPES table
-            
+
         Returns:
             dict[str, Any]: Dictionary representation of the fry type
         '''
@@ -40,20 +40,20 @@ class FryTypeDAO(DatabaseAccessObject):
             "STOCK_QUANTITY": row[2],
             "PRICE": row[3]
         }
-    
+
     def _build_insert_sql(self, entry: dict[str, Any]) -> tuple[str, list]:
         '''
         Build INSERT SQL for creating a new fry type.
-        
+
         Args:
             entry (dict[str, Any]): The fry type data to insert
-            
+
         Returns:
             tuple[str, list]: SQL string and list of parameter values
         '''
         sql = f"""
-            INSERT INTO {self._table_name} 
-            (FRY_TYPE_ID, FRY_TYPE_NAME, STOCK_QUANTITY, PRICE) 
+            INSERT INTO {self._table_name}
+            (FRY_TYPE_ID, FRY_TYPE_NAME, STOCK_QUANTITY, PRICE)
             VALUES (?, ?, ?, ?)
         """
         values = [
@@ -63,14 +63,14 @@ class FryTypeDAO(DatabaseAccessObject):
             entry.get("PRICE")
         ]
         return (sql, values)
-    
+
     def _build_update_sql(self, updates: dict[str, Any]) -> tuple[str, list]:
         '''
         Build UPDATE SQL SET clause for modifying a fry type.
-        
+
         Args:
             updates (dict[str, Any]): The fields to update
-            
+
         Returns:
             tuple[str, list]: SET clause string and list of parameter values
         '''

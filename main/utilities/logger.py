@@ -5,8 +5,8 @@
 #utilities/logger.py
 import logging
 import logging.config
-import yaml
 import os
+import yaml
 #from utilities.config import YamlReader
 
 #Ensures logging security so that malicious user cannot define a new path
@@ -102,11 +102,11 @@ class LoggerFactory:
         security_log_path = os.path.join(logs_dir, 'security.log')
         for path in [general_log_path, security_log_path]:
             if not os.path.exists(path):
-                with open(path, 'w'):
+                with open(path, 'w', encoding='utf-8'):
                     pass
 
         config_path = os.path.join(base_dir, 'configs', 'logging_config.yaml')
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
 
         LoggerFactory._use_smart_logger = config.get("use_smart_logger", True)

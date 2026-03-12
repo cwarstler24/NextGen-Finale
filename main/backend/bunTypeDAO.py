@@ -17,13 +17,13 @@ class BunTypeDAO(DatabaseAccessObject):
     DAO for managing Bun Types (ingredient lookup) in the database.
     Handles BUN_TYPES table operations.
     '''
-    
+
     def __init__(self):
         '''
-        Initialize the BunTypeDAO for the BUN_TYPES table.
+        Initialize the BunTypeDAO for the TBBUN_TYPES table.
         '''
-        super().__init__(table_name="BUN_TYPES", primary_key="BUN_ID")
-    
+        super().__init__(table_name="TBBUN_TYPES", primary_key="BUN_ID")
+
     def _row_to_dict(self, row: tuple) -> dict[str, Any]:
         '''
         Convert a BUN_TYPES table row to a dictionary.
@@ -40,7 +40,7 @@ class BunTypeDAO(DatabaseAccessObject):
             "STOCK_QUANTITY": row[2],
             "PRICE": row[3]
         }
-    
+
     def _build_insert_sql(self, entry: dict[str, Any]) -> tuple[str, list]:
         '''
         Build INSERT SQL for creating a new bun type.
@@ -52,7 +52,7 @@ class BunTypeDAO(DatabaseAccessObject):
             tuple[str, list]: SQL string and list of parameter values
         '''
         sql = f"""
-            INSERT INTO {self._table_name} 
+            INSERT INTO {self._table_name}
             (BUN_ID, BUN_NAME, STOCK_QUANTITY, PRICE) 
             VALUES (?, ?, ?, ?)
         """
@@ -63,7 +63,7 @@ class BunTypeDAO(DatabaseAccessObject):
             entry.get("PRICE")
         ]
         return (sql, values)
-    
+
     def _build_update_sql(self, updates: dict[str, Any]) -> tuple[str, list]:
         '''
         Build UPDATE SQL SET clause for modifying a bun type.

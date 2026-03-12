@@ -17,20 +17,20 @@ class ToppingDAO(DatabaseAccessObject):
     DAO for managing Toppings (ingredient lookup) in the database.
     Handles TOPPINGS table operations.
     '''
-    
+
     def __init__(self):
         '''
-        Initialize the ToppingDAO for the TOPPINGS table.
+        Initialize the ToppingDAO for the TBTOPPINGS table.
         '''
-        super().__init__(table_name="TOPPINGS", primary_key="TOPPING_ID")
-    
+        super().__init__(table_name="TBTOPPINGS", primary_key="TOPPING_ID")
+
     def _row_to_dict(self, row: tuple) -> dict[str, Any]:
         '''
         Convert a TOPPINGS table row to a dictionary.
-        
+
         Args:
             row (tuple): A DB2 result row from the TOPPINGS table
-            
+
         Returns:
             dict[str, Any]: Dictionary representation of the topping
         '''
@@ -40,20 +40,20 @@ class ToppingDAO(DatabaseAccessObject):
             "STOCK_QUANTITY": row[2],
             "PRICE": row[3]
         }
-    
+
     def _build_insert_sql(self, entry: dict[str, Any]) -> tuple[str, list]:
         '''
         Build INSERT SQL for creating a new topping.
-        
+
         Args:
             entry (dict[str, Any]): The topping data to insert
-            
+
         Returns:
             tuple[str, list]: SQL string and list of parameter values
         '''
         sql = f"""
-            INSERT INTO {self._table_name} 
-            (TOPPING_ID, TOPPING_NAME, STOCK_QUANTITY, PRICE) 
+            INSERT INTO {self._table_name}
+            (TOPPING_ID, TOPPING_NAME, STOCK_QUANTITY, PRICE)
             VALUES (?, ?, ?, ?)
         """
         values = [
@@ -63,14 +63,14 @@ class ToppingDAO(DatabaseAccessObject):
             entry.get("PRICE")
         ]
         return (sql, values)
-    
+
     def _build_update_sql(self, updates: dict[str, Any]) -> tuple[str, list]:
         '''
         Build UPDATE SQL SET clause for modifying a topping.
-        
+
         Args:
             updates (dict[str, Any]): The fields to update
-            
+
         Returns:
             tuple[str, list]: SET clause string and list of parameter values
         '''
