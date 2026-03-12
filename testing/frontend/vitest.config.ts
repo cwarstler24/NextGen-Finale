@@ -1,8 +1,10 @@
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vitest/config';
+import { resolve } from 'node:path';
 
 export default defineConfig({
     plugins: [vue()],
+    publicDir: resolve(__dirname, '../../main/frontend/public'),
     test: {
         environment: 'jsdom',
         include: ['testing/frontend/tests/**/*.test.{ts,js,tsx,jsx}'],
