@@ -180,3 +180,15 @@ button:hover {
     font-size: 2rem;
   }
 }
+
+footer {
+    text-align: center;
+    padding: 1.5rem;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+span.hover:hover {
+    color: #38bdf8;
+    cursor: pointer;
+}
