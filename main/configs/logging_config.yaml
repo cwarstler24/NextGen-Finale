@@ -1,0 +1,39 @@
+version: 1
+disable_existing_loggers: False
+
+use_smart_logger: True #Set this to false if you want to still keep logs even when not output (less optimized)
+
+formatters:
+  standard:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(module)s.%(funcName)s:%(lineno)d - %(message)s"
+  console:
+    format: "%(name)s;%(levelname)s - %(module)s.%(funcName)s:%(lineno)d - %(message)s"
+
+handlers:
+  general_file:
+    class: logging.FileHandler
+    level: INFO
+    formatter: standard
+    filename: "{LOG_DIR}/general.log"
+
+  security_file:
+    class: logging.FileHandler
+    level: WARNING
+    formatter: standard
+    filename: "{LOG_DIR}/security.log"
+
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: console
+
+loggers:
+  generalLogger:
+    level: DEBUG
+    handlers: [general_file, console]
+    propagate: False
+
+  securityLogger:
+    level: DEBUG
+    handlers: [security_file, console]
+    propagate: False

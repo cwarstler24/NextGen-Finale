@@ -6,6 +6,9 @@ disable=
     missing-module-docstring,
     missing-function-docstring,
     missing-class-docstring
+    pointless-string-statements
+    wrong-import-position
+    import-error
 
 [FORMAT]
-max-line-length=100
+max-line-length=120

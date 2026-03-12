@@ -10,7 +10,9 @@ export default defineConfig({
         globals: true,
         reporters: ['default'],
         coverage: {
-            enabled: false
+            enabled: true,
+            reporter: ['text', 'html'],
+            include: ['main/frontend/src/**/*.{ts,js,vue}'],
         }
     },
 });
