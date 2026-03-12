@@ -1,17 +1,61 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import BurgerOptionsComp from '../components/BurgerOptionsComp.vue';
 import FriesOptionsComp from '../components/FriesOptionsComp.vue';
+import { useCart } from '../composables/useCart';
+
+const OPTION_GROUP_METADATA = {
+    burger: {
+        buns: { label: 'Bun', selectionMode: 'single' },
+        patties: { label: 'Patty', selectionMode: 'single' },
+        toppings: { label: 'Toppings', selectionMode: 'multiple' },
+    },
+    fries: {
+        sizes: { label: 'Size', selectionMode: 'single' },
+        types: { label: 'Type', selectionMode: 'single' },
+        seasonings: { label: 'Seasoning', selectionMode: 'multiple' },
+    },
+};
 
 const router = useRouter();
+const { addItem } = useCart();
 
-// Get product from route params
+function getDefaultSelection(group) {
+    if (group.selectionMode === 'multiple') {
+        return [];
+    }
+
+    const defaultItem = group.items.find((item) => item.quantity > 0) ?? group.items[0];
+    return defaultItem?.id ?? null;
+}
+
+function getSelectionIds(group, selection) {
+    if (group.selectionMode === 'multiple') {
+        return Array.isArray(selection) ? selection : [];
+    }
+
+    return selection ? [selection] : [];
+}
+
+function normalizeProductOptions(productKey, optionsByGroup) {
+    const metadata = OPTION_GROUP_METADATA[productKey] ?? {};
+
+    return Object.entries(optionsByGroup).map(([key, items]) => ({
+        key,
+        label: metadata[key]?.label ?? key,
+        selectionMode: metadata[key]?.selectionMode ?? 'single',
+        items: items.map((item) => ({
+            ...item,
+            id: String(item.id),
+        })),
+    }));
+}
+
 const product = computed(() => {
     return (router.currentRoute.value.params.product || '').toLowerCase();
 });
 
-// Map product to image arrays
 const productImages = computed(() => {
     switch (product.value) {
         case 'burger':
@@ -24,83 +68,72 @@ const productImages = computed(() => {
 });
 
 const productData = computed(() => {
-    // TODO replace with API data
-
     switch (product.value) {
         case 'burger':
             return {
                 name: 'Classic Burger',
                 description: 'A crave-worthy mix of crisp, golden bites with fresh toppings. Balanced, filling, and perfect for a quick lunch or family night in.',
-                price: '.0',
+                price: 0,
             };
         case 'fries':
             return {
                 name: 'Crispy Fries',
                 description: 'Golden, crispy fries seasoned to perfection. A deliciously satisfying side that pairs perfectly with any meal.',
-                price: '0.0',
+                price: 0,
             };
         default:
             return {
                 name: 'Unknown Product',
                 description: 'No description available.',
-                price: '0',
+                price: 0,
             };
-    };
-});
-
-const totalPrice = computed(() => {
-    const base = parseFloat(productData.value.price.replace('$', '')) || 0;
-    let optionTotal = 0;
-
-    for (let i = 0; i < selectedOptions.value.length; i++) {
-        const optionKey = `option${i + 1}`;
-        const selectedValue = selectedOptions.value[i];
-        const selectedValues = Array.isArray(selectedValue) ? selectedValue : [selectedValue];
-
-        for (const value of selectedValues) {
-            const idx = productOptions.value[optionKey]?.indexOf(value);
-            if (idx !== undefined && idx >= 0) {
-                optionTotal += productOptions.value[`${optionKey}Price`][idx] || 0;
-            }
-        }
     }
-
-    return `${(base + optionTotal).toFixed(2)}`;
 });
 
-const productOptions = computed(() => {
-    // TODO replace with API data
+const rawProductOptions = computed(() => {
     switch (product.value) {
         case 'burger':
             return {
-                optionNames: ['Bun', 'Patty', 'Toppings'],
-                option1: ['Regular', 'Pretzel', 'None'],
-                option2: ['Regular', 'Vegan', 'Dirt', 'None'],
-                option3: ['Lettuce', 'Tomato','Pickles','Mustard','Katchup','Mayo'],
-                option1Price: [1,1.5,0],
-                option2Price: [3,4,1,0],
-                option3Price: [0.5,0.5,0.5,0,0,0]
+                buns: [
+                    { id: 101, name: 'Regular', price: 1, quantity: 5 },
+                    { id: 102, name: 'Pretzel', price: 1.5, quantity: 3 },
+                    { id: 103, name: 'None', price: 0, quantity: 10 },
+                ],
+                patties: [
+                    { id: 201, name: 'Regular', price: 3, quantity: 10 },
+                    { id: 202, name: 'Vegan', price: 4, quantity: 5 },
+                    { id: 203, name: 'Dirt', price: 1, quantity: 2 },
+                    { id: 204, name: 'None', price: 0, quantity: 10 },
+                ],
+                toppings: [
+                    { id: 301, name: 'Lettuce', price: 0.5, quantity: 20 },
+                    { id: 302, name: 'Tomato', price: 0.5, quantity: 15 },
+                    { id: 303, name: 'Pickles', price: 0.5, quantity: 10 },
+                    { id: 304, name: 'Mustard', price: 0, quantity: 25 },
+                    { id: 305, name: 'Ketchup', price: 0, quantity: 30 },
+                    { id: 306, name: 'Mayo', price: 0, quantity: 20 },
+                ],
             };
         case 'fries':
             return {
-                optionNames: ['Size', 'Type', 'Seasoning'],
-                option1: ['Small', 'Medium', 'Large'],
-                option2: ['Shoe-Lace', 'Curly', 'Sweet Potato'],
-                option3: ['Salt','Cajun','Sugar'],
-                option1Price: [.5,1,2],
-                option2Price: [0,0.5,1],
-                option3Price: [0,0.5,0.5]
+                sizes: [
+                    { id: 401, name: 'Small', price: 0.5, quantity: 10 },
+                    { id: 402, name: 'Medium', price: 1, quantity: 15 },
+                    { id: 403, name: 'Large', price: 2, quantity: 5 },
+                ],
+                types: [
+                    { id: 501, name: 'Shoe-Lace', price: 0, quantity: 10 },
+                    { id: 502, name: 'Curly', price: 0.5, quantity: 10 },
+                    { id: 503, name: 'Sweet Potato', price: 1, quantity: 5 },
+                ],
+                seasonings: [
+                    { id: 601, name: 'Salt', price: 0, quantity: 20 },
+                    { id: 602, name: 'Cajun', price: 0.5, quantity: 15 },
+                    { id: 603, name: 'Sugar', price: 0.5, quantity: 10 },
+                ],
             };
         default:
-            return {
-                optionNames: [],
-                option1: [],
-                option2: [],
-                option3: [],
-                option1Price: [],
-                option2Price: [],
-                option3Price: [],
-            };
+            return {};
     }
 });
 
@@ -115,23 +148,59 @@ const customizationComponent = computed(() => {
     }
 });
 
-const selectedOptions = ref([]);
+const optionGroups = computed(() => normalizeProductOptions(product.value, rawProductOptions.value));
+const selectedOptions = ref({});
+const selectedIndex = ref(0);
+const cartFeedbackMessage = ref('');
+
+let cartFeedbackTimeoutId = null;
+
+function clearCartFeedbackTimeout() {
+    if (cartFeedbackTimeoutId !== null) {
+        clearTimeout(cartFeedbackTimeoutId);
+        cartFeedbackTimeoutId = null;
+    }
+}
+
+function showCartFeedback(message) {
+    cartFeedbackMessage.value = message;
+    clearCartFeedbackTimeout();
+    cartFeedbackTimeoutId = window.setTimeout(() => {
+        cartFeedbackMessage.value = '';
+        cartFeedbackTimeoutId = null;
+    }, 3000);
+}
 
 watch(
-    productOptions,
-    (options) => {
-        selectedOptions.value = (options.optionNames || []).map((_, idx) => {
-            if (product.value === 'fries' && idx === 2) {
-                return [];
-            }
-
-            return options[`option${idx + 1}`]?.[0] ?? null;
-        });
+    optionGroups,
+    (groups) => {
+        selectedOptions.value = groups.reduce((nextSelections, group) => {
+            nextSelections[group.key] = getDefaultSelection(group);
+            return nextSelections;
+        }, {});
     },
     { immediate: true }
 );
 
-const selectedIndex = ref(0);
+watch(product, () => {
+    selectedIndex.value = 0;
+    cartFeedbackMessage.value = '';
+    clearCartFeedbackTimeout();
+});
+
+const totalPrice = computed(() => {
+    const base = Number(productData.value.price) || 0;
+    const optionTotal = optionGroups.value.reduce((runningTotal, group) => {
+        const selectedIds = getSelectionIds(group, selectedOptions.value[group.key]);
+
+        return runningTotal + selectedIds.reduce((groupTotal, selectedId) => {
+            const selectedItem = group.items.find((item) => item.id === selectedId);
+            return groupTotal + (selectedItem?.price ?? 0);
+        }, 0);
+    }, 0);
+
+    return `${(base + optionTotal).toFixed(2)}`;
+});
 
 const selectThumbnail = (index) => {
     selectedIndex.value = index;
@@ -142,12 +211,35 @@ const goMainPage = () => {
 };
 
 const addToCart = () => {
-    // TODO implement add to cart functionality
-    // For now, show an alert with the selected options and total price
-    alert(`Added to cart:\nProduct: ${productData.value.name}\nOptions: ${selectedOptions.value.map((opt, idx) => `${productOptions.value.optionNames[idx]}: ${opt}`).join(', ')}\nTotal Price: $${totalPrice.value}`);
+    addItem({
+        id: product.value,
+        name: productData.value.name,
+        image: productImages.value[0],
+        unitPrice: Number(totalPrice.value),
+        quantity: 1,
+        options: optionGroups.value.map((group) => {
+            const selectedIds = getSelectionIds(group, selectedOptions.value[group.key]);
+            const selectedItems = group.items.filter((item) => selectedIds.includes(item.id));
+
+            return {
+                id: group.selectionMode === 'multiple'
+                    ? selectedItems.map((item) => item.id).sort((left, right) => left.localeCompare(right))
+                    : selectedItems[0]?.id ?? null,
+                name: group.label,
+                value: group.selectionMode === 'multiple'
+                    ? selectedItems.map((item) => item.name).sort((left, right) => left.localeCompare(right))
+                    : selectedItems[0]?.name ?? null,
+            };
+        }),
+    });
+    showCartFeedback(`${productData.value.name} added to cart.`);
 };
 
+onBeforeUnmount(() => {
+    clearCartFeedbackTimeout();
+});
 </script>
+
 <template>
 <section class="page product-page">
     <div class="product-breadcrumbs">
@@ -158,13 +250,13 @@ const addToCart = () => {
         <div name="product-gallery" class="product-gallery card">
             <img name="product-image" class="product-hero" :src="productImages[selectedIndex]" alt="Product hero" />
             <div class="thumbnail-row">
-                <button 
-                    v-for="(img, idx) in productImages" 
-                    :key="img" 
-                    class="thumb" 
+                <button
+                    v-for="(img, idx) in productImages"
+                    :key="img"
+                    class="thumb"
                     :class="{ 'is-active': idx === selectedIndex }"
                     type="button"
-                    @click="selectThumbnail(idx)" 
+                    @click="selectThumbnail(idx)"
                 >
                     <img :src="img" :alt="`Thumbnail ${idx + 1}`" />
                 </button>
@@ -184,11 +276,19 @@ const addToCart = () => {
                 </div>
             </div>
 
-
             <div class="product-actions">
                 <button class="primary" type="button" @click="addToCart">
                     Add to Cart
                 </button>
+            </div>
+
+            <div
+                v-if="cartFeedbackMessage"
+                class="cart-feedback"
+                role="status"
+                aria-live="polite"
+            >
+                {{ cartFeedbackMessage }}
             </div>
         </div>
     </div>
@@ -199,23 +299,15 @@ const addToCart = () => {
                 :is="customizationComponent"
                 v-if="customizationComponent"
                 v-model="selectedOptions"
-                :product-options="productOptions"
+                :option-groups="optionGroups"
             />
             <template v-else>
-                <h3>Customize your order (Default)</h3>
-                <div name="options" class="option-grid">
-                    <label v-for="(name, idx) in productOptions.optionNames" :key="name">
-                        {{ name }}
-                        <select v-model="selectedOptions[idx]">
-                            <option v-for="(opt, optIdx) in productOptions[`option${idx+1}`]" :key="opt" :value="opt">
-                                {{ opt }} <span v-if="productOptions[`option${idx+1}Price`][optIdx] > 0"> +{{ productOptions[`option${idx+1}Price`][optIdx] }}</span>
-                            </option>
-                        </select>
-                    </label>
-                </div>
+                <h3>Customize your order</h3>
+                <p>No customization options are available for this product.</p>
             </template>
         </div>
     </div>
 </section>
 </template>
+
 <style src="../styles/ProductView.css" scoped></style>
