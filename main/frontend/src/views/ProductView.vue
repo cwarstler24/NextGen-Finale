@@ -96,17 +96,17 @@ const rawProductOptions = computed(() => {
             return {
                 buns: [
                     { id: 101, name: 'Regular', price: 1, quantity: 5 },
-                    { id: 102, name: 'Pretzel', price: 1.5, quantity: 3 },
+                    { id: 102, name: 'Pretzel', price: 1.5, quantity: 0 },
                     { id: 103, name: 'None', price: 0, quantity: 10 },
                 ],
                 patties: [
-                    { id: 201, name: 'Regular', price: 3, quantity: 10 },
+                    { id: 201, name: 'Regular', price: 3, quantity: 0 },
                     { id: 202, name: 'Vegan', price: 4, quantity: 5 },
                     { id: 203, name: 'Dirt', price: 1, quantity: 2 },
                     { id: 204, name: 'None', price: 0, quantity: 10 },
                 ],
                 toppings: [
-                    { id: 301, name: 'Lettuce', price: 0.5, quantity: 20 },
+                    { id: 301, name: 'Lettuce', price: 0.5, quantity: 0 },
                     { id: 302, name: 'Tomato', price: 0.5, quantity: 15 },
                     { id: 303, name: 'Pickles', price: 0.5, quantity: 10 },
                     { id: 304, name: 'Mustard', price: 0, quantity: 25 },
@@ -117,19 +117,19 @@ const rawProductOptions = computed(() => {
         case 'fries':
             return {
                 sizes: [
-                    { id: 401, name: 'Small', price: 0.5, quantity: 10 },
+                    { id: 401, name: 'Small', price: 0.5, quantity: 0 },
                     { id: 402, name: 'Medium', price: 1, quantity: 15 },
                     { id: 403, name: 'Large', price: 2, quantity: 5 },
                 ],
                 types: [
                     { id: 501, name: 'Shoe-Lace', price: 0, quantity: 10 },
-                    { id: 502, name: 'Curly', price: 0.5, quantity: 10 },
+                    { id: 502, name: 'Curly', price: 0.5, quantity: 0 },
                     { id: 503, name: 'Sweet Potato', price: 1, quantity: 5 },
                 ],
                 seasonings: [
                     { id: 601, name: 'Salt', price: 0, quantity: 20 },
                     { id: 602, name: 'Cajun', price: 0.5, quantity: 15 },
-                    { id: 603, name: 'Sugar', price: 0.5, quantity: 10 },
+                    { id: 603, name: 'Sugar', price: 0.5, quantity: 0 },
                 ],
             };
         default:

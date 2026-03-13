@@ -1,6 +1,8 @@
 <script setup>
 import { useCart } from '../composables/useCart';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const { cartEntries, cartCount, cartTotal, removeItem, clearCart } = useCart();
 
 function formatCurrency(value) {
@@ -16,8 +18,7 @@ function formatOptionValue(value) {
 }
 
 const purchase = () => {
-    alert('Purchase not implemented yet.');
-    clearCart();
+    router.push({ name: 'checkout' });
 };
 </script>
 
@@ -30,9 +31,6 @@ const purchase = () => {
                 {{ cartCount }} item<span v-if="cartCount !== 1">s</span> ready for checkout.
             </p>
         </div>
-        <button v-if="cartCount > 0" class="secondary" type="button" @click="clearCart">
-            Clear Cart
-        </button>
     </div>
 
     <div v-if="cartEntries.length === 0" class="card empty-cart">
@@ -74,7 +72,10 @@ const purchase = () => {
                 <strong>{{ formatCurrency(cartTotal) }}</strong>
             </div>
             <button class="primary purchase-button" type="button" @click="purchase">
-                Purchase
+                Checkout
+            </button>
+            <button v-if="cartCount > 0" class="secondary" type="button" @click="clearCart">
+                Clear Cart
             </button>
         </aside>
     </div>
