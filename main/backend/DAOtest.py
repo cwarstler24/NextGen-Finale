@@ -8,8 +8,7 @@ sys.path.insert(0, str(project_root))
 from main.backend.db_pool import get_db_cursor, db_pool
 from main.utilities.logger import LoggerFactory
 
-logger = LoggerFactory.get_general_logger()
-
+LOGGER = LoggerFactory.get_general_logger()
 
 def test_database_connection():
     """
@@ -38,7 +37,7 @@ def test_database_connection():
 
     except (ConnectionError, OSError, RuntimeError) as e:
         print(f"✗ Database connection failed: {e}")
-        logger.error(f"Connection test failed: {e}")
+        LOGGER.error(f"Connection test failed: {e}")
         return False
 
 
@@ -86,7 +85,7 @@ def check_schema_exists(schema_name: str):
 
     except (ConnectionError, OSError, RuntimeError) as e:
         print(f"✗ Error checking schema: {e}")
-        logger.error(f"Schema check failed: {e}")
+        LOGGER.error(f"Schema check failed: {e}")
         return False
 
 
@@ -182,7 +181,7 @@ def check_table_exists(schema_name: str, table_to_check: str):
 
     except (ConnectionError, OSError, RuntimeError) as e:
         print(f"✗ Error checking table: {e}")
-        logger.error(f"Table check failed: {e}")
+        LOGGER.error(f"Table check failed: {e}")
         return False
 
 
@@ -199,7 +198,7 @@ def query_table(schema_name: str, table_name_to_query: str):
             # Construct the fully qualified table name
             qualified_table = f"{schema_name}.{table_name_to_query}" if schema_name else table_name_to_query
 
-            logger.info(
+            LOGGER.info(
                 f"\n--- Querying table: {qualified_table} ---",
                 also_print=True)
 
@@ -249,9 +248,8 @@ def query_table(schema_name: str, table_name_to_query: str):
     except (ConnectionError, OSError, RuntimeError) as e:
         qualified_table = f"{schema_name}.{table_name_to_query}" if schema_name else table_name_to_query
         print(f"\n✗ Error querying table '{qualified_table}': {e}")
-        logger.error(f"Query failed: {e}")
+        LOGGER.error(f"Query failed: {e}")
         raise
-
 
 if __name__ == "__main__":
     """

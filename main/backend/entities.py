@@ -222,19 +222,22 @@ class BurgerItem(DatabaseEntity):
         burger_id: int,
         order_item_id: int,
         bun_type: int,
-        patty_type: int
+        patty_type: int,
+        patty_count: int = 1
     ):
         self.burger_id = burger_id
         self.order_item_id = order_item_id
         self.bun_type = bun_type
         self.patty_type = patty_type
+        self.patty_count = patty_count
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "BURGER_ID": self.burger_id,
             "ORDER_ITEM_ID": self.order_item_id,
             "BUN_TYPE": self.bun_type,
-            "PATTY_TYPE": self.patty_type
+            "PATTY_TYPE": self.patty_type,
+            "PATTY_COUNT": self.patty_count
         }
 
     @classmethod
@@ -243,7 +246,8 @@ class BurgerItem(DatabaseEntity):
             burger_id=data.get("BURGER_ID"),
             order_item_id=data.get("ORDER_ITEM_ID"),
             bun_type=data.get("BUN_TYPE"),
-            patty_type=data.get("PATTY_TYPE")
+            patty_type=data.get("PATTY_TYPE"),
+            patty_count=data.get("PATTY_COUNT", 1)
         )
 
     def get_primary_key(self) -> int:
