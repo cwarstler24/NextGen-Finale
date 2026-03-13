@@ -337,7 +337,6 @@ def sanitize_order_item(data: dict[str, Any]) -> OrderItem:
             order_id=sanitize_integer(data.get("order_id"), min_value=1),
             item_type=sanitize_string(data.get("item_type"), max_length=50),
             unit_price=sanitize_float(data.get("unit_price"), min_value=0.0),
-            extended_price=sanitize_float(data.get("extended_price"), min_value=0.0)
         )
     except Exception as e:
         LOGGER.error(f"Failed to sanitize order item data: {e}")
