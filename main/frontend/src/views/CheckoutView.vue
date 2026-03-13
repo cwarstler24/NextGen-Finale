@@ -99,7 +99,6 @@ const purchase = async () => {
     try {
         isSubmitting.value = true;
 
-        console.log('Order\n', JSON.stringify(buildOrderPayload()));
         const response = await fetch(ORDER_ENDPOINT, {
             method: 'POST',
             headers: {

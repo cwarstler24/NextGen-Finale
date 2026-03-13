@@ -145,7 +145,7 @@ class OrderDAO(DatabaseAccessObject):
         return self.execute_join_query(
             select_clause="""
                 oi.ORDER_ITEM_ID, oi.ORDER_ID, oi.ITEM_TYPE, 
-                oi.UNIT_PRICE, oi.EXTENDED_PRICE
+                oi.UNIT_PRICE
             """,
             join_clauses=[
                 "INNER JOIN TBORDER_ITEMS oi ON o.ORDER_ID = oi.ORDER_ID"

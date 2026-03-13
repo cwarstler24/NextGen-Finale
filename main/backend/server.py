@@ -614,7 +614,6 @@ async def create_order(order: OrderRequest):
                 "ORDER_ID": next_order_id,
                 "ITEM_TYPE": "BURGER",
                 "UNIT_PRICE": burger_price,
-                "EXTENDED_PRICE": burger_price
             }
             order_item_result = order_item_dao.create_record(order_item)
             if not order_item_result.success:
@@ -661,7 +660,6 @@ async def create_order(order: OrderRequest):
                 "ORDER_ID": next_order_id,
                 "ITEM_TYPE": "FRIES",
                 "UNIT_PRICE": fry_price,
-                "EXTENDED_PRICE": fry_price
             }
             order_item_result = order_item_dao.create_record(order_item)
             if not order_item_result.success:

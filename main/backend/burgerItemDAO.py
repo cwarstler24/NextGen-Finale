@@ -38,8 +38,14 @@ class BurgerItemDAO(DatabaseAccessObject):
             "BURGER_ID": row[0],
             "ORDER_ITEM_ID": row[1],
             "BUN_TYPE": row[2],
-            "PATTY_TYPE": row[3]
+            "PATTY_TYPE": row[3],
+            "PATTY_COUNT": row[4] if len(row) > 4 else 1
         }
+
+    def _prepare_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
+        prepared_entry = super()._prepare_entry(entry)
+        prepared_entry.setdefault("PATTY_COUNT", 1)
+        return prepared_entry
 
     def _build_insert_sql(self, entry: dict[str, Any]) -> tuple[str, list]:
         '''
@@ -53,14 +59,15 @@ class BurgerItemDAO(DatabaseAccessObject):
         '''
         sql = f"""
             INSERT INTO {self._table_name}
-            (BURGER_ID, ORDER_ITEM_ID, BUN_TYPE, PATTY_TYPE) 
-            VALUES (?, ?, ?, ?)
+            (BURGER_ID, ORDER_ITEM_ID, BUN_TYPE, PATTY_TYPE, PATTY_COUNT) 
+            VALUES (?, ?, ?, ?, ?)
         """
         values = [
             entry.get("BURGER_ID"),
             entry.get("ORDER_ITEM_ID"),
             entry.get("BUN_TYPE"),
-            entry.get("PATTY_TYPE")
+            entry.get("PATTY_TYPE"),
+            entry.get("PATTY_COUNT", 1)
         ]
         return (sql, values)
 
