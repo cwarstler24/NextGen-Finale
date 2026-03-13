@@ -44,6 +44,8 @@ function buildOrderPayload() {
                 const bunIds = parseOptionIds(getOption(item, 'Bun')?.id, 'bun', item.name);
                 const pattyIds = parseOptionIds(getOption(item, 'Patty')?.id, 'patty', item.name);
                 const toppingIds = parseOptionIds(getOption(item, 'Toppings')?.id ?? [], 'topping', item.name);
+                // TODO remove hardcoded patty count once multiple patties are supported
+                const pattyCount = 1;
 
                 if (bunIds.length !== 1 || pattyIds.length !== 1) {
                     throw new Error(`Burger selections are incomplete for ${item.name}.`);
@@ -53,6 +55,7 @@ function buildOrderPayload() {
                     bun_id: bunIds[0],
                     patty_id: pattyIds[0],
                     topping_ids: toppingIds,
+                    patty_count: pattyCount,
                 });
                 continue;
             }
