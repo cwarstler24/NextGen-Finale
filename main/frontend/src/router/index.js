@@ -3,6 +3,7 @@ import MainView from '../views/MainView.vue'
 import ProductView from '../views/ProductView.vue'
 import CartView from '../views/CartView.vue'
 import CheckoutView from '../views/CheckoutView.vue'
+import UserView from '../views/UserView.vue'
 
 const routes = [
     {
@@ -24,6 +25,11 @@ const routes = [
         path: "/checkout",
         name: "checkout",
         component: CheckoutView,
+    },
+    {
+        path: "/user",
+        name: "user",
+        component: UserView,
     },
 ]
 

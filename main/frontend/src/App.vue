@@ -17,6 +17,9 @@ const documentation = () => {
             <RouterLink to="/" class="brand-name"> The Frying Saucer </RouterLink>
         </span>
         <div class="nav-links">
+            <RouterLink to="/user" class="nav-pill">
+                User
+            </RouterLink>
             <RouterLink to="/product/Burger" class="nav-pill">
                 Burger
             </RouterLink>
