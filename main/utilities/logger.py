@@ -5,8 +5,8 @@
 #utilities/logger.py
 import logging
 import logging.config
-import yaml
 import os
+import yaml
 #from utilities.config import YamlReader
 
 #Ensures logging security so that malicious user cannot define a new path
@@ -23,27 +23,39 @@ class _SmartLogger:
     def __init__(self, name):
         self._logger = logging.getLogger(name)
 
-    def debug(self, msg, *args, **kwargs):
+    def debug(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         if self._logger.isEnabledFor(logging.DEBUG):
             self._logger.debug(msg, *args, stacklevel = 2, **kwargs)
 
-    def info(self, msg, *args, **kwargs):
+    def info(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         if self._logger.isEnabledFor(logging.INFO):
             self._logger.info(msg, *args, stacklevel = 2, **kwargs)
 
-    def warning(self, msg, *args, **kwargs):
+    def warning(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         if self._logger.isEnabledFor(logging.WARNING):
             self._logger.warning(msg, *args, stacklevel = 2, **kwargs)
 
-    def error(self, msg, *args, **kwargs):
+    def error(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         if self._logger.isEnabledFor(logging.ERROR):
             self._logger.error(msg, *args, stacklevel = 2, **kwargs)
 
-    def critical(self, msg, *args, **kwargs):
+    def critical(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         self._logger.critical(msg, *args, stacklevel = 2, **kwargs)
 
     #Allows traceback
-    def exception(self, msg, *args, **kwargs):
+    def exception(self, msg, *args, also_print=False, **kwargs):
+        if also_print:
+            print(msg)
         self._logger.exception(msg, *args, stacklevel = 2, **kwargs)
 
 #Create singleton Logger factory to ensure only one Logger is allocated.
@@ -90,11 +102,11 @@ class LoggerFactory:
         security_log_path = os.path.join(logs_dir, 'security.log')
         for path in [general_log_path, security_log_path]:
             if not os.path.exists(path):
-                with open(path, 'w'):
+                with open(path, 'w', encoding='utf-8'):
                     pass
 
         config_path = os.path.join(base_dir, 'configs', 'logging_config.yaml')
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
 
         LoggerFactory._use_smart_logger = config.get("use_smart_logger", True)
