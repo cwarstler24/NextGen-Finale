@@ -19,7 +19,7 @@ from main.utilities.logger import LoggerFactory
 from main.utilities.error_handler import ResponseCode
 
 # Set up IBM DB2 connection through the virtual environment
-venv_path = project_root / "myvenv" / "Lib" / "site-packages" / "clidriver"
+venv_path = project_root / "venv" / "Lib" / "site-packages" / "clidriver"
 clidriver_bin = venv_path / "bin"
 clidriver_crt = clidriver_bin / "amd64.VC12.CRT"
 

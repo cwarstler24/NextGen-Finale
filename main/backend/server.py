@@ -20,6 +20,8 @@ from main.utilities.sanitizer import sanitize_email
 # Initialize logger
 LOGGER = LoggerFactory.get_general_logger()
 
+from fastapi.middleware.cors import CORSMiddleware
+
 # ==================== Lifespan Event Handler ====================
 
 
@@ -46,6 +48,18 @@ app = FastAPI(
     title="Restaurant Order API",
     version="1.0.0",
     lifespan=lifespan
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ==================== Pydantic Models ====================
@@ -136,6 +150,7 @@ class CustomerInfo(BaseModel):
 class BurgerOrder(BaseModel):
     bun_id: int
     patty_id: int
+    patty_count: int = 1
     topping_ids: List[int]
 
 
@@ -601,8 +616,7 @@ async def create_order(order: OrderRequest):
                 "ORDER_ITEM_ID": next_order_item_id,
                 "ORDER_ID": next_order_id,
                 "ITEM_TYPE": "BURGER",
-                "UNIT_PRICE": burger_price,
-                "EXTENDED_PRICE": burger_price
+                "UNIT_PRICE": burger_price
             }
             order_item_result = order_item_dao.create_record(order_item)
             if not order_item_result.success:
@@ -615,7 +629,8 @@ async def create_order(order: OrderRequest):
                 "BURGER_ID": next_burger_id,
                 "ORDER_ITEM_ID": next_order_item_id,
                 "BUN_TYPE": burger["bun_id"],
-                "PATTY_TYPE": burger["patty_id"]
+                "PATTY_TYPE": burger["patty_id"],
+                "PATTY_COUNT": burger.get("patty_count", 1)
             }
             burger_create_result = burger_item_dao.create_record(burger_item)
             if not burger_create_result.success:
@@ -648,8 +663,7 @@ async def create_order(order: OrderRequest):
                 "ORDER_ITEM_ID": next_order_item_id,
                 "ORDER_ID": next_order_id,
                 "ITEM_TYPE": "FRIES",
-                "UNIT_PRICE": fry_price,
-                "EXTENDED_PRICE": fry_price
+                "UNIT_PRICE": fry_price
             }
             order_item_result = order_item_dao.create_record(order_item)
             if not order_item_result.success:

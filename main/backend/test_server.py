@@ -221,6 +221,7 @@ def test_create_order():
             {
                 "bun_id": burger_data['buns'][0]['id'],
                 "patty_id": burger_data['patties'][0]['id'],
+                "patty_count": 2,
                 "topping_ids": [
                     burger_data['toppings'][0]['id']] if burger_data.get('toppings') else []}],
         "fries": [
@@ -233,7 +234,7 @@ def test_create_order():
     LOGGER.info("Creating order with:", also_print=True)
     LOGGER.info(
         f"  - Customer: {order_data['customer']['email']}", also_print=True)
-    LOGGER.info(f"  - Burgers: {len(order_data['burgers'])}", also_print=True)
+    LOGGER.info(f"  - Burgers: {len(order_data['burgers'])} (with {order_data['burgers'][0]['patty_count']} patties)", also_print=True)
     LOGGER.info(f"  - Fries: {len(order_data['fries'])}", also_print=True)
 
     response = client.post("/Order/", json=order_data)
@@ -278,6 +279,7 @@ def test_create_order_invalid_ingredient():
             {
                 "bun_id": 99999,  # Invalid ID
                 "patty_id": 99999,  # Invalid ID
+                "patty_count": 1,
                 "topping_ids": []
             }
         ],
