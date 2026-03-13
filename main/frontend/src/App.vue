@@ -17,10 +17,13 @@ const documentation = () => {
             <RouterLink to="/" class="brand-name"> The Frying Saucer </RouterLink>
         </span>
         <div class="nav-links">
-            <RouterLink to="/product/Burger">
+            <RouterLink to="/user" class="nav-pill">
+                User
+            </RouterLink>
+            <RouterLink to="/product/Burger" class="nav-pill">
                 Burger
             </RouterLink>
-            <RouterLink to="/product/Fries">
+            <RouterLink to="/product/Fries" class="nav-pill">
                 Fries
             </RouterLink>
             <RouterLink to="/cart" class="cart-link">
@@ -62,6 +65,7 @@ const documentation = () => {
     flex-shrink: 0;
 }
 
+.nav-pill,
 .cart-link {
     display: inline-flex;
     align-items: center;
@@ -69,6 +73,13 @@ const documentation = () => {
     padding: 0.35rem 0.8rem;
     border-radius: 999px;
     background-color: rgba(255, 255, 255, 0.12);
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-pill:hover,
+.cart-link:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
 }
 
 .cart-icon {

@@ -1,0 +1,184 @@
+.user-page {
+    max-width: 1120px;
+}
+
+.user-hero,
+.lookup-card,
+.lookup-copy,
+.lookup-controls,
+.user-content,
+.profile-card,
+.stat-grid,
+.address-grid,
+.address-card,
+.orders-card,
+.orders-list,
+.empty-state {
+    display: grid;
+    gap: 1rem;
+}
+
+.user-hero {
+    gap: 0.75rem;
+}
+
+.hero-copy h1,
+.lookup-copy h2,
+.profile-card h2,
+.address-card h2,
+.orders-card h2,
+.address-card p,
+.orders-header,
+.profile-email {
+    margin: 0;
+}
+
+.lookup-card {
+    align-items: end;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+}
+
+.lookup-copy p,
+.profile-email,
+.address-card p,
+.empty-state p,
+.order-row p {
+    margin: 0;
+    color: #64748b;
+}
+
+.lookup-controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+}
+
+.input-group {
+    display: grid;
+    gap: 0.4rem;
+    font-weight: 600;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #0f172a;
+    font: inherit;
+}
+
+.input-group input:focus {
+    outline: 2px solid rgba(56, 189, 248, 0.2);
+    outline-offset: 1px;
+    border-color: #38bdf8;
+}
+
+.input-group input::placeholder {
+    color: #94a3b8;
+}
+
+.lookup-controls button {
+    white-space: nowrap;
+}
+
+.lookup-controls button:disabled {
+    cursor: wait;
+    opacity: 0.8;
+}
+
+.status-message {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    border-radius: 0.85rem;
+    font-weight: 500;
+}
+
+.error-message {
+    color: #991b1b;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+}
+
+.profile-card {
+    gap: 1.5rem;
+}
+
+.profile-header,
+.orders-header,
+.order-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+}
+
+.profile-badge {
+    padding: 0.65rem 1rem;
+    border-radius: 999px;
+    background: #e0f2fe;
+    color: #0c4a6e;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.stat-grid,
+.address-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.stat-tile,
+.address-card,
+.empty-state,
+.order-row {
+    padding: 1rem 1.1rem;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.stat-tile span {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.stat-tile strong,
+.orders-total {
+    font-size: 1.1rem;
+}
+
+.orders-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.order-row {
+    align-items: flex-start;
+}
+
+@media (max-width: 900px) {
+    .lookup-card,
+    .lookup-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .lookup-controls button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .profile-header,
+    .orders-header,
+    .order-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .profile-badge {
+        justify-self: start;
+    }
+}
