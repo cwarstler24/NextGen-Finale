@@ -178,13 +178,11 @@ class OrderItem(DatabaseEntity):
         order_id: int,
         item_type: str,
         unit_price: float,
-        extended_price: float
     ):
         self.order_item_id = order_item_id
         self.order_id = order_id
         self.item_type = item_type
         self.unit_price = unit_price
-        self.extended_price = extended_price
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -192,7 +190,6 @@ class OrderItem(DatabaseEntity):
             "ORDER_ID": self.order_id,
             "ITEM_TYPE": self.item_type,
             "UNIT_PRICE": self.unit_price,
-            "EXTENDED_PRICE": self.extended_price
         }
 
     @classmethod
@@ -202,7 +199,6 @@ class OrderItem(DatabaseEntity):
             order_id=data.get("ORDER_ID"),
             item_type=data.get("ITEM_TYPE"),
             unit_price=data.get("UNIT_PRICE"),
-            extended_price=data.get("EXTENDED_PRICE")
         )
 
     def get_primary_key(self) -> int:

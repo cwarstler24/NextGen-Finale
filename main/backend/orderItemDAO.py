@@ -40,7 +40,6 @@ class OrderItemDAO(DatabaseAccessObject):
             "ORDER_ITEM_ID": row[1],
             "ITEM_TYPE": row[2],
             "UNIT_PRICE": row[3],
-            "EXTENDED_PRICE": row[4]
         }
 
     def _build_insert_sql(self, entry: dict[str, Any]) -> tuple[str, list]:
@@ -55,15 +54,14 @@ class OrderItemDAO(DatabaseAccessObject):
         '''
         sql = f"""
             INSERT INTO {self._table_name}
-            (ORDER_ID, ORDER_ITEM_ID, ITEM_TYPE, UNIT_PRICE, EXTENDED_PRICE)
-            VALUES (?, ?, ?, ?, ?)
+            (ORDER_ID, ORDER_ITEM_ID, ITEM_TYPE, UNIT_PRICE)
+            VALUES (?, ?, ?, ?)
         """
         values = [
             entry.get("ORDER_ID"),
             entry.get("ORDER_ITEM_ID"),
             entry.get("ITEM_TYPE"),
             entry.get("UNIT_PRICE"),
-            entry.get("EXTENDED_PRICE")
         ]
         return (sql, values)
 
@@ -94,7 +92,7 @@ class OrderItemDAO(DatabaseAccessObject):
         '''
         return self.execute_join_query(
             select_clause="""
-                oi.ORDER_ITEM_ID, oi.ORDER_ID, oi.ITEM_TYPE, oi.UNIT_PRICE, oi.EXTENDED_PRICE,
+                oi.ORDER_ITEM_ID, oi.ORDER_ID, oi.ITEM_TYPE, oi.UNIT_PRICE,
                 b.BURGER_ID,
                 bt.BUN_NAME, bt.PRICE AS BUN_PRICE,
                 pt.PATTY_NAME, pt.PRICE AS PATTY_PRICE
@@ -120,7 +118,7 @@ class OrderItemDAO(DatabaseAccessObject):
         '''
         return self.execute_join_query(
             select_clause="""
-                oi.ORDER_ITEM_ID, oi.ORDER_ID, oi.ITEM_TYPE, oi.UNIT_PRICE, oi.EXTENDED_PRICE,
+                oi.ORDER_ITEM_ID, oi.ORDER_ID, oi.ITEM_TYPE, oi.UNIT_PRICE,
                 f.FRY_ID,
                 ft.FRY_TYPE_NAME AS TYPE_NAME, ft.PRICE AS TYPE_PRICE,
                 fs.FRY_SIZE AS SIZE_VALUE, fs.PRICE AS SIZE_PRICE,
