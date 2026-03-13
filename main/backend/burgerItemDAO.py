@@ -53,14 +53,15 @@ class BurgerItemDAO(DatabaseAccessObject):
         '''
         sql = f"""
             INSERT INTO {self._table_name}
-            (BURGER_ID, ORDER_ITEM_ID, BUN_TYPE, PATTY_TYPE) 
-            VALUES (?, ?, ?, ?)
+            (BURGER_ID, ORDER_ITEM_ID, BUN_TYPE, PATTY_TYPE, PATTY_COUNT) 
+            VALUES (?, ?, ?, ?, ?)
         """
         values = [
             entry.get("BURGER_ID"),
             entry.get("ORDER_ITEM_ID"),
             entry.get("BUN_TYPE"),
-            entry.get("PATTY_TYPE")
+            entry.get("PATTY_TYPE"),
+            entry.get("PATTY_COUNT", 1)  # Default to 1 patty if not specified
         ]
         return (sql, values)
 
