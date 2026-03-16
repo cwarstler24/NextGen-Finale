@@ -21,18 +21,51 @@ function updateSingleSelection(groupKey, value) {
 
 function getMultiSelections(groupKey) {
     const selections = props.modelValue[groupKey];
-    return Array.isArray(selections) ? selections : [];
+    if (!Array.isArray(selections)) {
+        return [];
+    }
+
+    return selections
+        .filter((selection) => selection && typeof selection === 'object' && !Array.isArray(selection))
+        .map((selection) => ({
+            id: String(selection.id),
+            quantity: Math.max(1, Number.parseInt(selection.quantity ?? 1, 10) || 1),
+        }));
+}
+
+function isMultiSelected(groupKey, value) {
+    return getMultiSelections(groupKey).some((selection) => selection.id === value);
+}
+
+function getMultiQuantity(groupKey, value) {
+    return getMultiSelections(groupKey).find((selection) => selection.id === value)?.quantity ?? 1;
 }
 
 function toggleMultiSelection(groupKey, value, checked) {
     const currentSelections = getMultiSelections(groupKey);
     const nextSelections = checked
-        ? [...new Set([...currentSelections, value])]
-        : currentSelections.filter((selection) => selection !== value);
+        ? [...currentSelections, { id: value, quantity: 1 }]
+        : currentSelections.filter((selection) => selection.id !== value);
 
     emit('update:modelValue', {
         ...props.modelValue,
         [groupKey]: nextSelections,
+    });
+}
+
+function updateMultiQuantity(groupKey, value, nextQuantity) {
+    emit('update:modelValue', {
+        ...props.modelValue,
+        [groupKey]: getMultiSelections(groupKey).map((selection) => {
+            if (selection.id !== value) {
+                return selection;
+            }
+
+            return {
+                ...selection,
+                quantity: Math.max(1, Number.parseInt(nextQuantity, 10) || 1),
+            };
+        }),
     });
 }
 
@@ -64,20 +97,31 @@ function formatPrice(price) {
         </select>
 
         <div v-else class="checkbox-group" :name="group.key">
-            <label
+            <div
                 v-for="item in group.items"
                 :key="item.id"
-                class="checkbox-option"
+                class="checkbox-option-row"
             >
+                <label class="checkbox-option">
+                    <input
+                        type="checkbox"
+                        :value="item.id"
+                        :checked="isMultiSelected(group.key, item.id)"
+                        :disabled="item.quantity <= 0"
+                        @change="toggleMultiSelection(group.key, item.id, $event.target.checked)"
+                    />
+                    <span>{{ item.name }}{{ formatPrice(item.price) }}</span>
+                </label>
                 <input
-                    type="checkbox"
-                    :value="item.id"
-                    :checked="getMultiSelections(group.key).includes(item.id)"
-                    :disabled="item.quantity <= 0"
-                    @change="toggleMultiSelection(group.key, item.id, $event.target.checked)"
+                    class="option-quantity-input"
+                    type="number"
+                    min="1"
+                    :max="item.quantity"
+                    :value="getMultiQuantity(group.key, item.id)"
+                    :disabled="!isMultiSelected(group.key, item.id) || item.quantity <= 0"
+                    @input="updateMultiQuantity(group.key, item.id, $event.target.value)"
                 />
-                <span>{{ item.name }}{{ formatPrice(item.price) }}</span>
-            </label>
+            </div>
         </div>
     </template>
 </div>

@@ -26,6 +26,26 @@ function parseOptionIds(rawValue, optionLabel, itemName) {
     return parsedIds;
 }
 
+function parseToppingSelections(rawValue, itemName) {
+    if (!Array.isArray(rawValue)) {
+        throw new Error(`Invalid topping selection for ${itemName}.`);
+    }
+
+    return rawValue.map((entry) => {
+        const parsedId = Number.parseInt(entry?.id, 10);
+        const parsedQuantity = Number.parseInt(entry?.quantity, 10);
+
+        if (!Number.isInteger(parsedId) || !Number.isInteger(parsedQuantity) || parsedQuantity < 1) {
+            throw new Error(`Invalid topping selection for ${itemName}.`);
+        }
+
+        return {
+            id: parsedId,
+            quantity: parsedQuantity,
+        };
+    });
+}
+
 function getOption(item, optionName) {
     return item.options.find((option) => option.name.toLowerCase() === optionName.toLowerCase());
 }
@@ -43,7 +63,7 @@ function buildOrderPayload() {
             if (item.id === 'burger') {
                 const bunIds = parseOptionIds(getOption(item, 'Bun')?.id, 'bun', item.name);
                 const pattyIds = parseOptionIds(getOption(item, 'Patty')?.id, 'patty', item.name);
-                const toppingIds = parseOptionIds(getOption(item, 'Toppings')?.id ?? [], 'topping', item.name);
+                const toppingIds = parseToppingSelections(getOption(item, 'Toppings')?.id ?? [], item.name);
                 // TODO remove hardcoded patty count once multiple patties are supported
                 const pattyCount = 1;
 
