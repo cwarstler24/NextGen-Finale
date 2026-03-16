@@ -258,22 +258,26 @@ class BurgerItemTopping(DatabaseEntity):
     def __init__(
         self,
         topping_id: int,
-        burger_order_id: int
+        burger_order_id: int,
+        topping_count: int = 1
     ):
         self.topping_id = topping_id
         self.burger_order_id = burger_order_id
+        self.topping_count = topping_count
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "TOPPING_ID": self.topping_id,
-            "BURGER_ORDER_ID": self.burger_order_id
+            "BURGER_ORDER_ID": self.burger_order_id,
+            "TOPPING_COUNT": self.topping_count
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> 'BurgerItemTopping':
         return cls(
             topping_id=data.get("TOPPING_ID"),
-            burger_order_id=data.get("BURGER_ORDER_ID")
+            burger_order_id=data.get("BURGER_ORDER_ID"),
+            topping_count=data.get("TOPPING_COUNT", 1)
         )
 
     def get_primary_key(self) -> tuple[int, int]:

@@ -154,11 +154,16 @@ class CustomerInfo(BaseModel):
     billing_address: str
 
 
+class ToppingSelection(BaseModel):
+    topping_id: int
+    count: int = 1
+
+
 class BurgerOrder(BaseModel):
     bun_id: int
     patty_id: int
     patty_count: int = 1
-    topping_ids: List[int]
+    toppings: List[ToppingSelection]
 
 
 class FriesOrder(BaseModel):
@@ -598,18 +603,20 @@ async def create_order(order: OrderRequest):
             burger_price = bun_price + patty_price
 
             # Validate and add topping prices
-            for topping_id in burger["topping_ids"]:
+            for topping in burger["toppings"]:
+                topping_id = topping["topping_id"]
+                topping_count = topping.get("count", 1)
                 topping_result = topping_dao.get_by_key(topping_id)
                 if not topping_result.success or not topping_result.data:
                     raise HTTPException(
                         status_code=400,
                         detail=f"Invalid topping ID: {topping_id}")
                 # Check topping inventory
-                if topping_result.data["STOCK_QUANTITY"] < 1:
+                if topping_result.data["STOCK_QUANTITY"] < topping_count:
                     raise HTTPException(
                         status_code=400,
-                        detail=f"Insufficient stock for topping ID {topping_id}")
-                burger_price += float(topping_result.data["PRICE"])
+                        detail=f"Insufficient stock for topping ID {topping_id} (need {topping_count}, have {topping_result.data['STOCK_QUANTITY']})")
+                burger_price += float(topping_result.data["PRICE"]) * topping_count
 
             # Store burger data for later creation
             burger_items_to_create.append({
@@ -715,11 +722,13 @@ async def create_order(order: OrderRequest):
                     detail="Failed to create burger item")
 
             # Create burger toppings
-            for topping_id in burger["topping_ids"]:
+            for topping in burger["toppings"]:
+                topping_id = topping["topping_id"]
+                topping_count = topping.get("count", 1)
                 burger_topping = {
                     "BURGER_ORDER_ID": next_burger_id,
                     "TOPPING_ID": topping_id,
-                    "TOPPING_COUNT": 1
+                    "TOPPING_COUNT": topping_count
                 }
                 topping_create_result = burger_topping_dao.create_record(
                     burger_topping)
@@ -790,10 +799,12 @@ async def create_order(order: OrderRequest):
                     detail=f"Failed to update patty inventory for ID {
                         burger['patty_id']}")
 
-            # Decrement topping stock by 1 for each topping
-            for topping_id in burger["topping_ids"]:
+            # Decrement topping stock by the specified count for each topping
+            for topping in burger["toppings"]:
+                topping_id = topping["topping_id"]
+                topping_count = topping.get("count", 1)
                 topping_update_result = topping_dao.decrement_stock(
-                    topping_id, 1)
+                    topping_id, topping_count)
                 if not topping_update_result.success:
                     raise HTTPException(
                         status_code=500,
