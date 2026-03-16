@@ -69,12 +69,33 @@ class DB2ConnectionPool:
         self._min_connections = 2
         self._max_connections = 10
         self._current_size = 0
+        self._schema = None
+        self._environment = None
+        self._test_data = None
+
+        # Load database setup configuration
+        self._load_database_setup()
 
         # Load credentials and build connection string
         self._load_credentials()
 
         # Create minimum number of connections
         self._initialize_pool()
+
+    def _load_database_setup(self):
+        """Load database setup configuration from database_setup.json"""
+        setup_path = project_root / "database_setup.json"
+        with open(setup_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        self._environment = config.get("environment", "PRODUCTION")
+        schemas = config.get("schemas", {})
+        self._schema = schemas.get(self._environment, "TSTFAL")
+        self._test_data = config.get("test_data", {})
+
+        self.logger.info(
+            f"Database setup loaded: Environment={self._environment}, Schema={self._schema}"
+        )
 
     def _load_credentials(self):
         """Load database credentials from credentials.json"""
@@ -90,7 +111,7 @@ class DB2ConnectionPool:
             f"AUTHENTICATION={credentials['authentication']};"
             f"UID={credentials['uid']};"
             f"PWD={credentials['pwd']};"
-            f"CURRENTSCHEMA=SKYFAL;"
+            f"CURRENTSCHEMA={self._schema};"
         )
         self.logger.info("Database credentials loaded successfully")
 
@@ -260,6 +281,88 @@ class DB2ConnectionPool:
             "max_connections": self._max_connections,
             "min_connections": self._min_connections
         }
+
+    def get_environment(self):
+        """Get the current database environment (PRODUCTION or TEST)"""
+        return self._environment
+
+    def get_schema(self):
+        """Get the current database schema name"""
+        return self._schema
+
+    def is_test_environment(self):
+        """Check if running in TEST environment"""
+        return self._environment == "TEST"
+
+    def get_test_data(self, table_name=None):
+        """
+        Get test data for populating tables.
+
+        Args:
+            table_name (str, optional): Specific table name. If None, returns all test data.
+
+        Returns:
+            dict or list: Test data for the specified table or all test data
+        """
+        if table_name:
+            return self._test_data.get(table_name, [])
+        return self._test_data
+
+    def populate_test_data(self):
+        """
+        Populate all tables with test data. Should only be used in TEST environment.
+
+        Returns:
+            dict: Status of population operation with counts per table
+        """
+        if not self.is_test_environment():
+            self.logger.warning(
+                "Attempted to populate test data in non-TEST environment. Operation blocked."
+            )
+            return {"status": "blocked", "reason": "Not in TEST environment"}
+
+        self.logger.info("Starting test data population...")
+        results = {}
+
+        with self.get_cursor() as cursor:
+            for table_name, rows in self._test_data.items():
+                if not rows:
+                    results[table_name] = {"inserted": 0, "status": "empty"}
+                    continue
+
+                try:
+                    # Clear existing data
+                    cursor.execute(f"DELETE FROM {self._schema}.{table_name}")
+
+                    # Insert test data
+                    inserted_count = 0
+                    for row in rows:
+                        columns = ", ".join(row.keys())
+                        placeholders = ", ".join(["?" for _ in row])
+                        sql = f"INSERT INTO {self._schema}.{table_name} ({columns}) VALUES ({placeholders})"
+                        cursor.execute(sql, list(row.values()))
+                        inserted_count += 1
+
+                    results[table_name] = {
+                        "inserted": inserted_count,
+                        "status": "success"
+                    }
+                    self.logger.info(
+                        f"Populated {table_name} with {inserted_count} rows"
+                    )
+
+                except Exception as e:
+                    results[table_name] = {
+                        "inserted": 0,
+                        "status": "error",
+                        "error": str(e)
+                    }
+                    self.logger.error(
+                        f"Failed to populate {table_name}: {e}"
+                    )
+
+        self.logger.info("Test data population completed")
+        return results
 
 
 # Global pool instance (singleton)

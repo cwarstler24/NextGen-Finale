@@ -723,7 +723,8 @@ async def create_order(order: OrderRequest):
             for topping_id in burger["topping_ids"]:
                 burger_topping = {
                     "BURGER_ORDER_ID": next_burger_id,
-                    "TOPPING_ID": topping_id
+                    "TOPPING_ID": topping_id,
+                    "TOPPING_COUNT": 1
                 }
                 topping_create_result = burger_topping_dao.create_record(
                     burger_topping)
