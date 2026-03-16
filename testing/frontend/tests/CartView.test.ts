@@ -3,6 +3,16 @@ import { mount } from '@vue/test-utils';
 
 import CartView from '../../../main/frontend/src/views/CartView.vue';
 
+const { pushMock } = vi.hoisted(() => ({
+    pushMock: vi.fn(),
+}));
+
+vi.mock('vue-router', () => ({
+    useRouter: () => ({
+        push: pushMock,
+    }),
+}));
+
 type CartOptionValue = string | string[] | null;
 
 type CartEntry = {
@@ -41,7 +51,7 @@ describe('CartView', () => {
         cartState.cartTotal = 0;
         clearCartMock.mockReset();
         removeItemMock.mockReset();
-        vi.stubGlobal('alert', vi.fn());
+        pushMock.mockReset();
     });
 
     it('shows the empty cart state when there are no items', () => {
@@ -82,12 +92,12 @@ describe('CartView', () => {
         await wrapper.get('button.remove-button').trigger('click');
         expect(removeItemMock).toHaveBeenCalledWith('burger-signature');
 
-        await wrapper.get('.cart-header button.secondary').trigger('click');
+        await wrapper.get('.cart-summary button.secondary').trigger('click');
         expect(clearCartMock).toHaveBeenCalledTimes(1);
 
         await wrapper.get('button.purchase-button').trigger('click');
-        expect(alert).toHaveBeenCalledWith('Purchase not implemented yet.');
-        expect(clearCartMock).toHaveBeenCalledTimes(2);
+        expect(pushMock).toHaveBeenCalledWith({ name: 'checkout' });
+        expect(clearCartMock).toHaveBeenCalledTimes(1);
     });
 
     it('renders singular checkout text and empty array options as none selected', () => {

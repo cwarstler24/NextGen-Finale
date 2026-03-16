@@ -23,11 +23,25 @@ venv_path = project_root / "venv" / "Lib" / "site-packages" / "clidriver"
 clidriver_bin = venv_path / "bin"
 clidriver_crt = clidriver_bin / "amd64.VC12.CRT"
 
-os.add_dll_directory(str(clidriver_bin))
-os.environ["PATH"] = str(clidriver_crt) + ";" + os.environ.get("PATH", "")
+def _configure_windows_db2_client_path() -> None:
+    """Configure Windows DLL paths only when running on Windows with clidriver present."""
+    if os.name != "nt" or not hasattr(os, "add_dll_directory"):
+        return
 
-import ibm_db
-import ibm_db_dbi
+    if clidriver_bin.exists():
+        os.add_dll_directory(str(clidriver_bin))
+    if clidriver_crt.exists():
+        os.environ["PATH"] = str(clidriver_crt) + ";" + os.environ.get("PATH", "")
+
+
+_configure_windows_db2_client_path()
+
+try:
+    import ibm_db
+    import ibm_db_dbi
+except ModuleNotFoundError:
+    ibm_db = None
+    ibm_db_dbi = None
 
 
 class DB2ConnectionPool:
@@ -69,12 +83,34 @@ class DB2ConnectionPool:
         self._min_connections = 2
         self._max_connections = 10
         self._current_size = 0
+        self._schema = None
+        self._environment = None
+        self._test_data = None
+        self._pool_initialized = True
+
+        # Load database setup configuration
+        self._load_database_setup()
 
         # Load credentials and build connection string
         self._load_credentials()
 
         # Create minimum number of connections
         self._initialize_pool()
+
+    def _load_database_setup(self):
+        """Load database setup configuration from database_setup.json"""
+        setup_path = project_root / "database_setup.json"
+        with open(setup_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        self._environment = config.get("environment", "PRODUCTION")
+        schemas = config.get("schemas", {})
+        self._schema = schemas.get(self._environment, "TSTFAL")
+        self._test_data = config.get("test_data", {})
+
+        self.logger.info(
+            f"Database setup loaded: Environment={self._environment}, Schema={self._schema}"
+        )
 
     def _load_credentials(self):
         """Load database credentials from credentials.json"""
@@ -90,12 +126,16 @@ class DB2ConnectionPool:
             f"AUTHENTICATION={credentials['authentication']};"
             f"UID={credentials['uid']};"
             f"PWD={credentials['pwd']};"
-            f"CURRENTSCHEMA=SKYFAL;"
+            f"CURRENTSCHEMA={self._schema};"
         )
         self.logger.info("Database credentials loaded successfully")
 
     def _create_connection(self):
         """Create a new DB2 connection"""
+        if ibm_db is None or ibm_db_dbi is None:
+            raise RuntimeError(
+                "DB2 driver is not available. Install ibm_db and configure DB2 client libraries.")
+
         try:
             # Create raw ibm_db connection
             conn = ibm_db.connect(self._conn_str, "", "")
@@ -107,8 +147,7 @@ class DB2ConnectionPool:
                 self._current_size += 1
 
             self.logger.info(
-                f"Created new DB2 connection (pool size: {
-                    self._current_size})")
+                f"Created new DB2 connection (pool size: {self._current_size})")
             return dbi_conn
 
         except Exception as e:
@@ -120,8 +159,7 @@ class DB2ConnectionPool:
     def _initialize_pool(self):
         """Initialize the pool with minimum connections"""
         self.logger.info(
-            f"Initializing connection pool with {
-                self._min_connections} connections")
+            f"Initializing connection pool with {self._min_connections} connections")
         for _ in range(self._min_connections):
             conn = self._create_connection()
             self._pool.put(conn)
@@ -162,8 +200,7 @@ class DB2ConnectionPool:
                     }
                 )
                 raise RuntimeError(
-                    f"Connection pool exhausted. Max connections ({
-                        self._max_connections}) reached. Please return connections to the pool.") from exc
+                    f"Connection pool exhausted. Max connections ({self._max_connections}) reached. Please return connections to the pool.") from exc
 
     def return_connection(self, conn):
         """
@@ -178,7 +215,7 @@ class DB2ConnectionPool:
                 conn.rollback()
                 self._pool.put(conn)
                 self.logger.debug("Connection returned to pool")
-            except (ibm_db.DatabaseError, ValueError) as e:
+            except Exception as e:
                 self.logger.error(f"Error returning connection to pool: {e}")
                 # Connection might be corrupted, remove it
                 self._remove_connection(conn)
@@ -187,7 +224,7 @@ class DB2ConnectionPool:
         """Remove a connection from the pool permanently"""
         try:
             conn.close()
-        except (ibm_db.DatabaseError, AttributeError):
+        except Exception:
             pass
 
         with self._connections_lock:
@@ -196,8 +233,7 @@ class DB2ConnectionPool:
                 self._current_size -= 1
 
         self.logger.info(
-            f"Removed connection from pool (pool size: {
-                self._current_size})")
+            f"Removed connection from pool (pool size: {self._current_size})")
 
     @contextmanager
     def get_cursor(self):
@@ -230,6 +266,9 @@ class DB2ConnectionPool:
 
     def close_all(self):
         """Close all connections in the pool. Should be called on application shutdown."""
+        if not self._pool_initialized:
+            return
+
         self.logger.info("Closing all database connections")
 
         # Close connections in the pool
@@ -237,7 +276,7 @@ class DB2ConnectionPool:
             try:
                 conn = self._pool.get_nowait()
                 conn.close()
-            except (ibm_db.DatabaseError, AttributeError):
+            except Exception:
                 pass
 
         # Close any connections that might be in use
@@ -245,10 +284,11 @@ class DB2ConnectionPool:
             for conn in self._all_connections:
                 try:
                     conn.close()
-                except (ibm_db.DatabaseError, AttributeError):
+                except Exception:
                     pass
             self._all_connections.clear()
             self._current_size = 0
+            self._pool_initialized = False
 
         self.logger.info("All database connections closed")
 
@@ -260,6 +300,88 @@ class DB2ConnectionPool:
             "max_connections": self._max_connections,
             "min_connections": self._min_connections
         }
+
+    def get_environment(self):
+        """Get the current database environment (PRODUCTION or TEST)"""
+        return self._environment
+
+    def get_schema(self):
+        """Get the current database schema name"""
+        return self._schema
+
+    def is_test_environment(self):
+        """Check if running in TEST environment"""
+        return self._environment == "TEST"
+
+    def get_test_data(self, table_name=None):
+        """
+        Get test data for populating tables.
+
+        Args:
+            table_name (str, optional): Specific table name. If None, returns all test data.
+
+        Returns:
+            dict or list: Test data for the specified table or all test data
+        """
+        if table_name:
+            return self._test_data.get(table_name, [])
+        return self._test_data
+
+    def populate_test_data(self):
+        """
+        Populate all tables with test data. Should only be used in TEST environment.
+
+        Returns:
+            dict: Status of population operation with counts per table
+        """
+        if not self.is_test_environment():
+            self.logger.warning(
+                "Attempted to populate test data in non-TEST environment. Operation blocked."
+            )
+            return {"status": "blocked", "reason": "Not in TEST environment"}
+
+        self.logger.info("Starting test data population...")
+        results = {}
+
+        with self.get_cursor() as cursor:
+            for table_name, rows in self._test_data.items():
+                if not rows:
+                    results[table_name] = {"inserted": 0, "status": "empty"}
+                    continue
+
+                try:
+                    # Clear existing data
+                    cursor.execute(f"DELETE FROM {self._schema}.{table_name}")
+
+                    # Insert test data
+                    inserted_count = 0
+                    for row in rows:
+                        columns = ", ".join(row.keys())
+                        placeholders = ", ".join(["?" for _ in row])
+                        sql = f"INSERT INTO {self._schema}.{table_name} ({columns}) VALUES ({placeholders})"
+                        cursor.execute(sql, list(row.values()))
+                        inserted_count += 1
+
+                    results[table_name] = {
+                        "inserted": inserted_count,
+                        "status": "success"
+                    }
+                    self.logger.info(
+                        f"Populated {table_name} with {inserted_count} rows"
+                    )
+
+                except Exception as e:
+                    results[table_name] = {
+                        "inserted": 0,
+                        "status": "error",
+                        "error": str(e)
+                    }
+                    self.logger.error(
+                        f"Failed to populate {table_name}: {e}"
+                    )
+
+        self.logger.info("Test data population completed")
+        return results
 
 
 # Global pool instance (singleton)

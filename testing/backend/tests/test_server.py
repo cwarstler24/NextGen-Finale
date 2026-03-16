@@ -12,7 +12,11 @@ def test_root_returns_200():
 
 def test_root_returns_hello_world():
     response = client.get("/")
-    assert response.json() == {"message": "Hello World"}
+    assert response.json() == {
+        "message": "Restaurant Order API",
+        "version": "1.0.0",
+        "status": "operational",
+    }
 
 
 def test_root_response_is_json():
