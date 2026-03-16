@@ -79,19 +79,20 @@ class ToppingDAO(DatabaseAccessObject):
         values = list(updates.values())
         return (set_clause, values)
 
-    def decrement_stock(self, topping_id: int, amount: int):
+    def decrement_stock(self, topping_id: int, amount: int, cursor=None):
         '''
         Decrement the stock quantity for a topping by the specified amount.
 
         Args:
             topping_id (int): The ID of the topping to decrement
             amount (int): The amount to decrement by
+            cursor: Optional cursor for shared transactions
 
         Returns:
             ResponseCode: Result of the stock decrement operation
         '''
         # Get current record
-        current = self.get_by_key(topping_id)
+        current = self.get_by_key(topping_id, cursor=cursor)
         if not current.success or not current.data:
             return current
         
@@ -100,4 +101,4 @@ class ToppingDAO(DatabaseAccessObject):
         new_stock = current_stock - amount
         
         # Update with new stock
-        return self.update_record(topping_id, {"STOCK_QUANTITY": new_stock})
+        return self.update_record(topping_id, {"STOCK_QUANTITY": new_stock}, cursor=cursor)
