@@ -672,7 +672,7 @@ async def create_order(order: OrderRequest):
                     "fry_size_value": fry_size_result.data["FRY_SIZE"]
                 })
                 total_price += fry_price
-            total_price += fry_price
+                total_price += fry_price
 
             # 4. Create ORDER record FIRST (so foreign key constraint is satisfied)
             order_date = order.date if order.date else datetime.now()
