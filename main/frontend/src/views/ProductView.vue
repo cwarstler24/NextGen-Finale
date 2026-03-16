@@ -8,7 +8,7 @@ import { useCart } from '../composables/useCart';
 const OPTION_GROUP_METADATA = {
     burger: {
         buns: { label: 'Bun', selectionMode: 'single' },
-        patties: { label: 'Patty', selectionMode: 'single' },
+        patties: { label: 'Patty', selectionMode: 'single_quantity' },
         toppings: { label: 'Toppings', selectionMode: 'multiple' },
     },
     fries: {
@@ -26,13 +26,32 @@ const PRODUCT_OPTIONS_ENDPOINTS = {
 const router = useRouter();
 const { addItem } = useCart();
 
+function isMultipleSelectionGroup(group) {
+    return group.selectionMode === 'multiple';
+}
+
+function isSingleQuantitySelectionGroup(group) {
+    return group.selectionMode === 'single_quantity';
+}
+
 function getDefaultSelection(group) {
-    if (group.selectionMode === 'multiple') {
+    if (isMultipleSelectionGroup(group)) {
         return [];
     }
 
     const defaultItem = group.items.find((item) => item.quantity > 0) ?? group.items[0];
-    return defaultItem?.id ?? null;
+    if (!defaultItem) {
+        return null;
+    }
+
+    if (isSingleQuantitySelectionGroup(group)) {
+        return {
+            id: defaultItem.id,
+            quantity: 1,
+        };
+    }
+
+    return defaultItem.id;
 }
 
 function getMultiSelections(selection) {
@@ -47,6 +66,17 @@ function getMultiSelections(selection) {
             quantity: Math.max(1, Number.parseInt(entry.quantity ?? 1, 10) || 1),
         }))
         .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function getSingleQuantitySelection(selection) {
+    if (!selection || typeof selection !== 'object' || Array.isArray(selection)) {
+        return null;
+    }
+
+    return {
+        id: String(selection.id ?? ''),
+        quantity: Math.max(1, Number.parseInt(selection.quantity ?? 1, 10) || 1),
+    };
 }
 
 function normalizeProductOptions(productKey, optionsByGroup) {
@@ -185,13 +215,19 @@ watch(
 const totalPrice = computed(() => {
     const base = Number(productData.value.price) || 0;
     const optionTotal = optionGroups.value.reduce((runningTotal, group) => {
-        if (group.selectionMode === 'multiple') {
+        if (isMultipleSelectionGroup(group)) {
             const multiSelections = getMultiSelections(selectedOptions.value[group.key]);
 
             return runningTotal + multiSelections.reduce((groupTotal, selection) => {
                 const selectedItem = group.items.find((item) => item.id === selection.id);
                 return groupTotal + ((selectedItem?.price ?? 0) * selection.quantity);
             }, 0);
+        }
+
+        if (isSingleQuantitySelectionGroup(group)) {
+            const selection = getSingleQuantitySelection(selectedOptions.value[group.key]);
+            const selectedItem = group.items.find((item) => item.id === selection?.id);
+            return runningTotal + ((selectedItem?.price ?? 0) * (selection?.quantity ?? 1));
         }
 
         const selectedItem = group.items.find((item) => item.id === selectedOptions.value[group.key]);
@@ -217,7 +253,7 @@ const addToCart = () => {
         unitPrice: Number(totalPrice.value),
         quantity: Number(document.getElementById('quantity').value) || 1,
         options: optionGroups.value.map((group) => {
-            if (group.selectionMode === 'multiple') {
+            if (isMultipleSelectionGroup(group)) {
                 const selectedItemsById = new Map(group.items.map((item) => [item.id, item]));
                 const structuredSelections = getMultiSelections(selectedOptions.value[group.key])
                     .map((selection) => {
@@ -245,6 +281,23 @@ const addToCart = () => {
                         name: selection.name,
                         quantity: selection.quantity,
                     })),
+                };
+            }
+
+            if (isSingleQuantitySelectionGroup(group)) {
+                const selection = getSingleQuantitySelection(selectedOptions.value[group.key]);
+                const selectedItem = group.items.find((item) => item.id === selection?.id);
+
+                return {
+                    id: selectedItem?.id ?? null,
+                    name: group.label,
+                    value: selectedItem
+                        ? [{
+                            id: selectedItem.id,
+                            name: selectedItem.name,
+                            quantity: selection?.quantity ?? 1,
+                        }]
+                        : null,
                 };
             }
 
