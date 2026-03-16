@@ -57,5 +57,5 @@ jobs:
       - name: Run Pylint
         run: |
           echo "::group::Pylint Results"
-          pylint --output-format=colorized --score=y --fail-under=9.0 --fail-on=E,F "main/backend/" "testing/backend/"
+          pylint --output-format=colorized --score=y --fail-under=9.0 --fail-on=E,F "main/backend/" "main/utilities/" "testing/backend/"
           echo "::endgroup::"

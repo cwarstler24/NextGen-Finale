@@ -5,6 +5,7 @@ All database interactions are mocked through get_db_cursor.
 """
 
 from unittest.mock import MagicMock, patch
+from typing import cast
 
 import pytest
 
@@ -58,10 +59,11 @@ class TestDb2SafeDecorator:
         def do_work():
             return {"ok": True}
 
-        result = do_work()
-        assert isinstance(result, ResponseCode)
-        assert result.success is True
-        assert result.data == {"ok": True}
+        result = cast(ResponseCode, do_work())
+        if not isinstance(result, ResponseCode):
+            pytest.fail("db2_safe should wrap return values into ResponseCode")
+        assert getattr(result, "success") is True
+        assert getattr(result, "data") == {"ok": True}
 
     def test_does_not_double_wrap_response_code(self):
         rc = ResponseCode("SUCCESS", {"x": 1})
@@ -76,7 +78,7 @@ class TestDb2SafeDecorator:
     def test_parses_sqlstate_and_sqlcode_from_exception(self):
         @db2_safe
         def do_work():
-            raise Exception("DB blew up SQLSTATE=23505 SQLCODE=-803")
+            raise RuntimeError("DB blew up SQLSTATE=23505 SQLCODE=-803")
 
         result = do_work()
         assert result.success is False
