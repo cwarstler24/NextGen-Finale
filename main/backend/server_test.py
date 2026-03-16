@@ -75,10 +75,7 @@ def test_get_fries_items():
         if data.get('types'):
             LOGGER.info(f"Sample Type: {data['types'][0]}", also_print=True)
         if data.get('seasonings'):
-            LOGGER.info(
-                f"Sample Seasoning: {
-                    data['seasonings'][0]}",
-                also_print=True)
+            LOGGER.info(f"Sample Seasoning: {data['seasonings'][0]}",also_print=True)
 
         assert "sizes" in data
         assert "types" in data
