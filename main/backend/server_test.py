@@ -110,10 +110,7 @@ def test_get_burger_items():
         if data.get('patties'):
             LOGGER.info(f"Sample Patty: {data['patties'][0]}", also_print=True)
         if data.get('toppings'):
-            LOGGER.info(
-                f"Sample Topping: {
-                    data['toppings'][0]}",
-                also_print=True)
+            LOGGER.info(f"Sample Topping: {data['toppings'][0]}",also_print=True)
 
         assert "buns" in data
         assert "patties" in data
@@ -242,12 +239,7 @@ def test_create_order():
         data = response.json()
         LOGGER.info(f"Order ID: {data.get('order_id')}", also_print=True)
         LOGGER.info(f"Message: {data.get('message')}", also_print=True)
-        LOGGER.info(
-            f"Total Price: ${
-                data.get(
-                    'total_price',
-                    0):.2f}",
-            also_print=True)
+        LOGGER.info(f"Total Price: ${data.get('total_price',0):.2f}",also_print=True)
 
         assert "order_id" in data
         assert "total_price" in data
@@ -320,15 +312,13 @@ def run_all_tests():
         except AssertionError as e:
             failed += 1
             LOGGER.error(
-                f"[FAIL] TEST FAILED: {
-                    test.__name__}",
+                f"[FAIL] TEST FAILED: {test.__name__}",
                 also_print=True)
             LOGGER.error(f"   Error: {str(e)}\n", also_print=True)
         except Exception as e:
             failed += 1
             LOGGER.error(
-                f"[FAIL] TEST ERROR: {
-                    test.__name__}",
+                f"[FAIL] TEST ERROR: {test.__name__}",
                 also_print=True)
             LOGGER.error(f"   Exception: {str(e)}\n", also_print=True)
 
