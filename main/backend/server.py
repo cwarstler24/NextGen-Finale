@@ -575,13 +575,11 @@ async def create_order(order: OrderRequest):
             if not bun_result.success or not bun_result.data:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid bun ID: {
-                        burger['bun_id']}")
+                    detail=f"Invalid bun ID: {burger['bun_id']}")
             if not patty_result.success or not patty_result.data:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid patty ID: {
-                        burger['patty_id']}")
+                    detail=f"Invalid patty ID: {burger['patty_id']}")
 
             # Check inventory availability
             patty_count = burger.get("patty_count", 1)
@@ -632,18 +630,15 @@ async def create_order(order: OrderRequest):
             if not fry_type_result.success or not fry_type_result.data:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid fry type ID: {
-                        fry['type_id']}")
+                    detail=f"Invalid fry type ID: {fry['type_id']}")
             if not fry_size_result.success or not fry_size_result.data:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid fry size ID: {
-                        fry['size_id']}")
+                    detail=f"Invalid fry size ID: {fry['size_id']}")
             if not fry_seasoning_result.success or not fry_seasoning_result.data:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid fry seasoning ID: {
-                        fry['seasoning_id']}")
+                    detail=f"Invalid fry seasoning ID: {fry['seasoning_id']}")
 
             # Check inventory availability (fry_size is the multiplier for
             # stock usage)
@@ -829,8 +824,7 @@ async def create_order(order: OrderRequest):
                         fry['seasoning_id']}")
 
         LOGGER.info(
-            f"Order {next_order_id} created successfully with total ${
-                total_price:.2f}")
+            f"Order {next_order_id} created successfully with total ${total_price:.2f}")
 
         return {
             "order_id": next_order_id,

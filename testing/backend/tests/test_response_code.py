@@ -145,3 +145,36 @@ def test_success_response_calls_logger_info():
     with patch("main.utilities.error_handler.LoggerFactory.get_general_logger", return_value=dummy):
         ResponseCode("SUCCESS")
     dummy.info.assert_called_once()
+
+
+# --- Property accessors ---
+
+def test_property_success_true_for_success_code(mock_logger):
+    rc = ResponseCode("SUCCESS")
+    assert rc.success is True
+
+
+def test_property_success_false_for_error_code(mock_logger):
+    rc = ResponseCode("NOT_FOUND")
+    assert rc.success is False
+
+
+def test_property_error_code_matches_getter(mock_logger):
+    rc = ResponseCode("BAD_REQUEST")
+    assert rc.error_code == rc.get_error_code()
+
+
+def test_property_error_tag_matches_getter(mock_logger):
+    rc = ResponseCode("FORBIDDEN")
+    assert rc.error_tag == rc.get_error_tag()
+
+
+def test_property_message_matches_getter(mock_logger):
+    rc = ResponseCode("NOT_FOUND")
+    assert rc.message == rc.get_message()
+
+
+def test_property_data_matches_getter(mock_logger):
+    rc = ResponseCode("SUCCESS", data={"x": 1})
+    assert rc.data == rc.get_data()
+    assert rc.data == {"x": 1}

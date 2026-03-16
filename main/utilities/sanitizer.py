@@ -455,8 +455,7 @@ def sanitize_and_unmarshal(
     sanitizer = sanitizer_map.get(entity_type)
     if not sanitizer:
         raise ValueError(
-            f"No sanitizer available for entity type: {
-                entity_type.__name__}")
+            f"No sanitizer available for entity type: {entity_type.__name__}")
 
     LOGGER.debug(f"Sanitizing data for entity type: {entity_type.__name__}")
     return sanitizer(data)

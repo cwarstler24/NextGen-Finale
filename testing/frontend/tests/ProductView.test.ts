@@ -3,12 +3,44 @@ import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 
 import ProductView from '../../../main/frontend/src/views/ProductView.vue';
+import { fetchMock } from '../mocks/browserMocks';
 
 const { addItemMock, currentRoute, pushMock } = vi.hoisted(() => ({
     addItemMock: vi.fn(),
     currentRoute: { value: { params: { product: 'Burger' } } },
     pushMock: vi.fn(),
 }));
+
+const burgerOptionsResponse = {
+    buns: [
+        { id: 101, name: 'Sesame', price: 1.0, quantity: 5 },
+        { id: 102, name: 'Pretzel', price: 1.5, quantity: 5 },
+    ],
+    patties: [
+        { id: 201, name: 'Beef', price: 2.5, quantity: 5 },
+        { id: 202, name: 'Vegan', price: 3.0, quantity: 5 },
+    ],
+    toppings: [
+        { id: 301, name: 'Lettuce', price: 1.5, quantity: 5 },
+        { id: 302, name: 'Tomato', price: 1.0, quantity: 5 },
+    ],
+};
+
+const friesOptionsResponse = {
+    sizes: [
+        { id: 401, name: 'Small', price: 0.5, quantity: 5 },
+        { id: 403, name: 'Large', price: 2.0, quantity: 5 },
+    ],
+    types: [
+        { id: 501, name: 'Shoestring', price: 0.0, quantity: 5 },
+        { id: 503, name: 'Waffle', price: 0.5, quantity: 5 },
+    ],
+    seasonings: [
+        { id: 601, name: 'Salt', price: 0.0, quantity: 5 },
+        { id: 602, name: 'Cajun', price: 0.5, quantity: 5 },
+        { id: 603, name: 'Garlic', price: 1.0, quantity: 5 },
+    ],
+};
 
 vi.mock('vue-router', () => ({
     useRouter: () => ({
@@ -37,10 +69,45 @@ function mountProductView(product = 'Burger') {
     });
 }
 
+async function waitForOptionsToLoad() {
+    await Promise.resolve();
+    await Promise.resolve();
+    await nextTick();
+}
+
 describe('ProductView', () => {
     beforeEach(() => {
         addItemMock.mockReset();
         pushMock.mockReset();
+        fetchMock.mockReset();
+        fetchMock.mockImplementation((input: unknown) => {
+            const requestUrl = typeof input === 'string'
+                ? input
+                : input instanceof URL
+                    ? input.toString()
+                    : (input as { url: string }).url;
+
+            if (requestUrl.includes('/Items/Burger')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => burgerOptionsResponse,
+                });
+            }
+
+            if (requestUrl.includes('/Items/Fries')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => friesOptionsResponse,
+                });
+            }
+
+            return Promise.resolve({
+                ok: false,
+                status: 404,
+                statusText: 'Not Found',
+                json: async () => ({}),
+            });
+        });
         vi.useFakeTimers();
     });
 
@@ -50,9 +117,10 @@ describe('ProductView', () => {
 
     it('updates burger selections and adds the customized item to the cart', async () => {
         const wrapper = mountProductView('Burger');
+        await waitForOptionsToLoad();
 
         expect(wrapper.text()).toContain('Classic Burger');
-        expect(wrapper.text()).toContain('$4.00');
+        expect(wrapper.text()).toContain('$3.50');
 
         await wrapper.get('#buns-input').setValue('102');
         await wrapper.get('#patties-input').setValue('202');
@@ -86,6 +154,7 @@ describe('ProductView', () => {
 
     it('renders fries customization and routes back to the main page', async () => {
         const wrapper = mountProductView('Fries');
+        await waitForOptionsToLoad();
 
         expect(wrapper.text()).toContain('Fries');
         expect(wrapper.text()).toContain('Crispy Fries');
@@ -93,12 +162,9 @@ describe('ProductView', () => {
 
         await wrapper.get('#sizes-input').setValue('403');
         await wrapper.get('#types-input').setValue('503');
+        await wrapper.get('#seasonings-input').setValue('603');
 
-        const seasoningCheckboxes = wrapper.findAll('input[type="checkbox"]');
-        await seasoningCheckboxes[1].setValue(true);
-        await seasoningCheckboxes[2].setValue(true);
-
-        expect(wrapper.text()).toContain('$4.00');
+        expect(wrapper.text()).toContain('$3.50');
 
         await wrapper.get('.product-breadcrumbs .hover').trigger('click');
 
