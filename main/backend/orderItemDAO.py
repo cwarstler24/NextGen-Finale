@@ -93,7 +93,7 @@ class OrderItemDAO(DatabaseAccessObject):
         return self.execute_join_query(
             select_clause="""
                 oi.ORDER_ITEM_ID, oi.ORDER_ID, oi.ITEM_TYPE, oi.UNIT_PRICE,
-                b.BURGER_ID,
+                b.BURGER_ID, b.PATTY_COUNT,
                 bt.BUN_NAME, bt.PRICE AS BUN_PRICE,
                 pt.PATTY_NAME, pt.PRICE AS PATTY_PRICE
             """,
@@ -148,8 +148,8 @@ class OrderItemDAO(DatabaseAccessObject):
         fries_result = self.get_order_items_with_fries(order_id)
 
         combined_data = {
-            "burgers": burgers_result.data if not burgers_result.error_tag else [],
-            "fries": fries_result.data if not fries_result.error_tag else []
+            "burgers": burgers_result.data if burgers_result.success else [],
+            "fries": fries_result.data if fries_result.success else []
         }
 
         return ResponseCode("SUCCESS", combined_data)

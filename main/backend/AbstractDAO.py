@@ -117,7 +117,6 @@ class DatabaseAccessObject(ABC):
         Returns:
             dict[str, Any]: Dictionary representation of the row
         '''
-        pass
 
     @abstractmethod
     def _build_insert_sql(self, entry: dict[str, Any]) -> tuple[str, list]:
@@ -131,7 +130,6 @@ class DatabaseAccessObject(ABC):
         Returns:
             tuple[str, list]: SQL string and list of parameter values
         '''
-        pass
 
     @abstractmethod
     def _build_update_sql(self, updates: dict[str, Any]) -> tuple[str, list]:
@@ -145,7 +143,6 @@ class DatabaseAccessObject(ABC):
         Returns:
             tuple[str, list]: SET clause string and list of parameter values
         '''
-        pass
 
     @db2_safe
     def get_by_key(self, key_value: Any) -> ResponseCode:
