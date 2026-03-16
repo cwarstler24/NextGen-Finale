@@ -277,8 +277,9 @@ def test_create_order():
                 "bun_id": burger_data['buns'][0]['id'],
                 "patty_id": burger_data['patties'][0]['id'],
                 "patty_count": 2,
-                "topping_ids": [
-                    burger_data['toppings'][0]['id']] if burger_data.get('toppings') else []}],
+                "toppings": [
+                    {"topping_id": burger_data['toppings'][0]['id'], "count": 2}
+                ] if burger_data.get('toppings') else []}],
         "fries": [
             {
                 "size_id": fries_data['sizes'][0]['id'],
@@ -360,7 +361,7 @@ def test_create_order():
                 f"  - Patty: -{patty_change} (expected -2)",
                 also_print=True)
             LOGGER.info(
-                f"  - Topping: -{topping_change} (expected -1)",
+                f"  - Topping: -{topping_change} (expected -2)",
                 also_print=True)
             LOGGER.info(
                 f"  - Fry Type: -{fry_type_change} (expected -{fry_size_value})",
@@ -373,7 +374,7 @@ def test_create_order():
             assert bun_change == 1, f"Bun stock should decrease by 1, but decreased by {bun_change}"
             assert patty_change == 2, f"Patty stock should decrease by 2 (patty_count), but decreased by {patty_change}"
             if burger_data.get('toppings'):
-                assert topping_change == 1, f"Topping stock should decrease by 1, but decreased by {topping_change}"
+                assert topping_change == 2, f"Topping stock should decrease by 2 (topping count), but decreased by {topping_change}"
             assert fry_type_change == fry_size_value, f"Fry type stock should decrease by {fry_size_value} (fry size), but decreased by {fry_type_change}"
             assert fry_seasoning_change == fry_size_value, f"Fry seasoning stock should decrease by {fry_size_value} (fry size), but decreased by {fry_seasoning_change}"
 
@@ -407,7 +408,7 @@ def test_create_order_invalid_ingredient():
                 "bun_id": 99999,  # Invalid ID
                 "patty_id": 99999,  # Invalid ID
                 "patty_count": 1,
-                "topping_ids": []
+                "toppings": []
             }
         ],
         "fries": []
@@ -469,7 +470,7 @@ def test_insufficient_inventory():
                 "bun_id": burger_data['buns'][0]['id'],
                 "patty_id": patty['id'],
                 "patty_count": available_stock + 100,  # More than available
-                "topping_ids": []
+                "toppings": []
             }
         ],
         "fries": []
