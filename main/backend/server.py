@@ -16,6 +16,7 @@ from main.utilities.sanitizer import sanitize_and_unmarshal
 from main.backend.entities import Customer
 from main.utilities.logger import LoggerFactory
 from main.utilities.sanitizer import sanitize_email
+from main.backend.db_pool import get_db_cursor
 
 # Initialize logger
 LOGGER = LoggerFactory.get_general_logger()
@@ -536,9 +537,12 @@ async def create_order(order: OrderRequest):
         fry_size_dao = DAOFactory.get_or_create_dao("FrySizeDAO")
         fry_seasoning_dao = DAOFactory.get_or_create_dao("FrySeasoningDAO")
 
-        # 1. Check/Create customer
-        existing_customer = customer_dao.get_by_key(
-            customer_entity.get_primary_key())
+        # Use a single database cursor for the entire order creation transaction
+        # This dramatically improves performance by avoiding 30-40 separate connections
+        with get_db_cursor() as cursor:
+            # 1. Check/Create customer
+            existing_customer = customer_dao.get_by_key(
+                customer_entity.get_primary_key(), cursor=cursor)
         if not existing_customer.success or not existing_customer.data:
             LOGGER.info(f"Creating new customer: {customer_entity.email}")
             customer_create_result = customer_dao.create_record(

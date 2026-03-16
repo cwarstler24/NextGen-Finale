@@ -16,6 +16,7 @@ sys.path.insert(0, str(project_root))
 from main.utilities.error_handler import ResponseCode
 from main.backend.db_pool import get_db_cursor
 from main.utilities.logger import LoggerFactory
+from contextlib import contextmanager, nullcontext
 
 
 def db2_safe(func):
@@ -92,6 +93,26 @@ class DatabaseAccessObject(ABC):
         self._primary_key = primary_key
         self._logger = LoggerFactory.get_general_logger()
 
+    @contextmanager
+    def _cursor_context(self, cursor=None):
+        '''
+        Context manager that either uses a provided cursor (for shared transactions)
+        or creates a new one (for standalone operations).
+        
+        Args:
+            cursor: Optional cursor to use. If None, creates a new cursor.
+            
+        Yields:
+            tuple: (cursor, should_commit) where should_commit is True if we created the cursor
+        '''
+        if cursor is not None:
+            # Use provided cursor, don't commit (caller will handle it)
+            yield cursor, False
+        else:
+            # Create new cursor, commit after operation
+            with get_db_cursor() as new_cursor:
+                yield new_cursor, True
+
     def _prepare_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
         '''
         Hook method to set default field values before insert.
@@ -145,22 +166,23 @@ class DatabaseAccessObject(ABC):
         '''
 
     @db2_safe
-    def get_by_key(self, key_value: Any) -> ResponseCode:
+    def get_by_key(self, key_value: Any, cursor=None) -> ResponseCode:
         '''
         Return a DB2 record by primary key value
 
         Args:
             key_value (Any): The value of the primary key
+            cursor: Optional cursor for shared transactions
 
         Returns:
             ResponseCode: ResponseCode with the record as a dictionary in data
         '''
         self._logger.debug( f"Getting {self.__class__.__name__} record by {self._primary_key}={key_value}.")
 
-        with get_db_cursor() as cursor:
+        with self._cursor_context(cursor) as (cur, should_commit):
             sql = f"SELECT * FROM {self._table_name} WHERE {self._primary_key} = ?"
-            cursor.execute(sql, (key_value,))
-            row = cursor.fetchone()
+            cur.execute(sql, (key_value,))
+            row = cur.fetchone()
             if row is None:
                 return ResponseCode(error_tag="NOT_FOUND", data=f"No record found with {self._primary_key}={key_value}")
             return self._row_to_dict(row)
@@ -194,24 +216,25 @@ class DatabaseAccessObject(ABC):
             return [self._row_to_dict(row) for row in rows]
 
     @db2_safe
-    def get_all_records(self, limit: Optional[int] = None) -> ResponseCode:
+    def get_all_records(self, limit: Optional[int] = None, cursor=None) -> ResponseCode:
         '''
         Return all (or limited) DB2 records from the table
 
         Args:
             limit (int optional): Maximum number of records to return
+            cursor: Optional cursor for shared transactions
 
         Returns:
             ResponseCode: ResponseCode with list of records as dictionaries
         '''
         self._logger.debug(f"Getting all {self.__class__.__name__} records with limit {limit}.")
 
-        with get_db_cursor() as cursor:
+        with self._cursor_context(cursor) as (cur, should_commit):
             sql = f"SELECT * FROM {self._table_name}"
             if limit is not None:
                 sql += f" FETCH FIRST {limit} ROWS ONLY"
-            cursor.execute(sql)
-            rows = cursor.fetchall()
+            cur.execute(sql)
+            rows = cur.fetchall()
             if not rows:
                 return ResponseCode(
                     error_tag="NOT_FOUND",
@@ -253,13 +276,15 @@ class DatabaseAccessObject(ABC):
     def update_record(self,
                       key_value: Any,
                       updates: dict[str,
-                                    Any]) -> ResponseCode:
+                                    Any],
+                      cursor=None) -> ResponseCode:
         '''
         Update a record by primary key
 
         Args:
             key_value (Any): The value of the primary key
             updates (dict[str, Any]): Dictionary of fields to update
+            cursor: Optional cursor for shared transactions
 
         Returns:
             ResponseCode: ResponseCode with the primary key value
@@ -275,21 +300,22 @@ class DatabaseAccessObject(ABC):
         set_clause, values = self._build_update_sql(updates)
         values.append(key_value)  # Add primary key value for WHERE clause
 
-        with get_db_cursor() as cursor:
+        with self._cursor_context(cursor) as (cur, should_commit):
             sql = f"UPDATE {self._table_name} SET {set_clause} WHERE {self._primary_key} = ?"
-            cursor.execute(sql, values)
+            cur.execute(sql, values)
             # Check if any rows were updated
-            if cursor.rowcount == 0:
+            if cur.rowcount == 0:
                 return ResponseCode(error_tag="NOT_FOUND",data=f"No record found with {self._primary_key}={key_value}")
             return key_value
 
     @db2_safe
-    def create_record(self, entry: dict[str, Any]) -> ResponseCode:
+    def create_record(self, entry: dict[str, Any], cursor=None) -> ResponseCode:
         '''
         Create a new record in the table
 
         Args:
             entry (dict[str, Any]): Dictionary of field names and values
+            cursor: Optional cursor for shared transactions
 
         Returns:
             ResponseCode: ResponseCode with the created record's primary key
@@ -300,8 +326,8 @@ class DatabaseAccessObject(ABC):
         # Build INSERT SQL using subclass implementation
         insert_sql, values = self._build_insert_sql(entry)
 
-        with get_db_cursor() as cursor:
-            cursor.execute(insert_sql, values)
+        with self._cursor_context(cursor) as (cur, should_commit):
+            cur.execute(insert_sql, values)
             # Get the inserted primary key value
             inserted_id = entry.get(self._primary_key, "unknown")
             self._logger.debug(f"Created! New {self._primary_key}: {inserted_id}")
