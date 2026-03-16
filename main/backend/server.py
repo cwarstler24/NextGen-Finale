@@ -778,62 +778,81 @@ async def create_order(order: OrderRequest):
             # 6. Decrement inventory for all ingredients used
             LOGGER.debug("Decrementing inventory for order items")
 
-            # Decrement burger ingredients
+            # Aggregate burger ingredients first to coalesce UPDATE statements
+            bun_decrements = {}
+            patty_decrements = {}
+            topping_decrements = {}
+            
             for burger_item_data in burger_items_to_create:
                 burger = burger_item_data["burger_data"]
                 patty_count = burger.get("patty_count", 1)
-
-                # Decrement bun stock by 1
-                bun_update_result = bun_dao.decrement_stock(burger["bun_id"], 1, cursor=cursor)
-                if not bun_update_result.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to update bun inventory for ID {
-                            burger['bun_id']}")
-
-                # Decrement patty stock by patty_count
-                patty_update_result = patty_dao.decrement_stock(
-                    burger["patty_id"], patty_count, cursor=cursor)
-                if not patty_update_result.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to update patty inventory for ID {
-                            burger['patty_id']}")
-
-                # Decrement topping stock by the specified count for each topping
+                
+                # Aggregate bun decrements
+                bun_id = burger["bun_id"]
+                bun_decrements[bun_id] = bun_decrements.get(bun_id, 0) + 1
+                
+                # Aggregate patty decrements
+                patty_id = burger["patty_id"]
+                patty_decrements[patty_id] = patty_decrements.get(patty_id, 0) + patty_count
+                
+                # Aggregate topping decrements
                 for topping in burger["toppings"]:
                     topping_id = topping["topping_id"]
                     topping_count = topping.get("count", 1)
-                    topping_update_result = topping_dao.decrement_stock(
-                        topping_id, topping_count, cursor=cursor)
-                    if not topping_update_result.success:
-                        raise HTTPException(
-                                status_code=500,
-                            detail=f"Failed to update topping inventory for ID {topping_id}")
+                    topping_decrements[topping_id] = topping_decrements.get(topping_id, 0) + topping_count
+            
+            # Execute aggregated burger ingredient decrements
+            for bun_id, amount in bun_decrements.items():
+                bun_update_result = bun_dao.decrement_stock(bun_id, amount, cursor=cursor)
+                if not bun_update_result.success:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to update bun inventory for ID {bun_id}")
+            
+            for patty_id, amount in patty_decrements.items():
+                patty_update_result = patty_dao.decrement_stock(patty_id, amount, cursor=cursor)
+                if not patty_update_result.success:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to update patty inventory for ID {patty_id}")
+            
+            for topping_id, amount in topping_decrements.items():
+                topping_update_result = topping_dao.decrement_stock(topping_id, amount, cursor=cursor)
+                if not topping_update_result.success:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to update topping inventory for ID {topping_id}")
 
-            # Decrement fry ingredients (using fry_size as multiplier)
+            # Aggregate fry ingredients first to coalesce UPDATE statements
+            fry_type_decrements = {}
+            fry_seasoning_decrements = {}
+            
             for fry_item_data in fry_items_to_create:
                 fry = fry_item_data["fry_data"]
-                # This is the multiplier (8, 12, 16, 20 oz)
                 fry_size_value = fry_item_data["fry_size_value"]
-
-                # Decrement fry type stock by fry_size
-                fry_type_update_result = fry_type_dao.decrement_stock(
-                    fry["type_id"], fry_size_value, cursor=cursor)
+                
+                # Aggregate fry type decrements
+                fry_type_id = fry["type_id"]
+                fry_type_decrements[fry_type_id] = fry_type_decrements.get(fry_type_id, 0) + fry_size_value
+                
+                # Aggregate fry seasoning decrements
+                fry_seasoning_id = fry["seasoning_id"]
+                fry_seasoning_decrements[fry_seasoning_id] = fry_seasoning_decrements.get(fry_seasoning_id, 0) + fry_size_value
+            
+            # Execute aggregated fry ingredient decrements
+            for fry_type_id, amount in fry_type_decrements.items():
+                fry_type_update_result = fry_type_dao.decrement_stock(fry_type_id, amount, cursor=cursor)
                 if not fry_type_update_result.success:
                     raise HTTPException(
                         status_code=500,
-                        detail=f"Failed to update fry type inventory for ID {
-                            fry['type_id']}")
-
-                # Decrement fry seasoning stock by fry_size
-                fry_seasoning_update_result = fry_seasoning_dao.decrement_stock(
-                    fry["seasoning_id"], fry_size_value, cursor=cursor)
+                        detail=f"Failed to update fry type inventory for ID {fry_type_id}")
+            
+            for fry_seasoning_id, amount in fry_seasoning_decrements.items():
+                fry_seasoning_update_result = fry_seasoning_dao.decrement_stock(fry_seasoning_id, amount, cursor=cursor)
                 if not fry_seasoning_update_result.success:
                     raise HTTPException(
                         status_code=500,
-                        detail=f"Failed to update fry seasoning inventory for ID {
-                            fry['seasoning_id']}")
+                        detail=f"Failed to update fry seasoning inventory for ID {fry_seasoning_id}")
 
             # All operations completed successfully - commit happens automatically
             # when exiting the cursor context
