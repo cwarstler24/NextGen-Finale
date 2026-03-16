@@ -78,3 +78,26 @@ class PattyTypeDAO(DatabaseAccessObject):
         set_clause = ", ".join(set_clauses)
         values = list(updates.values())
         return (set_clause, values)
+
+    def decrement_stock(self, patty_id: int, amount: int):
+        '''
+        Decrement the stock quantity for a patty type by the specified amount.
+
+        Args:
+            patty_id (int): The ID of the patty type to decrement
+            amount (int): The amount to decrement by
+
+        Returns:
+            ResponseCode: Result of the stock decrement operation
+        '''
+        # Get current record
+        current = self.get_by_key(patty_id)
+        if not current.success or not current.data:
+            return current
+        
+        # Calculate new stock
+        current_stock = current.data.get("STOCK_QUANTITY", 0)
+        new_stock = current_stock - amount
+        
+        # Update with new stock
+        return self.update_record(patty_id, {"STOCK_QUANTITY": new_stock})

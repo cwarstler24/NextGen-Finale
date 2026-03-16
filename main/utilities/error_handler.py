@@ -223,14 +223,16 @@ class ResponseCode:
                     self.__error_code}. {
                     self.__error_tag}: {
                     self.__message}\n\t\t\tdata: {
-                    self.__data}")
+                    self.__data}"
+            )
         else:
             self.__logger.info(
                 f"{
                     self.__error_code}. {
                     self.__error_tag}: {
                     self.__message}\n\t\t\tdata: {
-                    self.__data}")
+                    self.__data}"
+            )
 
     def get_success(self) -> bool:
         return self.__success

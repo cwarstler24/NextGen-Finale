@@ -31,7 +31,6 @@ LOGGER = LoggerFactory.get_general_logger()
 # Create test client (no need to run server separately!)
 client = TestClient(app)
 
-
 def test_root_endpoint():
     """Test the root endpoint - health check"""
     LOGGER.info("=" * 60, also_print=True)
@@ -86,7 +85,9 @@ def test_get_fries_items():
             assert "quantity" in sample_type or "STOCK_QUANTITY" in sample_type
         if data.get('seasonings'):
             sample_seasoning = data['seasonings'][0]
-            LOGGER.info(f"Sample Seasoning: {sample_seasoning}", also_print=True)
+            LOGGER.info(
+                f"Sample Seasoning: {sample_seasoning}",
+                also_print=True)
             # Verify seasonings have stock quantity
             assert "quantity" in sample_seasoning or "STOCK_QUANTITY" in sample_seasoning
 
@@ -182,7 +183,7 @@ def test_get_customer_found():
         assert "name" in data
         assert "email" in data
         assert "orders" in data
-        
+
         # Check order structure if orders exist
         if data.get('orders'):
             first_order = data['orders'][0]
@@ -190,14 +191,17 @@ def test_get_customer_found():
             assert "date" in first_order, "Order should have date"
             assert "price" in first_order, "Order should have price"
             assert "items" in first_order, "Order should have items list"
-            
+
             # Check item structure if items exist
             if first_order.get('items'):
                 first_item = first_order['items'][0]
                 assert "item_type" in first_item, "Item should have item_type"
                 assert "name" in first_item, "Item should have name"
                 assert "price" in first_item, "Item should have price"
-                LOGGER.info(f"Sample Order Item: {first_item['name']}", also_print=True)
+                LOGGER.info(
+                    f"Sample Order Item: {
+                        first_item['name']}",
+                    also_print=True)
 
         LOGGER.info(
             "[PASS] Customer endpoint returned data\n",
@@ -239,21 +243,26 @@ def test_create_order():
     # Capture initial stock quantities
     initial_bun_stock = burger_data['buns'][0].get('quantity', 0)
     initial_patty_stock = burger_data['patties'][0].get('quantity', 0)
-    initial_topping_stock = burger_data['toppings'][0].get('quantity', 0) if burger_data.get('toppings') else 0
+    initial_topping_stock = burger_data['toppings'][0].get(
+        'quantity', 0) if burger_data.get('toppings') else 0
     initial_fry_type_stock = fries_data['types'][0].get('quantity', 0)
-    initial_fry_seasoning_stock = fries_data['seasonings'][0].get('quantity', 0)
-    fry_size_value = fries_data['sizes'][0].get('name', fries_data['sizes'][0].get('FRY_SIZE', 0))
-    
+    initial_fry_seasoning_stock = fries_data['seasonings'][0].get(
+        'quantity', 0)
+    fry_size_value = fries_data['sizes'][0].get(
+        'name', fries_data['sizes'][0].get('FRY_SIZE', 0))
+
     # Extract numeric size value (e.g., "8 oz" -> 8)
     if isinstance(fry_size_value, str):
         fry_size_value = int(''.join(filter(str.isdigit, fry_size_value)))
-    
+
     LOGGER.info("Initial Stock Quantities:", also_print=True)
     LOGGER.info(f"  - Bun: {initial_bun_stock}", also_print=True)
     LOGGER.info(f"  - Patty: {initial_patty_stock}", also_print=True)
     LOGGER.info(f"  - Topping: {initial_topping_stock}", also_print=True)
     LOGGER.info(f"  - Fry Type: {initial_fry_type_stock}", also_print=True)
-    LOGGER.info(f"  - Fry Seasoning: {initial_fry_seasoning_stock}", also_print=True)
+    LOGGER.info(
+        f"  - Fry Seasoning: {initial_fry_seasoning_stock}",
+        also_print=True)
     LOGGER.info(f"  - Fry Size Multiplier: {fry_size_value}", also_print=True)
 
     # Create test order with valid IDs
@@ -280,7 +289,12 @@ def test_create_order():
     LOGGER.info("Creating order with:", also_print=True)
     LOGGER.info(
         f"  - Customer: {order_data['customer']['email']}", also_print=True)
-    LOGGER.info(f"  - Burgers: {len(order_data['burgers'])} (with {order_data['burgers'][0]['patty_count']} patties)", also_print=True)
+    LOGGER.info(
+        f"  - Burgers: {
+            len(
+                order_data['burgers'])} (with {
+            order_data['burgers'][0]['patty_count']} patties)",
+        also_print=True)
     LOGGER.info(f"  - Fries: {len(order_data['fries'])}", also_print=True)
 
     response = client.post("/Order/", json=order_data)
@@ -305,24 +319,32 @@ def test_create_order():
         # Get stock quantities AFTER order to verify decrementation
         fries_response_after = client.get("/Items/Fries")
         burger_response_after = client.get("/Items/Burger")
-        
+
         if fries_response_after.status_code == 200 and burger_response_after.status_code == 200:
             fries_data_after = fries_response_after.json()
             burger_data_after = burger_response_after.json()
-            
+
             final_bun_stock = burger_data_after['buns'][0].get('quantity', 0)
-            final_patty_stock = burger_data_after['patties'][0].get('quantity', 0)
-            final_topping_stock = burger_data_after['toppings'][0].get('quantity', 0) if burger_data_after.get('toppings') else 0
-            final_fry_type_stock = fries_data_after['types'][0].get('quantity', 0)
-            final_fry_seasoning_stock = fries_data_after['seasonings'][0].get('quantity', 0)
-            
+            final_patty_stock = burger_data_after['patties'][0].get(
+                'quantity', 0)
+            final_topping_stock = burger_data_after['toppings'][0].get(
+                'quantity', 0) if burger_data_after.get('toppings') else 0
+            final_fry_type_stock = fries_data_after['types'][0].get(
+                'quantity', 0)
+            final_fry_seasoning_stock = fries_data_after['seasonings'][0].get(
+                'quantity', 0)
+
             LOGGER.info("\nFinal Stock Quantities:", also_print=True)
             LOGGER.info(f"  - Bun: {final_bun_stock}", also_print=True)
             LOGGER.info(f"  - Patty: {final_patty_stock}", also_print=True)
             LOGGER.info(f"  - Topping: {final_topping_stock}", also_print=True)
-            LOGGER.info(f"  - Fry Type: {final_fry_type_stock}", also_print=True)
-            LOGGER.info(f"  - Fry Seasoning: {final_fry_seasoning_stock}", also_print=True)
-            
+            LOGGER.info(
+                f"  - Fry Type: {final_fry_type_stock}",
+                also_print=True)
+            LOGGER.info(
+                f"  - Fry Seasoning: {final_fry_seasoning_stock}",
+                also_print=True)
+
             # Verify decrementation
             LOGGER.info("\nStock Changes:", also_print=True)
             bun_change = initial_bun_stock - final_bun_stock
@@ -330,13 +352,23 @@ def test_create_order():
             topping_change = initial_topping_stock - final_topping_stock
             fry_type_change = initial_fry_type_stock - final_fry_type_stock
             fry_seasoning_change = initial_fry_seasoning_stock - final_fry_seasoning_stock
-            
-            LOGGER.info(f"  - Bun: -{bun_change} (expected -1)", also_print=True)
-            LOGGER.info(f"  - Patty: -{patty_change} (expected -2)", also_print=True)
-            LOGGER.info(f"  - Topping: -{topping_change} (expected -1)", also_print=True)
-            LOGGER.info(f"  - Fry Type: -{fry_type_change} (expected -{fry_size_value})", also_print=True)
-            LOGGER.info(f"  - Fry Seasoning: -{fry_seasoning_change} (expected -{fry_size_value})", also_print=True)
-            
+
+            LOGGER.info(
+                f"  - Bun: -{bun_change} (expected -1)",
+                also_print=True)
+            LOGGER.info(
+                f"  - Patty: -{patty_change} (expected -2)",
+                also_print=True)
+            LOGGER.info(
+                f"  - Topping: -{topping_change} (expected -1)",
+                also_print=True)
+            LOGGER.info(
+                f"  - Fry Type: -{fry_type_change} (expected -{fry_size_value})",
+                also_print=True)
+            LOGGER.info(
+                f"  - Fry Seasoning: -{fry_seasoning_change} (expected -{fry_size_value})",
+                also_print=True)
+
             # Assert correct decrementation
             assert bun_change == 1, f"Bun stock should decrease by 1, but decreased by {bun_change}"
             assert patty_change == 2, f"Patty stock should decrease by 2 (patty_count), but decreased by {patty_change}"
@@ -344,10 +376,14 @@ def test_create_order():
                 assert topping_change == 1, f"Topping stock should decrease by 1, but decreased by {topping_change}"
             assert fry_type_change == fry_size_value, f"Fry type stock should decrease by {fry_size_value} (fry size), but decreased by {fry_type_change}"
             assert fry_seasoning_change == fry_size_value, f"Fry seasoning stock should decrease by {fry_size_value} (fry size), but decreased by {fry_seasoning_change}"
-            
-            LOGGER.info("\n[PASS] Order created successfully and inventory decremented correctly\n", also_print=True)
+
+            LOGGER.info(
+                "\n[PASS] Order created successfully and inventory decremented correctly\n",
+                also_print=True)
         else:
-            LOGGER.info("\n[PASS] Order created successfully (could not verify decrementation)\n", also_print=True)
+            LOGGER.info(
+                "\n[PASS] Order created successfully (could not verify decrementation)\n",
+                also_print=True)
     else:
         LOGGER.error(f"[FAIL] {response.json()}\n", also_print=True)
 
@@ -391,28 +427,36 @@ def test_create_order_invalid_ingredient():
 def test_insufficient_inventory():
     """Test POST /Order/ with insufficient inventory"""
     LOGGER.info("=" * 60, also_print=True)
-    LOGGER.info("TEST 8: POST /Order/ - Insufficient Inventory", also_print=True)
+    LOGGER.info(
+        "TEST 8: POST /Order/ - Insufficient Inventory",
+        also_print=True)
     LOGGER.info("=" * 60, also_print=True)
 
     # Get available items
     burger_response = client.get("/Items/Burger")
     if burger_response.status_code != 200:
-        LOGGER.info("[INFO] SKIPPED: Cannot get ingredient data\n", also_print=True)
+        LOGGER.info(
+            "[INFO] SKIPPED: Cannot get ingredient data\n",
+            also_print=True)
         return
 
     burger_data = burger_response.json()
     if not burger_data.get('patties'):
-        LOGGER.info("[INFO] SKIPPED: No patty data available\n", also_print=True)
+        LOGGER.info(
+            "[INFO] SKIPPED: No patty data available\n",
+            also_print=True)
         return
 
     # Try to order more patties than available
     patty = burger_data['patties'][0]
     available_stock = patty.get('quantity', 0)
-    
+
     if available_stock < 1:
-        LOGGER.info("[INFO] SKIPPED: No patty stock available\n", also_print=True)
+        LOGGER.info(
+            "[INFO] SKIPPED: No patty stock available\n",
+            also_print=True)
         return
-    
+
     order_data = {
         "customer": {
             "name": "Test Customer",
@@ -440,13 +484,17 @@ def test_insufficient_inventory():
     assert response.status_code == 400
     assert "Insufficient stock" in response.json().get('detail', '')
 
-    LOGGER.info("[PASS] Returns 400 for insufficient inventory\n", also_print=True)
+    LOGGER.info(
+        "[PASS] Returns 400 for insufficient inventory\n",
+        also_print=True)
 
 
 def test_order_history_with_toppings():
     """Test that order history includes topping details"""
     LOGGER.info("=" * 60, also_print=True)
-    LOGGER.info("TEST 9: GET /Customer/{email} - Order History with Toppings", also_print=True)
+    LOGGER.info(
+        "TEST 9: GET /Customer/{email} - Order History with Toppings",
+        also_print=True)
     LOGGER.info("=" * 60, also_print=True)
 
     # Use the testorder@example.com created in test_create_order
@@ -458,37 +506,60 @@ def test_order_history_with_toppings():
     if response.status_code == 200:
         data = response.json()
         orders = data.get('orders', [])
-        
+
         if orders:
             LOGGER.info(f"Found {len(orders)} order(s)", also_print=True)
-            
+
             # Check first order
             first_order = orders[0]
-            LOGGER.info(f"Order ID: {first_order.get('order_id')}", also_print=True)
-            LOGGER.info(f"Order Date: {first_order.get('date')}", also_print=True)
-            LOGGER.info(f"Order Price: ${first_order.get('price', 0):.2f}", also_print=True)
-            
+            LOGGER.info(
+                f"Order ID: {
+                    first_order.get('order_id')}",
+                also_print=True)
+            LOGGER.info(
+                f"Order Date: {
+                    first_order.get('date')}",
+                also_print=True)
+            LOGGER.info(
+                f"Order Price: ${
+                    first_order.get(
+                        'price',
+                        0):.2f}",
+                also_print=True)
+
             items = first_order.get('items', [])
             LOGGER.info(f"Order Items: {len(items)}", also_print=True)
-            
+
             for item in items:
-                LOGGER.info(f"  - {item['item_type']}: {item['name']} (${item['price']:.2f})", also_print=True)
-            
+                LOGGER.info(
+                    f"  - {item['item_type']}: {item['name']} (${item['price']:.2f})", also_print=True)
+
             # Verify structure
             assert 'order_id' in first_order
             assert 'items' in first_order
             assert len(items) > 0
-            
+
             # Check for burger with toppings (if created in test 6)
-            burger_items = [item for item in items if item['item_type'] == 'Burger']
-            if burger_items and 'topping' not in burger_items[0]['name'].lower():
-                LOGGER.info("[INFO] Burger item found but no toppings in name (may not have been ordered with toppings)", also_print=True)
-            
-            LOGGER.info("[PASS] Order history includes detailed items\n", also_print=True)
+            burger_items = [
+                item for item in items if item['item_type'] == 'Burger']
+            if burger_items and 'topping' not in burger_items[0]['name'].lower(
+            ):
+                LOGGER.info(
+                    "[INFO] Burger item found but no toppings in name (may not have been ordered with toppings)",
+                    also_print=True)
+
+            LOGGER.info(
+                "[PASS] Order history includes detailed items\n",
+                also_print=True)
         else:
-            LOGGER.info("[INFO] No orders found for test customer\n", also_print=True)
+            LOGGER.info(
+                "[INFO] No orders found for test customer\n",
+                also_print=True)
     else:
-        LOGGER.info(f"[INFO] SKIPPED: Customer not found (status {response.status_code})\n", also_print=True)
+        LOGGER.info(
+            f"[INFO] SKIPPED: Customer not found (status {
+                response.status_code})\n",
+            also_print=True)
 
 
 def run_all_tests():
