@@ -188,6 +188,35 @@ class DatabaseAccessObject(ABC):
             return self._row_to_dict(row)
 
     @db2_safe
+    def get_by_keys(self, key_values: list[Any], cursor=None) -> ResponseCode:
+        '''
+        Return DB2 records matching any of the given primary key values in a
+        single query. Much more efficient than calling get_by_key in a loop.
+
+        Args:
+            key_values (list[Any]): List of primary key values to fetch
+            cursor: Optional cursor for shared transactions
+
+        Returns:
+            ResponseCode: ResponseCode with list of matching records as dictionaries
+        '''
+        if not key_values:
+            return ResponseCode("SUCCESS", [])
+
+        self._logger.debug(
+            f"Batch fetching {self.__class__.__name__} records by "
+            f"{self._primary_key} IN ({len(key_values)} keys).")
+
+        unique_keys = list(set(key_values))
+        placeholders = ", ".join(["?"] * len(unique_keys))
+
+        with self._cursor_context(cursor) as (cur, should_commit):
+            sql = f"SELECT * FROM {self._table_name} WHERE {self._primary_key} IN ({placeholders})"
+            cur.execute(sql, unique_keys)
+            rows = cur.fetchall()
+            return [self._row_to_dict(row) for row in rows]
+
+    @db2_safe
     def get_by_fields(self, filters: dict[str, Any]) -> ResponseCode:
         '''
         Return DB2 records matching the given field filters
@@ -332,6 +361,64 @@ class DatabaseAccessObject(ABC):
             inserted_id = entry.get(self._primary_key, "unknown")
             self._logger.debug(f"Created! New {self._primary_key}: {inserted_id}")
             return inserted_id
+
+    @db2_safe
+    def create_records_batch(self, entries: list[dict[str, Any]], cursor=None) -> ResponseCode:
+        '''
+        Create multiple records in a single executemany call.
+        Much more efficient than calling create_record in a loop.
+
+        Args:
+            entries (list[dict[str, Any]]): List of dictionaries of field names and values
+            cursor: Optional cursor for shared transactions
+
+        Returns:
+            ResponseCode: ResponseCode with the count of inserted records
+        '''
+        if not entries:
+            return ResponseCode("SUCCESS", {"inserted_count": 0})
+
+        prepared = [self._prepare_entry(entry) for entry in entries]
+        self._logger.debug(
+            f"Batch creating {len(prepared)} {self.__class__.__name__} records.")
+
+        # Build SQL from the first entry (all entries must have the same structure)
+        insert_sql, _ = self._build_insert_sql(prepared[0])
+
+        # Build the values list for all entries
+        all_values = [self._build_insert_sql(entry)[1] for entry in prepared]
+
+        with self._cursor_context(cursor) as (cur, should_commit):
+            cur.executemany(insert_sql, all_values)
+            return {"inserted_count": len(prepared)}
+
+    @db2_safe
+    def batch_update_field_by_delta(self, deltas: dict[Any, int], field_name: str, cursor=None) -> ResponseCode:
+        '''
+        Update a numeric field by adding a delta value for multiple records.
+        Issues one UPDATE per unique key (aggregated), instead of one per item.
+
+        Args:
+            deltas (dict[Any, int]): Mapping of primary key value -> total delta to apply
+            field_name (str): Name of the field to update (e.g., "STOCK_QUANTITY")
+            cursor: Optional cursor for shared transactions
+
+        Returns:
+            ResponseCode: ResponseCode with count of updated records
+        '''
+        if not deltas:
+            return ResponseCode("SUCCESS", {"updated_count": 0})
+
+        self._logger.debug(
+            f"Batch updating {field_name} for {len(deltas)} {self.__class__.__name__} records.")
+
+        with self._cursor_context(cursor) as (cur, should_commit):
+            updated = 0
+            for key_value, delta in deltas.items():
+                sql = f"UPDATE {self._table_name} SET {field_name} = {field_name} + ? WHERE {self._primary_key} = ?"
+                cur.execute(sql, (delta, key_value))
+                updated += cur.rowcount
+            return {"updated_count": updated}
 
     @db2_safe
     def delete_record(self, key_value: Any) -> ResponseCode:

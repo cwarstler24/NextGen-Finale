@@ -572,51 +572,74 @@ async def create_order(order: OrderRequest):
 
             # Prepare burger data
             burger_items_to_create = []
-            for burger in sanitized_burgers:
-                # Get ingredient prices
-                bun_result = bun_dao.get_by_key(burger["bun_id"], cursor=cursor)
-                patty_result = patty_dao.get_by_key(burger["patty_id"], cursor=cursor)
 
-                if not bun_result.success or not bun_result.data:
+            # Batch-fetch all unique buns, patties, and toppings in 3 queries
+            bun_ids = list(set(b["bun_id"] for b in sanitized_burgers))
+            patty_ids = list(set(b["patty_id"] for b in sanitized_burgers))
+            topping_ids = list(set(
+                t["topping_id"]
+                for b in sanitized_burgers
+                for t in b["toppings"]
+            ))
+
+            bun_results = bun_dao.get_by_keys(bun_ids, cursor=cursor) if bun_ids else None
+            patty_results = patty_dao.get_by_keys(patty_ids, cursor=cursor) if patty_ids else None
+            topping_results = topping_dao.get_by_keys(topping_ids, cursor=cursor) if topping_ids else None
+
+            bun_lookup = {}
+            if bun_results and bun_results.success and isinstance(bun_results.data, list):
+                bun_lookup = {item["BUN_ID"]: item for item in bun_results.data}
+            patty_lookup = {}
+            if patty_results and patty_results.success and isinstance(patty_results.data, list):
+                patty_lookup = {item["PATTY_ID"]: item for item in patty_results.data}
+            topping_lookup = {}
+            if topping_results and topping_results.success and isinstance(topping_results.data, list):
+                topping_lookup = {item["TOPPING_ID"]: item for item in topping_results.data}
+
+            for burger in sanitized_burgers:
+                bun_data = bun_lookup.get(burger["bun_id"])
+                patty_data = patty_lookup.get(burger["patty_id"])
+
+                if not bun_data:
                     raise HTTPException(
                         status_code=400,
                         detail=f"Invalid bun ID: {burger['bun_id']}")
-                if not patty_result.success or not patty_result.data:
+                if not patty_data:
                     raise HTTPException(
                         status_code=400,
                         detail=f"Invalid patty ID: {burger['patty_id']}")
 
                 # Check inventory availability
                 patty_count = burger.get("patty_count", 1)
-                if bun_result.data["STOCK_QUANTITY"] < 1:
+                if bun_data["STOCK_QUANTITY"] < 1:
                     raise HTTPException(
                         status_code=400,
                         detail=f"Insufficient stock for bun ID {burger['bun_id']}")
-                if patty_result.data["STOCK_QUANTITY"] < patty_count:
+                if patty_data["STOCK_QUANTITY"] < patty_count:
                     raise HTTPException(
                         status_code=400, detail=f"Insufficient stock for patty ID {
                             burger['patty_id']} (need {patty_count}, have {
-                            patty_result.data['STOCK_QUANTITY']})")
+                            patty_data['STOCK_QUANTITY']})")
 
-                bun_price = float(bun_result.data["PRICE"])
-                patty_price = float(patty_result.data["PRICE"])
+                bun_price = float(bun_data["PRICE"])
+                patty_price = float(patty_data["PRICE"])
                 burger_price = bun_price + patty_price
 
                 # Validate and add topping prices
                 for topping in burger["toppings"]:
                     topping_id = topping["topping_id"]
                     topping_count = topping.get("count", 1)
-                    topping_result = topping_dao.get_by_key(topping_id, cursor=cursor)
-                    if not topping_result.success or not topping_result.data:
+                    topping_data = topping_lookup.get(topping_id)
+                    if not topping_data:
                         raise HTTPException(
                             status_code=400,
                             detail=f"Invalid topping ID: {topping_id}")
                     # Check topping inventory
-                    if topping_result.data["STOCK_QUANTITY"] < topping_count:
+                    if topping_data["STOCK_QUANTITY"] < topping_count:
                         raise HTTPException(
                             status_code=400,
-                            detail=f"Insufficient stock for topping ID {topping_id} (need {topping_count}, have {topping_result.data['STOCK_QUANTITY']})")
-                    burger_price += float(topping_result.data["PRICE"]) * topping_count
+                            detail=f"Insufficient stock for topping ID {topping_id} (need {topping_count}, have {topping_data['STOCK_QUANTITY']})")
+                    burger_price += float(topping_data["PRICE"]) * topping_count
 
                 # Store burger data for later creation
                 burger_items_to_create.append({
@@ -627,51 +650,68 @@ async def create_order(order: OrderRequest):
 
             # Prepare fry data
             fry_items_to_create = []
-            for fry in sanitized_fries:
-                # Get ingredient prices
-                fry_type_result = fry_type_dao.get_by_key(fry["type_id"], cursor=cursor)
-                fry_size_result = fry_size_dao.get_by_key(fry["size_id"], cursor=cursor)
-                fry_seasoning_result = fry_seasoning_dao.get_by_key(
-                    fry["seasoning_id"], cursor=cursor)
 
-                if not fry_type_result.success or not fry_type_result.data:
+            # Batch-fetch all unique fry types, sizes, and seasonings
+            fry_type_ids = list(set(f["type_id"] for f in sanitized_fries))
+            fry_size_ids = list(set(f["size_id"] for f in sanitized_fries))
+            fry_seasoning_ids = list(set(f["seasoning_id"] for f in sanitized_fries))
+
+            fry_type_results = fry_type_dao.get_by_keys(fry_type_ids, cursor=cursor) if fry_type_ids else None
+            fry_size_results = fry_size_dao.get_by_keys(fry_size_ids, cursor=cursor) if fry_size_ids else None
+            fry_seasoning_results = fry_seasoning_dao.get_by_keys(fry_seasoning_ids, cursor=cursor) if fry_seasoning_ids else None
+
+            fry_type_lookup = {}
+            if fry_type_results and fry_type_results.success and isinstance(fry_type_results.data, list):
+                fry_type_lookup = {item["FRY_TYPE_ID"]: item for item in fry_type_results.data}
+            fry_size_lookup = {}
+            if fry_size_results and fry_size_results.success and isinstance(fry_size_results.data, list):
+                fry_size_lookup = {item["FRY_SIZE_ID"]: item for item in fry_size_results.data}
+            fry_seasoning_lookup = {}
+            if fry_seasoning_results and fry_seasoning_results.success and isinstance(fry_seasoning_results.data, list):
+                fry_seasoning_lookup = {item["FRY_SEASONING_ID"]: item for item in fry_seasoning_results.data}
+
+            for fry in sanitized_fries:
+                fry_type_data = fry_type_lookup.get(fry["type_id"])
+                fry_size_data = fry_size_lookup.get(fry["size_id"])
+                fry_seasoning_data = fry_seasoning_lookup.get(fry["seasoning_id"])
+
+                if not fry_type_data:
                     raise HTTPException(
                         status_code=400,
                         detail=f"Invalid fry type ID: {fry['type_id']}")
-                if not fry_size_result.success or not fry_size_result.data:
+                if not fry_size_data:
                     raise HTTPException(
                         status_code=400,
                         detail=f"Invalid fry size ID: {fry['size_id']}")
-                if not fry_seasoning_result.success or not fry_seasoning_result.data:
+                if not fry_seasoning_data:
                     raise HTTPException(
                         status_code=400,
                         detail=f"Invalid fry seasoning ID: {fry['seasoning_id']}")
 
                 # Check inventory availability (fry_size is the multiplier for
                 # stock usage)
-                fry_size_value = fry_size_result.data["FRY_SIZE"]
-                if fry_type_result.data["STOCK_QUANTITY"] < fry_size_value:
+                fry_size_value = fry_size_data["FRY_SIZE"]
+                if fry_type_data["STOCK_QUANTITY"] < fry_size_value:
                     raise HTTPException(
                         status_code=400, detail=f"Insufficient stock for fry type ID {
                             fry['type_id']} (need {fry_size_value}, have {
-                            fry_type_result.data['STOCK_QUANTITY']})")
-                if fry_seasoning_result.data["STOCK_QUANTITY"] < fry_size_value:
+                            fry_type_data['STOCK_QUANTITY']})")
+                if fry_seasoning_data["STOCK_QUANTITY"] < fry_size_value:
                     raise HTTPException(
                         status_code=400, detail=f"Insufficient stock for fry seasoning ID {
                             fry['seasoning_id']} (need {fry_size_value}, have {
-                            fry_seasoning_result.data['STOCK_QUANTITY']})")
+                            fry_seasoning_data['STOCK_QUANTITY']})")
 
-                fry_price = (float(fry_type_result.data["PRICE"]) +
-                             float(fry_size_result.data["PRICE"]) +
-                             float(fry_seasoning_result.data["PRICE"]))
+                fry_price = (float(fry_type_data["PRICE"]) +
+                             float(fry_size_data["PRICE"]) +
+                             float(fry_seasoning_data["PRICE"]))
 
                 # Store fry data for later creation
                 fry_items_to_create.append({
                     "fry_data": fry,
                     "price": fry_price,
-                    "fry_size_value": fry_size_result.data["FRY_SIZE"]
+                    "fry_size_value": fry_size_data["FRY_SIZE"]
                 })
-                total_price += fry_price
                 total_price += fry_price
 
             # 4. Create ORDER record FIRST (so foreign key constraint is satisfied)
@@ -690,150 +730,141 @@ async def create_order(order: OrderRequest):
                     detail="Failed to create order")
 
             # 5. Now create ORDER_ITEMS and associated items (order exists now)
-            # Process burgers
+            # Build all insert records in memory, then batch-insert each table
+            all_order_items = []
+            all_burger_items = []
+            all_burger_toppings = []
+            all_fry_items = []
+
+            # Collect burger insert records
             for burger_item_data in burger_items_to_create:
                 burger = burger_item_data["burger_data"]
                 burger_price = burger_item_data["price"]
 
-                # Create order item
-                order_item = {
+                all_order_items.append({
                     "ORDER_ITEM_ID": next_order_item_id,
                     "ORDER_ID": next_order_id,
                     "ITEM_TYPE": "BURGER",
                     "UNIT_PRICE": burger_price
-                }
-                order_item_result = order_item_dao.create_record(order_item, cursor=cursor)
-                if not order_item_result.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Failed to create order item")
+                })
 
-                # Create burger item
-                burger_item = {
+                all_burger_items.append({
                     "BURGER_ID": next_burger_id,
                     "ORDER_ITEM_ID": next_order_item_id,
                     "BUN_TYPE": burger["bun_id"],
                     "PATTY_TYPE": burger["patty_id"],
                     "PATTY_COUNT": burger.get("patty_count", 1)
-                }
-                burger_create_result = burger_item_dao.create_record(burger_item, cursor=cursor)
-                if not burger_create_result.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Failed to create burger item")
+                })
 
-                # Create burger toppings
                 for topping in burger["toppings"]:
-                    topping_id = topping["topping_id"]
-                    topping_count = topping.get("count", 1)
-                    burger_topping = {
+                    all_burger_toppings.append({
                         "BURGER_ORDER_ID": next_burger_id,
-                        "TOPPING_ID": topping_id,
-                        "TOPPING_COUNT": topping_count
-                    }
-                    topping_create_result = burger_topping_dao.create_record(
-                        burger_topping, cursor=cursor)
-                    if not topping_create_result.success:
-                        raise HTTPException(
-                            status_code=500, detail="Failed to create burger topping")
+                        "TOPPING_ID": topping["topping_id"],
+                        "TOPPING_COUNT": topping.get("count", 1)
+                    })
 
                 next_order_item_id += 1
                 next_burger_id += 1
 
-            # Process fries
+            # Collect fry insert records
             for fry_item_data in fry_items_to_create:
                 fry = fry_item_data["fry_data"]
                 fry_price = fry_item_data["price"]
 
-                # Create order item
-                order_item = {
+                all_order_items.append({
                     "ORDER_ITEM_ID": next_order_item_id,
                     "ORDER_ID": next_order_id,
                     "ITEM_TYPE": "FRIES",
                     "UNIT_PRICE": fry_price
-                }
-                order_item_result = order_item_dao.create_record(order_item, cursor=cursor)
-                if not order_item_result.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Failed to create order item")
+                })
 
-                # Create fry item
-                fry_item = {
+                all_fry_items.append({
                     "FRY_ID": next_fry_id,
                     "ORDER_ITEM_ID": next_order_item_id,
                     "FRY_TYPE": fry["type_id"],
                     "FRY_SIZE": fry["size_id"],
                     "FRY_SEASONING": fry["seasoning_id"]
-                }
-                fry_create_result = fry_item_dao.create_record(fry_item, cursor=cursor)
-                if not fry_create_result.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Failed to create fry item")
+                })
 
                 next_order_item_id += 1
                 next_fry_id += 1
 
-            # 6. Decrement inventory for all ingredients used
+            # Batch insert all records (one executemany per table)
+            if all_order_items:
+                result = order_item_dao.create_records_batch(all_order_items, cursor=cursor)
+                if not result.success:
+                    raise HTTPException(status_code=500, detail="Failed to create order items")
+            if all_burger_items:
+                result = burger_item_dao.create_records_batch(all_burger_items, cursor=cursor)
+                if not result.success:
+                    raise HTTPException(status_code=500, detail="Failed to create burger items")
+            if all_burger_toppings:
+                result = burger_topping_dao.create_records_batch(all_burger_toppings, cursor=cursor)
+                if not result.success:
+                    raise HTTPException(status_code=500, detail="Failed to create burger toppings")
+            if all_fry_items:
+                result = fry_item_dao.create_records_batch(all_fry_items, cursor=cursor)
+                if not result.success:
+                    raise HTTPException(status_code=500, detail="Failed to create fry items")
+
+            # 6. Decrement inventory for all ingredients used (aggregated by ID)
             LOGGER.debug("Decrementing inventory for order items")
 
-            # Decrement burger ingredients
+            # Aggregate burger ingredient decrements by ID
+            bun_decrements = {}    # bun_id -> total to decrement
+            patty_decrements = {}  # patty_id -> total to decrement
+            topping_decrements = {}  # topping_id -> total to decrement
+
             for burger_item_data in burger_items_to_create:
                 burger = burger_item_data["burger_data"]
                 patty_count = burger.get("patty_count", 1)
 
-                # Decrement bun stock by 1
-                bun_update_result = bun_dao.decrement_stock(burger["bun_id"], 1, cursor=cursor)
-                if not bun_update_result.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to update bun inventory for ID {
-                            burger['bun_id']}")
+                bun_id = burger["bun_id"]
+                bun_decrements[bun_id] = bun_decrements.get(bun_id, 0) - 1
 
-                # Decrement patty stock by patty_count
-                patty_update_result = patty_dao.decrement_stock(
-                    burger["patty_id"], patty_count, cursor=cursor)
-                if not patty_update_result.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to update patty inventory for ID {
-                            burger['patty_id']}")
+                patty_id = burger["patty_id"]
+                patty_decrements[patty_id] = patty_decrements.get(patty_id, 0) - patty_count
 
-                # Decrement topping stock by the specified count for each topping
                 for topping in burger["toppings"]:
-                    topping_id = topping["topping_id"]
-                    topping_count = topping.get("count", 1)
-                    topping_update_result = topping_dao.decrement_stock(
-                        topping_id, topping_count, cursor=cursor)
-                    if not topping_update_result.success:
-                        raise HTTPException(
-                                status_code=500,
-                            detail=f"Failed to update topping inventory for ID {topping_id}")
+                    tid = topping["topping_id"]
+                    tc = topping.get("count", 1)
+                    topping_decrements[tid] = topping_decrements.get(tid, 0) - tc
 
-            # Decrement fry ingredients (using fry_size as multiplier)
+            # Aggregate fry ingredient decrements by ID
+            fry_type_decrements = {}
+            fry_seasoning_decrements = {}
+
             for fry_item_data in fry_items_to_create:
                 fry = fry_item_data["fry_data"]
-                # This is the multiplier (8, 12, 16, 20 oz)
                 fry_size_value = fry_item_data["fry_size_value"]
 
-                # Decrement fry type stock by fry_size
-                fry_type_update_result = fry_type_dao.decrement_stock(
-                    fry["type_id"], fry_size_value, cursor=cursor)
-                if not fry_type_update_result.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to update fry type inventory for ID {
-                            fry['type_id']}")
+                type_id = fry["type_id"]
+                fry_type_decrements[type_id] = fry_type_decrements.get(type_id, 0) - fry_size_value
 
-                # Decrement fry seasoning stock by fry_size
-                fry_seasoning_update_result = fry_seasoning_dao.decrement_stock(
-                    fry["seasoning_id"], fry_size_value, cursor=cursor)
-                if not fry_seasoning_update_result.success:
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Failed to update fry seasoning inventory for ID {
-                            fry['seasoning_id']}")
+                seasoning_id = fry["seasoning_id"]
+                fry_seasoning_decrements[seasoning_id] = fry_seasoning_decrements.get(seasoning_id, 0) - fry_size_value
+
+            # Execute aggregated decrements (one UPDATE per unique ingredient ID)
+            if bun_decrements:
+                result = bun_dao.batch_update_field_by_delta(bun_decrements, "STOCK_QUANTITY", cursor=cursor)
+                if not result.success:
+                    raise HTTPException(status_code=500, detail="Failed to update bun inventory")
+            if patty_decrements:
+                result = patty_dao.batch_update_field_by_delta(patty_decrements, "STOCK_QUANTITY", cursor=cursor)
+                if not result.success:
+                    raise HTTPException(status_code=500, detail="Failed to update patty inventory")
+            if topping_decrements:
+                result = topping_dao.batch_update_field_by_delta(topping_decrements, "STOCK_QUANTITY", cursor=cursor)
+                if not result.success:
+                    raise HTTPException(status_code=500, detail="Failed to update topping inventory")
+            if fry_type_decrements:
+                result = fry_type_dao.batch_update_field_by_delta(fry_type_decrements, "STOCK_QUANTITY", cursor=cursor)
+                if not result.success:
+                    raise HTTPException(status_code=500, detail="Failed to update fry type inventory")
+            if fry_seasoning_decrements:
+                result = fry_seasoning_dao.batch_update_field_by_delta(fry_seasoning_decrements, "STOCK_QUANTITY", cursor=cursor)
+                if not result.success:
+                    raise HTTPException(status_code=500, detail="Failed to update fry seasoning inventory")
 
             # All operations completed successfully - commit happens automatically
             # when exiting the cursor context
