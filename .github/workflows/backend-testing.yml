@@ -32,5 +32,5 @@ jobs:
       - name: Run Pytest
         run: |
           echo "::group::Pytest Results"
-          pytest -o addopts="-ra -vv --tb=short --color=yes --cov=main.backend --cov=main.utilities --cov-report=xml:coverage.xml"
+          pytest -o addopts="-ra -vv --tb=short --color=yes --cov=main.backend --cov=main.utilities --cov-report=html:pytestCov.html"
           echo "::endgroup::"
