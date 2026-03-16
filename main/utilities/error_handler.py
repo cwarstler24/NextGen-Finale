@@ -219,18 +219,10 @@ class ResponseCode:
 
         if (not self.__success):
             self.__logger.error(
-                f"{
-                    self.__error_code}. {
-                    self.__error_tag}: {
-                    self.__message}\n\t\t\tdata: {
-                    self.__data}")
+                f"{self.__error_code}. {self.__error_tag}: {self.__message}\n\t\t\tdata: {self.__data}")
         else:
             self.__logger.info(
-                f"{
-                    self.__error_code}. {
-                    self.__error_tag}: {
-                    self.__message}\n\t\t\tdata: {
-                    self.__data}")
+                f"{self.__error_code}. {self.__error_tag}: {self.__message}\n\t\t\tdata: {self.__data}")
 
     def get_success(self) -> bool:
         return self.__success

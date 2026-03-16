@@ -107,8 +107,7 @@ class DB2ConnectionPool:
                 self._current_size += 1
 
             self.logger.info(
-                f"Created new DB2 connection (pool size: {
-                    self._current_size})")
+                f"Created new DB2 connection (pool size: {self._current_size})")
             return dbi_conn
 
         except Exception as e:
@@ -120,8 +119,7 @@ class DB2ConnectionPool:
     def _initialize_pool(self):
         """Initialize the pool with minimum connections"""
         self.logger.info(
-            f"Initializing connection pool with {
-                self._min_connections} connections")
+            f"Initializing connection pool with {self._min_connections} connections")
         for _ in range(self._min_connections):
             conn = self._create_connection()
             self._pool.put(conn)
@@ -162,8 +160,7 @@ class DB2ConnectionPool:
                     }
                 )
                 raise RuntimeError(
-                    f"Connection pool exhausted. Max connections ({
-                        self._max_connections}) reached. Please return connections to the pool.") from exc
+                    f"Connection pool exhausted. Max connections ({self._max_connections}) reached. Please return connections to the pool.") from exc
 
     def return_connection(self, conn):
         """
@@ -196,8 +193,7 @@ class DB2ConnectionPool:
                 self._current_size -= 1
 
         self.logger.info(
-            f"Removed connection from pool (pool size: {
-                self._current_size})")
+            f"Removed connection from pool (pool size: {self._current_size})")
 
     @contextmanager
     def get_cursor(self):

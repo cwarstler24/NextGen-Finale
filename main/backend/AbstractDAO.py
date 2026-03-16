@@ -242,12 +242,10 @@ class DatabaseAccessObject(ABC):
                 where_clauses = [f"{field} = ?" for field in filters.keys()]
                 where_sql = " AND ".join(where_clauses)
                 values = list(filters.values())
-                sql = f"SELECT * FROM {
-                    self._table_name} WHERE {where_sql} ORDER BY RAND() FETCH FIRST {num_returned} ROWS ONLY"
+                sql = f"SELECT * FROM {self._table_name} WHERE {where_sql} ORDER BY RAND() FETCH FIRST {num_returned} ROWS ONLY"
                 cursor.execute(sql, values)
             else:
-                sql = f"SELECT * FROM {
-                    self._table_name} ORDER BY RAND() FETCH FIRST {num_returned} ROWS ONLY"
+                sql = f"SELECT * FROM {self._table_name} ORDER BY RAND() FETCH FIRST {num_returned} ROWS ONLY"
                 cursor.execute(sql)
             rows = cursor.fetchall()
             if len(rows) < num_returned:
