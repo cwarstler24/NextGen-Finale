@@ -461,9 +461,7 @@ async def create_order(order: OrderRequest):
             sanitized_fries.append(fry_dict)
 
         LOGGER.debug(
-            f"Sanitized {
-                len(sanitized_burgers)} burgers and {
-                len(sanitized_fries)} fries")
+            f"Sanitized {len(sanitized_burgers)} burgers and {len(sanitized_fries)} fries")
 
         # Get all DAOs
         customer_dao = DAOFactory.get_or_create_dao("CustomerDAO")
@@ -526,13 +524,11 @@ async def create_order(order: OrderRequest):
             if not bun_result.success or not bun_result.data:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid bun ID: {
-                        burger['bun_id']}")
+                    detail=f"Invalid bun ID: {burger['bun_id']}")
             if not patty_result.success or not patty_result.data:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid patty ID: {
-                        burger['patty_id']}")
+                    detail=f"Invalid patty ID: {burger['patty_id']}")
 
             bun_price = float(bun_result.data["PRICE"])
             patty_price = float(patty_result.data["PRICE"])
@@ -566,18 +562,15 @@ async def create_order(order: OrderRequest):
             if not fry_type_result.success or not fry_type_result.data:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid fry type ID: {
-                        fry['type_id']}")
+                    detail=f"Invalid fry type ID: {fry['type_id']}")
             if not fry_size_result.success or not fry_size_result.data:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid fry size ID: {
-                        fry['size_id']}")
+                    detail=f"Invalid fry size ID: {fry['size_id']}")
             if not fry_seasoning_result.success or not fry_seasoning_result.data:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid fry seasoning ID: {
-                        fry['seasoning_id']}")
+                    detail=f"Invalid fry seasoning ID: {fry['seasoning_id']}")
 
             fry_price = (float(fry_type_result.data["PRICE"]) +
                          float(fry_size_result.data["PRICE"]) +
@@ -689,8 +682,7 @@ async def create_order(order: OrderRequest):
             next_fry_id += 1
 
         LOGGER.info(
-            f"Order {next_order_id} created successfully with total ${
-                total_price:.2f}")
+            f"Order {next_order_id} created successfully with total ${total_price:.2f}")
 
         return {
             "order_id": next_order_id,

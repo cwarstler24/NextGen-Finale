@@ -158,22 +158,14 @@ class DatabaseAccessObject(ABC):
         Returns:
             ResponseCode: ResponseCode with the record as a dictionary in data
         '''
-        self._logger.debug(
-            f"Getting {
-                self.__class__.__name__} record by {
-                self._primary_key}={key_value}.")
+        self._logger.debug( f"Getting {self.__class__.__name__} record by {self._primary_key}={key_value}.")
 
         with get_db_cursor() as cursor:
-            sql = f"SELECT * FROM {
-                self._table_name} WHERE {
-                self._primary_key} = ?"
+            sql = f"SELECT * FROM {self._table_name} WHERE {self._primary_key} = ?"
             cursor.execute(sql, (key_value,))
             row = cursor.fetchone()
             if row is None:
-                return ResponseCode(
-                    error_tag="NOT_FOUND",
-                    data=f"No record found with {
-                        self._primary_key}={key_value}")
+                return ResponseCode(error_tag="NOT_FOUND", data=f"No record found with {self._primary_key}={key_value}")
             return self._row_to_dict(row)
 
     @db2_safe
@@ -192,9 +184,7 @@ class DatabaseAccessObject(ABC):
                 error_tag="BAD_REQUEST",
                 data="Filter cannot be empty")
 
-        self._logger.debug(
-            f"Getting {
-                self.__class__.__name__} records by fields {filters}.")
+        self._logger.debug(f"Getting {self.__class__.__name__} records by fields {filters}.")
 
         # Build WHERE clause
         where_clauses = [f"{field} = ?" for field in filters.keys()]
@@ -217,9 +207,7 @@ class DatabaseAccessObject(ABC):
         Returns:
             ResponseCode: ResponseCode with list of records as dictionaries
         '''
-        self._logger.debug(
-            f"Getting all {
-                self.__class__.__name__} records with limit {limit}.")
+        self._logger.debug(f"Getting all {self.__class__.__name__} records with limit {limit}.")
 
         with get_db_cursor() as cursor:
             sql = f"SELECT * FROM {self._table_name}"
@@ -247,27 +235,21 @@ class DatabaseAccessObject(ABC):
             ResponseCode: ResponseCode with list of random records
         '''
         filters = filters or {}
-        self._logger.debug(
-            f"Getting {num_returned} random {
-                self.__class__.__name__} records with filters {filters}.")
+        self._logger.debug(f"Getting {num_returned} random {self.__class__.__name__} records with filters {filters}.")
 
         with get_db_cursor() as cursor:
             if filters:
                 where_clauses = [f"{field} = ?" for field in filters.keys()]
                 where_sql = " AND ".join(where_clauses)
                 values = list(filters.values())
-                sql = f"SELECT * FROM {
-                    self._table_name} WHERE {where_sql} ORDER BY RAND() FETCH FIRST {num_returned} ROWS ONLY"
+                sql = f"SELECT * FROM {self._table_name} WHERE {where_sql} ORDER BY RAND() FETCH FIRST {num_returned} ROWS ONLY"
                 cursor.execute(sql, values)
             else:
-                sql = f"SELECT * FROM {
-                    self._table_name} ORDER BY RAND() FETCH FIRST {num_returned} ROWS ONLY"
+                sql = f"SELECT * FROM {self._table_name} ORDER BY RAND() FETCH FIRST {num_returned} ROWS ONLY"
                 cursor.execute(sql)
             rows = cursor.fetchall()
             if len(rows) < num_returned:
-                self._logger.warning(
-                    f"Requested {num_returned}, but only returned {
-                        len(rows)} records.")
+                self._logger.warning(f"Requested {num_returned}, but only returned {len(rows)} records.")
             return [self._row_to_dict(row) for row in rows]
 
     @db2_safe
@@ -290,26 +272,18 @@ class DatabaseAccessObject(ABC):
                 "BAD_REQUEST",
                 "Update payload must not be empty.")
 
-        self._logger.debug(
-            f"Updating {
-                self.__class__.__name__} with {
-                self._primary_key}={key_value}: {updates}.")
+        self._logger.debug(f"Updating {self.__class__.__name__} with {self._primary_key}={key_value}: {updates}.")
 
         # Build UPDATE SET clause using subclass implementation
         set_clause, values = self._build_update_sql(updates)
         values.append(key_value)  # Add primary key value for WHERE clause
 
         with get_db_cursor() as cursor:
-            sql = f"UPDATE {
-                self._table_name} SET {set_clause} WHERE {
-                self._primary_key} = ?"
+            sql = f"UPDATE {self._table_name} SET {set_clause} WHERE {self._primary_key} = ?"
             cursor.execute(sql, values)
             # Check if any rows were updated
             if cursor.rowcount == 0:
-                return ResponseCode(
-                    error_tag="NOT_FOUND",
-                    data=f"No record found with {
-                        self._primary_key}={key_value}")
+                return ResponseCode(error_tag="NOT_FOUND",data=f"No record found with {self._primary_key}={key_value}")
             return key_value
 
     @db2_safe
@@ -324,9 +298,7 @@ class DatabaseAccessObject(ABC):
             ResponseCode: ResponseCode with the created record's primary key
         '''
         entry = self._prepare_entry(entry)
-        self._logger.debug(
-            f"Creating {
-                self.__class__.__name__} record: {entry}.")
+        self._logger.debug(f"Creating {self.__class__.__name__} record: {entry}.")
 
         # Build INSERT SQL using subclass implementation
         insert_sql, values = self._build_insert_sql(entry)
@@ -335,9 +307,7 @@ class DatabaseAccessObject(ABC):
             cursor.execute(insert_sql, values)
             # Get the inserted primary key value
             inserted_id = entry.get(self._primary_key, "unknown")
-            self._logger.debug(
-                f"Created! New {
-                    self._primary_key}: {inserted_id}")
+            self._logger.debug(f"Created! New {self._primary_key}: {inserted_id}")
             return inserted_id
 
     @db2_safe
@@ -351,21 +321,13 @@ class DatabaseAccessObject(ABC):
         Returns:
             ResponseCode: ResponseCode with deleted count
         '''
-        self._logger.debug(
-            f"Deleting {
-                self.__class__.__name__} record with {
-                self._primary_key}={key_value}.")
+        self._logger.debug(f"Deleting {self.__class__.__name__} record with {self._primary_key}={key_value}.")
 
         with get_db_cursor() as cursor:
-            sql = f"DELETE FROM {
-                self._table_name} WHERE {
-                self._primary_key} = ?"
+            sql = f"DELETE FROM {self._table_name} WHERE {self._primary_key} = ?"
             cursor.execute(sql, (key_value,))
             if cursor.rowcount == 0:
-                return ResponseCode(
-                    error_tag="NOT_FOUND",
-                    data=f"No record found with {
-                        self._primary_key}={key_value}")
+                return ResponseCode(error_tag="NOT_FOUND",data=f"No record found with {self._primary_key}={key_value}")
             return {"deleted_count": cursor.rowcount}
 
     @db2_safe
@@ -387,9 +349,7 @@ class DatabaseAccessObject(ABC):
             return ResponseCode("BAD_REQUEST",
                                 "Delete filter must contain only one field.")
 
-        self._logger.debug(
-            f"Deleting {
-                self.__class__.__name__} records by filter {filters}.")
+        self._logger.debug(f"Deleting {self.__class__.__name__} records by filter {filters}.")
 
         field = list(filters.keys())[0]
         value = filters[field]

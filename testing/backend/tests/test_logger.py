@@ -124,6 +124,50 @@ def test_smart_logger_exception_always_dispatches():
     m.assert_called_once()
 
 
+# --- also_print=True branches ---
+
+def test_debug_also_prints_to_stdout(capsys):
+    logger = _SmartLogger("generalLogger")
+    with patch.object(logger._logger, "isEnabledFor", return_value=False):
+        logger.debug("debug-msg", also_print=True)
+    assert "debug-msg" in capsys.readouterr().out
+
+
+def test_info_also_prints_to_stdout(capsys):
+    logger = _SmartLogger("generalLogger")
+    with patch.object(logger._logger, "isEnabledFor", return_value=False):
+        logger.info("info-msg", also_print=True)
+    assert "info-msg" in capsys.readouterr().out
+
+
+def test_warning_also_prints_to_stdout(capsys):
+    logger = _SmartLogger("generalLogger")
+    with patch.object(logger._logger, "isEnabledFor", return_value=False):
+        logger.warning("warning-msg", also_print=True)
+    assert "warning-msg" in capsys.readouterr().out
+
+
+def test_error_also_prints_to_stdout(capsys):
+    logger = _SmartLogger("generalLogger")
+    with patch.object(logger._logger, "isEnabledFor", return_value=False):
+        logger.error("error-msg", also_print=True)
+    assert "error-msg" in capsys.readouterr().out
+
+
+def test_critical_also_prints_to_stdout(capsys):
+    logger = _SmartLogger("generalLogger")
+    with patch.object(logger._logger, "critical"):
+        logger.critical("critical-msg", also_print=True)
+    assert "critical-msg" in capsys.readouterr().out
+
+
+def test_exception_also_prints_to_stdout(capsys):
+    logger = _SmartLogger("generalLogger")
+    with patch.object(logger._logger, "exception"):
+        logger.exception("exception-msg", also_print=True)
+    assert "exception-msg" in capsys.readouterr().out
+
+
 # --- Non-SmartLogger fallback branch ---
 
 def test_get_general_logger_returns_standard_logger_when_smart_disabled(monkeypatch):

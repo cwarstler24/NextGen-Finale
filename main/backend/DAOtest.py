@@ -301,9 +301,7 @@ if __name__ == "__main__":
 
         # Step 3: Check if table exists
         print(
-            f"\nSTEP 3: Checking if table '{
-                schema +
-                '.' if schema else ''}{table_name}' exists...")
+            f"\nSTEP 3: Checking if table '{schema + '.' if schema else ''}{table_name}' exists...")
         print("-" * 60)
 
         if not check_table_exists(schema, table_name):
