@@ -7,6 +7,7 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",
+		"clean:artifacts": "powershell -ExecutionPolicy Bypass -File ./scripts/cleanup-artifacts.ps1",
 		"test": "vitest run --config testing/frontend/vitest.config.ts --coverage",
 		"test:watch": "vitest --config testing/frontend/vitest.config.ts",
 		"lint": "eslint \"main/frontend/src/**/*.{js,mjs,cjs,ts,vue}\" \"testing/frontend/**/*.{js,mjs,cjs,ts}\" --debug"
