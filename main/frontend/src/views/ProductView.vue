@@ -14,8 +14,13 @@ const OPTION_GROUP_METADATA = {
     fries: {
         sizes: { label: 'Size', selectionMode: 'single' },
         types: { label: 'Type', selectionMode: 'single' },
-        seasonings: { label: 'Seasoning', selectionMode: 'multiple' },
+        seasonings: { label: 'Seasoning', selectionMode: 'single' },
     },
+};
+
+const PRODUCT_OPTIONS_ENDPOINTS = {
+    burger: 'http://localhost:8000/Items/Burger',
+    fries: 'http://localhost:8000/Items/Fries',
 };
 
 const router = useRouter();
@@ -90,52 +95,7 @@ const productData = computed(() => {
     }
 });
 
-const rawProductOptions = computed(() => {
-    switch (product.value) {
-        case 'burger':
-            return {
-                buns: [
-                    { id: 101, name: 'Regular', price: 1, quantity: 5 },
-                    { id: 102, name: 'Pretzel', price: 1.5, quantity: 0 },
-                    { id: 103, name: 'None', price: 0, quantity: 10 },
-                ],
-                patties: [
-                    { id: 201, name: 'Regular', price: 3, quantity: 0 },
-                    { id: 202, name: 'Vegan', price: 4, quantity: 5 },
-                    { id: 203, name: 'Dirt', price: 1, quantity: 2 },
-                    { id: 204, name: 'None', price: 0, quantity: 10 },
-                ],
-                toppings: [
-                    { id: 301, name: 'Lettuce', price: 0.5, quantity: 0 },
-                    { id: 302, name: 'Tomato', price: 0.5, quantity: 15 },
-                    { id: 303, name: 'Pickles', price: 0.5, quantity: 10 },
-                    { id: 304, name: 'Mustard', price: 0, quantity: 25 },
-                    { id: 305, name: 'Ketchup', price: 0, quantity: 30 },
-                    { id: 306, name: 'Mayo', price: 0, quantity: 20 },
-                ],
-            };
-        case 'fries':
-            return {
-                sizes: [
-                    { id: 401, name: 'Small', price: 0.5, quantity: 0 },
-                    { id: 402, name: 'Medium', price: 1, quantity: 15 },
-                    { id: 403, name: 'Large', price: 2, quantity: 5 },
-                ],
-                types: [
-                    { id: 501, name: 'Shoe-Lace', price: 0, quantity: 10 },
-                    { id: 502, name: 'Curly', price: 0.5, quantity: 0 },
-                    { id: 503, name: 'Sweet Potato', price: 1, quantity: 5 },
-                ],
-                seasonings: [
-                    { id: 601, name: 'Salt', price: 0, quantity: 20 },
-                    { id: 602, name: 'Cajun', price: 0.5, quantity: 15 },
-                    { id: 603, name: 'Sugar', price: 0.5, quantity: 0 },
-                ],
-            };
-        default:
-            return {};
-    }
-});
+const rawProductOptions = ref({});
 
 const customizationComponent = computed(() => {
     switch (product.value) {
@@ -182,11 +142,39 @@ watch(
     { immediate: true }
 );
 
-watch(product, () => {
-    selectedIndex.value = 0;
-    cartFeedbackMessage.value = '';
-    clearCartFeedbackTimeout();
-});
+watch(
+    product,
+    async (productKey, _previousProductKey, onCleanup) => {
+        selectedIndex.value = 0;
+        cartFeedbackMessage.value = '';
+        clearCartFeedbackTimeout();
+        rawProductOptions.value = {};
+
+        const endpoint = PRODUCT_OPTIONS_ENDPOINTS[productKey];
+        if (!endpoint) {
+            return;
+        }
+
+        const abortController = new AbortController();
+        onCleanup(() => abortController.abort());
+
+        try {
+            const response = await fetch(endpoint, { signal: abortController.signal });
+            if (!response.ok) {
+                throw new Error(`Failed to load ${productKey} options: ${response.status} ${response.statusText}`);
+            }
+
+            rawProductOptions.value = await response.json();
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                return;
+            }
+
+            console.error(`Unable to fetch ${productKey} options`, error);
+        }
+    },
+    { immediate: true }
+);
 
 const totalPrice = computed(() => {
     const base = Number(productData.value.price) || 0;
