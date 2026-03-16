@@ -82,6 +82,7 @@ class ToppingDAO(DatabaseAccessObject):
     def decrement_stock(self, topping_id: int, amount: int, cursor=None):
         '''
         Decrement the stock quantity for a topping by the specified amount.
+        Uses optimized single UPDATE query instead of SELECT + UPDATE.
 
         Args:
             topping_id (int): The ID of the topping to decrement
@@ -91,14 +92,5 @@ class ToppingDAO(DatabaseAccessObject):
         Returns:
             ResponseCode: Result of the stock decrement operation
         '''
-        # Get current record
-        current = self.get_by_key(topping_id, cursor=cursor)
-        if not current.success or not current.data:
-            return current
-        
-        # Calculate new stock
-        current_stock = current.data.get("STOCK_QUANTITY", 0)
-        new_stock = current_stock - amount
-        
-        # Update with new stock
-        return self.update_record(topping_id, {"STOCK_QUANTITY": new_stock}, cursor=cursor)
+        # Use atomic UPDATE operation (single query instead of SELECT + UPDATE)
+        return self.update_field_by_delta(topping_id, "STOCK_QUANTITY", -amount, cursor=cursor)

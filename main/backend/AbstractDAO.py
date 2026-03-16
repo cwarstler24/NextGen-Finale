@@ -382,6 +382,50 @@ class DatabaseAccessObject(ABC):
             cursor.execute(sql, (value,))
             return {"deleted_count": cursor.rowcount}
 
+    @db2_safe
+    def get_max_id(self, cursor=None) -> ResponseCode:
+        '''
+        Get the maximum value of the primary key. Much faster than get_all_records().
+        
+        Args:
+            cursor: Optional cursor for shared transactions
+            
+        Returns:
+            ResponseCode: ResponseCode with the max ID value, or 0 if table is empty
+        '''
+        self._logger.debug(f"Getting max {self._primary_key} from {self.__class__.__name__}.")
+        
+        with self._cursor_context(cursor) as (cur, should_commit):
+            sql = f"SELECT MAX({self._primary_key}) as MAX_ID FROM {self._table_name}"
+            cur.execute(sql)
+            row = cur.fetchone()
+            max_id = row[0] if row and row[0] is not None else 0
+            return max_id
+
+    @db2_safe
+    def update_field_by_delta(self, key_value: Any, field_name: str, delta: int, cursor=None) -> ResponseCode:
+        '''
+        Update a numeric field by adding a delta value. Useful for stock decrements.
+        Uses a single atomic UPDATE instead of SELECT + UPDATE.
+        
+        Args:
+            key_value (Any): The value of the primary key
+            field_name (str): Name of the field to update (e.g., "STOCK_QUANTITY")
+            delta (int): Amount to add (use negative for decrement)
+            cursor: Optional cursor for shared transactions
+            
+        Returns:
+            ResponseCode: ResponseCode with success status
+        '''
+        self._logger.debug(f"Updating {field_name} by {delta} for {self.__class__.__name__} with {self._primary_key}={key_value}.")
+        
+        with self._cursor_context(cursor) as (cur, should_commit):
+            sql = f"UPDATE {self._table_name} SET {field_name} = {field_name} + ? WHERE {self._primary_key} = ?"
+            cur.execute(sql, (delta, key_value))
+            if cur.rowcount == 0:
+                return ResponseCode(error_tag="NOT_FOUND", data=f"No record found with {self._primary_key}={key_value}")
+            return {"updated_count": cur.rowcount}
+
     def execute_join_query(
         self,
         select_clause: str,
