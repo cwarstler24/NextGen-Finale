@@ -86,6 +86,7 @@ class DB2ConnectionPool:
         self._schema = None
         self._environment = None
         self._test_data = None
+        self._pool_initialized = True
 
         # Load database setup configuration
         self._load_database_setup()
@@ -177,8 +178,6 @@ class DB2ConnectionPool:
         Raises:
             Exception: If unable to get a connection
         """
-        self._ensure_pool_initialized()
-
         try:
             # Try to get an existing connection from the pool
             conn = self._pool.get(timeout=timeout)
