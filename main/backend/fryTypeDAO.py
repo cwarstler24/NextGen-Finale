@@ -78,3 +78,26 @@ class FryTypeDAO(DatabaseAccessObject):
         set_clause = ", ".join(set_clauses)
         values = list(updates.values())
         return (set_clause, values)
+
+    def decrement_stock(self, fry_type_id: int, amount: int):
+        '''
+        Decrement the stock quantity for a fry type by the specified amount.
+
+        Args:
+            fry_type_id (int): The ID of the fry type to decrement
+            amount (int): The amount to decrement by
+
+        Returns:
+            ResponseCode: Result of the stock decrement operation
+        '''
+        # Get current record
+        current = self.get_by_key(fry_type_id)
+        if not current.success or not current.data:
+            return current
+        
+        # Calculate new stock
+        current_stock = current.data.get("STOCK_QUANTITY", 0)
+        new_stock = current_stock - amount
+        
+        # Update with new stock
+        return self.update_record(fry_type_id, {"STOCK_QUANTITY": new_stock})

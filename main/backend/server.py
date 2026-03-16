@@ -71,7 +71,6 @@ class FrySizeItem(BaseModel):
     id: int
     name: str
     price: float
-    quantity: int
 
 
 class FryTypeItem(BaseModel):
@@ -125,9 +124,17 @@ class BurgerResponse(BaseModel):
 # --- Customer Models ---
 
 
+class OrderItemSummary(BaseModel):
+    item_type: str
+    name: str
+    price: float
+
+
 class OrderSummary(BaseModel):
+    order_id: int
     date: datetime
     price: float
+    items: List[OrderItemSummary]
 
 
 class CustomerResponse(BaseModel):
@@ -225,8 +232,7 @@ async def get_fries_items():
             {
                 "id": item["FRY_SIZE_ID"],
                 "name": f"{item['FRY_SIZE']} oz",
-                "price": float(item["PRICE"]),
-                "quantity": item["STOCK_QUANTITY"]
+                "price": float(item["PRICE"])
             }
             for item in sizes_result.data
         ]
@@ -368,6 +374,8 @@ async def get_customer(email: str):
 
         # Get DAOs from factory
         customer_dao = DAOFactory.get_or_create_dao("CustomerDAO")
+        order_item_dao = DAOFactory.get_or_create_dao("OrderItemDAO")
+        burger_item_dao = DAOFactory.get_or_create_dao("BurgerItemDAO")
 
         # Fetch customer with orders using the join method
         customer_result = customer_dao.get_customer_with_orders(
@@ -400,9 +408,52 @@ async def get_customer(email: str):
         orders = []
         for row in customer_result.data:
             if row.get("ORDER_ID") is not None:
+                order_id = row["ORDER_ID"]
+
+                # Get order items with details
+                order_items_result = order_item_dao.get_all_order_items_with_details(
+                    order_id)
+
+                items = []
+                if order_items_result.success and order_items_result.data:
+                    # Process burgers
+                    for burger in order_items_result.data.get("burgers", []):
+                        patty_count = burger.get("PATTY_COUNT", 1)
+                        patty_text = f"{patty_count} {
+                            burger['PATTY_NAME']}" if patty_count > 1 else burger['PATTY_NAME']
+
+                        # Get toppings for this burger
+                        toppings_result = burger_item_dao.get_burger_toppings(
+                            burger["BURGER_ID"])
+                        topping_names = []
+                        if toppings_result.success and toppings_result.data:
+                            topping_names = [topping["TOPPING_NAME"]
+                                             for topping in toppings_result.data]
+
+                        # Build burger description
+                        burger_name = f"{burger['BUN_NAME']} with {patty_text}"
+                        if topping_names:
+                            burger_name += f" and {', '.join(topping_names)}"
+
+                        items.append({
+                            "item_type": "Burger",
+                            "name": burger_name,
+                            "price": float(burger["UNIT_PRICE"])
+                        })
+
+                    # Process fries
+                    for fry in order_items_result.data.get("fries", []):
+                        items.append({
+                            "item_type": "Fries",
+                            "name": f"{fry['SIZE_VALUE']}oz {fry['TYPE_NAME']} with {fry['SEASONING_NAME']}",
+                            "price": float(fry["UNIT_PRICE"])
+                        })
+
                 orders.append({
+                    "order_id": order_id,
                     "date": row["PURCHASE_DATE"],
-                    "price": float(row["TOTAL_PRICE"])
+                    "price": float(row["TOTAL_PRICE"]),
+                    "items": items
                 })
 
         return {
@@ -461,9 +512,7 @@ async def create_order(order: OrderRequest):
             sanitized_fries.append(fry_dict)
 
         LOGGER.debug(
-            f"Sanitized {
-                len(sanitized_burgers)} burgers and {
-                len(sanitized_fries)} fries")
+            f"Sanitized {len(sanitized_burgers)} burgers and {len(sanitized_fries)} fries")
 
         # Get all DAOs
         customer_dao = DAOFactory.get_or_create_dao("CustomerDAO")
@@ -534,6 +583,18 @@ async def create_order(order: OrderRequest):
                     detail=f"Invalid patty ID: {
                         burger['patty_id']}")
 
+            # Check inventory availability
+            patty_count = burger.get("patty_count", 1)
+            if bun_result.data["STOCK_QUANTITY"] < 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Insufficient stock for bun ID {burger['bun_id']}")
+            if patty_result.data["STOCK_QUANTITY"] < patty_count:
+                raise HTTPException(
+                    status_code=400, detail=f"Insufficient stock for patty ID {
+                        burger['patty_id']} (need {patty_count}, have {
+                        patty_result.data['STOCK_QUANTITY']})")
+
             bun_price = float(bun_result.data["PRICE"])
             patty_price = float(patty_result.data["PRICE"])
             burger_price = bun_price + patty_price
@@ -545,6 +606,11 @@ async def create_order(order: OrderRequest):
                     raise HTTPException(
                         status_code=400,
                         detail=f"Invalid topping ID: {topping_id}")
+                # Check topping inventory
+                if topping_result.data["STOCK_QUANTITY"] < 1:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Insufficient stock for topping ID {topping_id}")
                 burger_price += float(topping_result.data["PRICE"])
 
             # Store burger data for later creation
@@ -579,6 +645,20 @@ async def create_order(order: OrderRequest):
                     detail=f"Invalid fry seasoning ID: {
                         fry['seasoning_id']}")
 
+            # Check inventory availability (fry_size is the multiplier for
+            # stock usage)
+            fry_size_value = fry_size_result.data["FRY_SIZE"]
+            if fry_type_result.data["STOCK_QUANTITY"] < fry_size_value:
+                raise HTTPException(
+                    status_code=400, detail=f"Insufficient stock for fry type ID {
+                        fry['type_id']} (need {fry_size_value}, have {
+                        fry_type_result.data['STOCK_QUANTITY']})")
+            if fry_seasoning_result.data["STOCK_QUANTITY"] < fry_size_value:
+                raise HTTPException(
+                    status_code=400, detail=f"Insufficient stock for fry seasoning ID {
+                        fry['seasoning_id']} (need {fry_size_value}, have {
+                        fry_seasoning_result.data['STOCK_QUANTITY']})")
+
             fry_price = (float(fry_type_result.data["PRICE"]) +
                          float(fry_size_result.data["PRICE"]) +
                          float(fry_seasoning_result.data["PRICE"]))
@@ -586,7 +666,8 @@ async def create_order(order: OrderRequest):
             # Store fry data for later creation
             fry_items_to_create.append({
                 "fry_data": fry,
-                "price": fry_price
+                "price": fry_price,
+                "fry_size_value": fry_size_result.data["FRY_SIZE"]
             })
             total_price += fry_price
 
@@ -687,6 +768,64 @@ async def create_order(order: OrderRequest):
 
             next_order_item_id += 1
             next_fry_id += 1
+
+        # 6. Decrement inventory for all ingredients used
+        LOGGER.debug("Decrementing inventory for order items")
+
+        # Decrement burger ingredients
+        for burger_item_data in burger_items_to_create:
+            burger = burger_item_data["burger_data"]
+            patty_count = burger.get("patty_count", 1)
+
+            # Decrement bun stock by 1
+            bun_update_result = bun_dao.decrement_stock(burger["bun_id"], 1)
+            if not bun_update_result.success:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to update bun inventory for ID {
+                        burger['bun_id']}")
+
+            # Decrement patty stock by patty_count
+            patty_update_result = patty_dao.decrement_stock(
+                burger["patty_id"], patty_count)
+            if not patty_update_result.success:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to update patty inventory for ID {
+                        burger['patty_id']}")
+
+            # Decrement topping stock by 1 for each topping
+            for topping_id in burger["topping_ids"]:
+                topping_update_result = topping_dao.decrement_stock(
+                    topping_id, 1)
+                if not topping_update_result.success:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to update topping inventory for ID {topping_id}")
+
+        # Decrement fry ingredients (using fry_size as multiplier)
+        for fry_item_data in fry_items_to_create:
+            fry = fry_item_data["fry_data"]
+            # This is the multiplier (8, 12, 16, 20 oz)
+            fry_size_value = fry_item_data["fry_size_value"]
+
+            # Decrement fry type stock by fry_size
+            fry_type_update_result = fry_type_dao.decrement_stock(
+                fry["type_id"], fry_size_value)
+            if not fry_type_update_result.success:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to update fry type inventory for ID {
+                        fry['type_id']}")
+
+            # Decrement fry seasoning stock by fry_size
+            fry_seasoning_update_result = fry_seasoning_dao.decrement_stock(
+                fry["seasoning_id"], fry_size_value)
+            if not fry_seasoning_update_result.success:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to update fry seasoning inventory for ID {
+                        fry['seasoning_id']}")
 
         LOGGER.info(
             f"Order {next_order_id} created successfully with total ${
