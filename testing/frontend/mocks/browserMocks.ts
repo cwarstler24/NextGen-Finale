@@ -7,8 +7,9 @@ export const localStorageMock = {
     clear: vi.fn(),
 };
 
-export const fetchMock = vi.fn(() =>
+export const fetchMock = vi.fn((_input?: unknown) =>
     Promise.resolve({
+        ok: true,
         json: () => Promise.resolve({}),
     })
 );
