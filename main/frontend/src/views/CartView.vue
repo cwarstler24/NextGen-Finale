@@ -11,6 +11,12 @@ function formatCurrency(value) {
 
 function formatOptionValue(value) {
     if (Array.isArray(value)) {
+        if (value.every((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))) {
+            return value.length > 0
+                ? value.map((entry) => `${entry.name ?? entry.id} x${entry.quantity ?? 1}`).join(', ')
+                : 'None selected';
+        }
+
         return value.length > 0 ? value.join(', ') : 'None selected';
     }
 

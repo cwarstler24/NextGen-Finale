@@ -120,7 +120,7 @@ class BurgerItemDAO(DatabaseAccessObject):
         '''
         return self.execute_join_query(
             select_clause="""
-                t.TOPPING_ID, t.TOPPING_NAME, t.PRICE, t.STOCK_QUANTITY
+                b.BURGER_ID, t.TOPPING_ID, t.TOPPING_NAME, t.PRICE, t.STOCK_QUANTITY, bit.TOPPING_COUNT
             """,
             join_clauses=[
                 "INNER JOIN TBBURGER_TOPPINGS bit ON b.BURGER_ID = bit.BURGER_ORDER_ID",

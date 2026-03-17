@@ -26,8 +26,91 @@ function parseOptionIds(rawValue, optionLabel, itemName) {
     return parsedIds;
 }
 
+function parseToppingSelections(rawValue, itemName) {
+    if (!Array.isArray(rawValue)) {
+        throw new Error(`Invalid topping selection for ${itemName}.`);
+    }
+
+    return rawValue.map((entry) => {
+        const parsedId = Number.parseInt(entry?.id, 10);
+        const parsedQuantity = Number.parseInt(entry?.quantity, 10);
+
+        if (!Number.isInteger(parsedId) || !Number.isInteger(parsedQuantity) || parsedQuantity < 1) {
+            throw new Error(`Invalid topping selection for ${itemName}.`);
+        }
+
+        return {
+            topping_id: parsedId,
+            count: parsedQuantity,
+        };
+    });
+}
+
+function parseSingleQuantitySelection(rawValue, optionLabel, itemName) {
+    if (!Array.isArray(rawValue) || rawValue.length !== 1) {
+        throw new Error(`Invalid ${optionLabel} selection for ${itemName}.`);
+    }
+
+    const parsedQuantity = Number.parseInt(rawValue[0]?.quantity, 10);
+    if (!Number.isInteger(parsedQuantity) || parsedQuantity < 1) {
+        throw new Error(`Invalid ${optionLabel} quantity for ${itemName}.`);
+    }
+
+    return parsedQuantity;
+}
+
 function getOption(item, optionName) {
     return item.options.find((option) => option.name.toLowerCase() === optionName.toLowerCase());
+}
+
+function formatApiErrorDetail(detail) {
+    if (typeof detail === 'string' && detail.trim() !== '') {
+        return detail;
+    }
+
+    if (Array.isArray(detail)) {
+        const messages = detail
+            .map((entry) => {
+                if (typeof entry === 'string' && entry.trim() !== '') {
+                    return entry;
+                }
+
+                if (!entry || typeof entry !== 'object') {
+                    return null;
+                }
+
+                const fieldPath = Array.isArray(entry.loc)
+                    ? entry.loc
+                        .filter((segment) => typeof segment === 'string' || typeof segment === 'number')
+                        .slice(1)
+                        .join('.')
+                    : '';
+                const message = typeof entry.msg === 'string' && entry.msg.trim() !== ''
+                    ? entry.msg
+                    : JSON.stringify(entry);
+
+                return fieldPath ? `${fieldPath}: ${message}` : message;
+            })
+            .filter((message) => typeof message === 'string' && message.trim() !== '');
+
+        return messages.length > 0 ? messages.join('; ') : null;
+    }
+
+    if (detail && typeof detail === 'object') {
+        if (typeof detail.message === 'string' && detail.message.trim() !== '') {
+            return detail.message;
+        }
+
+        return JSON.stringify(detail);
+    }
+
+    return null;
+}
+
+function getResponseErrorMessage(responseData, fallbackMessage) {
+    return formatApiErrorDetail(responseData?.detail)
+        ?? formatApiErrorDetail(responseData?.message)
+        ?? fallbackMessage;
 }
 
 function buildOrderPayload() {
@@ -43,9 +126,8 @@ function buildOrderPayload() {
             if (item.id === 'burger') {
                 const bunIds = parseOptionIds(getOption(item, 'Bun')?.id, 'bun', item.name);
                 const pattyIds = parseOptionIds(getOption(item, 'Patty')?.id, 'patty', item.name);
-                const toppingIds = parseOptionIds(getOption(item, 'Toppings')?.id ?? [], 'topping', item.name);
-                // TODO remove hardcoded patty count once multiple patties are supported
-                const pattyCount = 1;
+                const toppingIds = parseToppingSelections(getOption(item, 'Toppings')?.id ?? [], item.name);
+                const pattyCount = parseSingleQuantitySelection(getOption(item, 'Patty')?.value, 'patty', item.name);
 
                 if (bunIds.length !== 1 || pattyIds.length !== 1) {
                     throw new Error(`Burger selections are incomplete for ${item.name}.`);
@@ -54,7 +136,7 @@ function buildOrderPayload() {
                 burgers.push({
                     bun_id: bunIds[0],
                     patty_id: pattyIds[0],
-                    topping_ids: toppingIds,
+                    toppings: toppingIds,
                     patty_count: pattyCount,
                 });
                 continue;
@@ -112,14 +194,17 @@ const purchase = async () => {
 
         const responseData = await response.json().catch(() => null);
         if (!response.ok) {
-            throw new Error(responseData?.detail ?? responseData?.message ?? `Checkout failed: ${response.status} ${response.statusText}`);
+            throw new Error(getResponseErrorMessage(
+                responseData,
+                `Checkout failed: ${response.status} ${response.statusText}`
+            ));
         }
 
         clearCart();
         alert(`Order placed successfully${responseData?.order_id ? ` (#${responseData.order_id})` : ''}.`);
         router.push({ name: 'main' });
     } catch (error) {
-        console.error('Unable to place order', error);
+        console.error('Unable to place order');
         alert(error instanceof Error ? error.message : 'Unable to place order.');
     } finally {
         isSubmitting.value = false;

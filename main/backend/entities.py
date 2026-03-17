@@ -47,7 +47,6 @@ class DatabaseEntity(ABC):
         Returns:
             dict[str, Any]: Dictionary containing all entity fields
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -61,7 +60,6 @@ class DatabaseEntity(ABC):
         Returns:
             DatabaseEntity: New instance of the entity
         """
-        pass
 
     @abstractmethod
     def get_primary_key(self) -> Any:
@@ -71,7 +69,6 @@ class DatabaseEntity(ABC):
         Returns:
             Any: The primary key value
         """
-        pass
 
     def __repr__(self) -> str:
         """String representation of the entity"""
@@ -261,22 +258,26 @@ class BurgerItemTopping(DatabaseEntity):
     def __init__(
         self,
         topping_id: int,
-        burger_order_id: int
+        burger_order_id: int,
+        topping_count: int = 1
     ):
         self.topping_id = topping_id
         self.burger_order_id = burger_order_id
+        self.topping_count = topping_count
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "TOPPING_ID": self.topping_id,
-            "BURGER_ORDER_ID": self.burger_order_id
+            "BURGER_ORDER_ID": self.burger_order_id,
+            "TOPPING_COUNT": self.topping_count
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> 'BurgerItemTopping':
         return cls(
             topping_id=data.get("TOPPING_ID"),
-            burger_order_id=data.get("BURGER_ORDER_ID")
+            burger_order_id=data.get("BURGER_ORDER_ID"),
+            topping_count=data.get("TOPPING_COUNT", 1)
         )
 
     def get_primary_key(self) -> tuple[int, int]:
@@ -497,19 +498,16 @@ class FrySize(DatabaseEntity):
         self,
         fry_size_id: int,
         fry_size: int,
-        stock_quantity: int,
         price: Decimal
     ):
         self.fry_size_id = fry_size_id
         self.fry_size = fry_size
-        self.stock_quantity = stock_quantity
         self.price = price
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "FRY_SIZE_ID": self.fry_size_id,
             "FRY_SIZE": self.fry_size,
-            "STOCK_QUANTITY": self.stock_quantity,
             "PRICE": float(self.price) if self.price else None
         }
 
@@ -518,7 +516,6 @@ class FrySize(DatabaseEntity):
         return cls(
             fry_size_id=data.get("FRY_SIZE_ID"),
             fry_size=data.get("FRY_SIZE"),
-            stock_quantity=data.get("STOCK_QUANTITY"),
             price=Decimal(str(data.get("PRICE"))) if data.get("PRICE") else None
         )
 
