@@ -130,6 +130,31 @@ class BurgerItemDAO(DatabaseAccessObject):
             parameters=[burger_id]
         )
 
+    def get_toppings_for_burgers(self, burger_ids: list[int]) -> ResponseCode:
+        '''
+        Get all toppings for multiple burgers in a single query.
+
+        Args:
+            burger_ids (list[int]): List of burger item IDs
+
+        Returns:
+            ResponseCode: List of toppings with BURGER_ID for grouping
+        '''
+        if not burger_ids:
+            return ResponseCode("SUCCESS", [])
+        placeholders = ", ".join(["?"] * len(burger_ids))
+        return self.execute_join_query(
+            select_clause="""
+                b.BURGER_ID, t.TOPPING_ID, t.TOPPING_NAME, t.PRICE, t.STOCK_QUANTITY, bit.TOPPING_COUNT
+            """,
+            join_clauses=[
+                "INNER JOIN TBBURGER_TOPPINGS bit ON b.BURGER_ID = bit.BURGER_ORDER_ID",
+                "INNER JOIN TBTOPPINGS t ON bit.TOPPING_ID = t.TOPPING_ID"
+            ],
+            where_clause=f"b.BURGER_ID IN ({placeholders})",
+            parameters=burger_ids
+        )
+
     def get_burger_complete(self, burger_id: int) -> ResponseCode:
         '''
         Get complete burger information including bun, patty, and all toppings.

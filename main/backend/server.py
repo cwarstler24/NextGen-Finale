@@ -411,49 +411,90 @@ async def get_customer(email: str):
 
         # Marshall orders (filter out rows with no order - LEFT JOIN can have
         # NULL ORDER_ID)
+        order_ids = [
+            row["ORDER_ID"] for row in customer_result.data
+            if row.get("ORDER_ID") is not None
+        ]
+
+        # Batch-fetch all burgers and fries for all orders in 2 queries
+        all_burgers = []
+        all_fries = []
+        if order_ids:
+            burgers_result = order_item_dao.get_burgers_for_orders(order_ids)
+            if burgers_result.success and burgers_result.data:
+                all_burgers = burgers_result.data
+
+            fries_result = order_item_dao.get_fries_for_orders(order_ids)
+            if fries_result.success and fries_result.data:
+                all_fries = fries_result.data
+
+        # Batch-fetch all toppings for all burgers in 1 query
+        burger_ids = [b["BURGER_ID"] for b in all_burgers]
+        all_toppings = []
+        if burger_ids:
+            toppings_result = burger_item_dao.get_toppings_for_burgers(burger_ids)
+            if toppings_result.success and toppings_result.data:
+                all_toppings = toppings_result.data
+
+        # Group toppings by burger ID for fast lookup
+        toppings_by_burger = {}
+        for topping in all_toppings:
+            bid = topping["BURGER_ID"]
+            if bid not in toppings_by_burger:
+                toppings_by_burger[bid] = []
+            toppings_by_burger[bid].append(topping)
+
+        # Group burgers and fries by order ID
+        burgers_by_order = {}
+        for burger in all_burgers:
+            oid = burger["ORDER_ID"]
+            if oid not in burgers_by_order:
+                burgers_by_order[oid] = []
+            burgers_by_order[oid].append(burger)
+
+        fries_by_order = {}
+        for fry in all_fries:
+            oid = fry["ORDER_ID"]
+            if oid not in fries_by_order:
+                fries_by_order[oid] = []
+            fries_by_order[oid].append(fry)
+
+        # Assemble the response
         orders = []
         for row in customer_result.data:
             if row.get("ORDER_ID") is not None:
                 order_id = row["ORDER_ID"]
-
-                # Get order items with details
-                order_items_result = order_item_dao.get_all_order_items_with_details(
-                    order_id)
-
                 items = []
-                if order_items_result.success and order_items_result.data:
-                    # Process burgers
-                    for burger in order_items_result.data.get("burgers", []):
-                        patty_count = burger.get("PATTY_COUNT", 1)
-                        patty_text = f"{patty_count} {
-                            burger['PATTY_NAME']}" if patty_count > 1 else burger['PATTY_NAME']
 
-                        # Get toppings for this burger
-                        toppings_result = burger_item_dao.get_burger_toppings(
-                            burger["BURGER_ID"])
-                        topping_names = []
-                        if toppings_result.success and toppings_result.data:
-                            topping_names = [topping["TOPPING_NAME"]
-                                             for topping in toppings_result.data]
+                # Process burgers for this order
+                for burger in burgers_by_order.get(order_id, []):
+                    patty_count = burger.get("PATTY_COUNT", 1)
+                    patty_text = f"{patty_count} {
+                        burger['PATTY_NAME']}" if patty_count > 1 else burger['PATTY_NAME']
 
-                        # Build burger description
-                        burger_name = f"{burger['BUN_NAME']} with {patty_text}"
-                        if topping_names:
-                            burger_name += f" and {', '.join(topping_names)}"
+                    # Look up toppings from pre-fetched data
+                    topping_names = [
+                        t["TOPPING_NAME"]
+                        for t in toppings_by_burger.get(burger["BURGER_ID"], [])
+                    ]
 
-                        items.append({
-                            "item_type": "Burger",
-                            "name": burger_name,
-                            "price": float(burger["UNIT_PRICE"])
-                        })
+                    burger_name = f"{burger['BUN_NAME']} with {patty_text}"
+                    if topping_names:
+                        burger_name += f" and {', '.join(topping_names)}"
 
-                    # Process fries
-                    for fry in order_items_result.data.get("fries", []):
-                        items.append({
-                            "item_type": "Fries",
-                            "name": f"{fry['SIZE_VALUE']}oz {fry['TYPE_NAME']} with {fry['SEASONING_NAME']}",
-                            "price": float(fry["UNIT_PRICE"])
-                        })
+                    items.append({
+                        "item_type": "Burger",
+                        "name": burger_name,
+                        "price": float(burger["UNIT_PRICE"])
+                    })
+
+                # Process fries for this order
+                for fry in fries_by_order.get(order_id, []):
+                    items.append({
+                        "item_type": "Fries",
+                        "name": f"{fry['SIZE_VALUE']}oz {fry['TYPE_NAME']} with {fry['SEASONING_NAME']}",
+                        "price": float(fry["UNIT_PRICE"])
+                    })
 
                 orders.append({
                     "order_id": order_id,

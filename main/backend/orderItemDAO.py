@@ -153,3 +153,63 @@ class OrderItemDAO(DatabaseAccessObject):
         }
 
         return ResponseCode("SUCCESS", combined_data)
+
+    def get_burgers_for_orders(self, order_ids: list[int]) -> ResponseCode:
+        '''
+        Get all burger order items for multiple orders in a single query.
+
+        Args:
+            order_ids (list[int]): List of order IDs
+
+        Returns:
+            ResponseCode: List of burger order items with ingredient details
+        '''
+        if not order_ids:
+            return ResponseCode("SUCCESS", [])
+        placeholders = ", ".join(["?"] * len(order_ids))
+        return self.execute_join_query(
+            select_clause="""
+                oi.ORDER_ITEM_ID, oi.ORDER_ID, oi.ITEM_TYPE, oi.UNIT_PRICE,
+                b.BURGER_ID, b.PATTY_COUNT,
+                bt.BUN_NAME, bt.PRICE AS BUN_PRICE,
+                pt.PATTY_NAME, pt.PRICE AS PATTY_PRICE
+            """,
+            join_clauses=[
+                "INNER JOIN TBBURGER_ITEMS b ON oi.ORDER_ITEM_ID = b.ORDER_ITEM_ID",
+                "INNER JOIN TBBUN_TYPES bt ON b.BUN_TYPE = bt.BUN_ID",
+                "INNER JOIN TBPATTY_TYPES pt ON b.PATTY_TYPE = pt.PATTY_ID"
+            ],
+            where_clause=f"oi.ORDER_ID IN ({placeholders}) AND oi.ITEM_TYPE = 'BURGER'",
+            parameters=order_ids
+        )
+
+    def get_fries_for_orders(self, order_ids: list[int]) -> ResponseCode:
+        '''
+        Get all fry order items for multiple orders in a single query.
+
+        Args:
+            order_ids (list[int]): List of order IDs
+
+        Returns:
+            ResponseCode: List of fry order items with ingredient details
+        '''
+        if not order_ids:
+            return ResponseCode("SUCCESS", [])
+        placeholders = ", ".join(["?"] * len(order_ids))
+        return self.execute_join_query(
+            select_clause="""
+                oi.ORDER_ITEM_ID, oi.ORDER_ID, oi.ITEM_TYPE, oi.UNIT_PRICE,
+                f.FRY_ID,
+                ft.FRY_TYPE_NAME AS TYPE_NAME, ft.PRICE AS TYPE_PRICE,
+                fs.FRY_SIZE AS SIZE_VALUE, fs.PRICE AS SIZE_PRICE,
+                fse.FRY_SEASONING_NAME AS SEASONING_NAME, fse.PRICE AS SEASONING_PRICE
+            """,
+            join_clauses=[
+                "INNER JOIN TBFRY_ITEMS f ON oi.ORDER_ITEM_ID = f.ORDER_ITEM_ID",
+                "INNER JOIN TBFRY_TYPES ft ON f.FRY_TYPE = ft.FRY_TYPE_ID",
+                "INNER JOIN TBFRY_SIZES fs ON f.FRY_SIZE = fs.FRY_SIZE_ID",
+                "INNER JOIN TBFRY_SEASONINGS fse ON f.FRY_SEASONING = fse.FRY_SEASONING_ID"
+            ],
+            where_clause=f"oi.ORDER_ID IN ({placeholders}) AND oi.ITEM_TYPE = 'FRIES'",
+            parameters=order_ids
+        )
