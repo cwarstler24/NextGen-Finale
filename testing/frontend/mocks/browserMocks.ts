@@ -7,11 +7,13 @@ export const localStorageMock = {
     clear: vi.fn(),
 };
 
-export const fetchMock = vi.fn(() =>
-    Promise.resolve({
+export const fetchMock = vi.fn((input?: unknown) => {
+    void input;
+    return Promise.resolve({
+        ok: true,
         json: () => Promise.resolve({}),
-    })
-);
+    });
+});
 
 Object.defineProperty(globalThis, 'localStorage', {
     value: localStorageMock,

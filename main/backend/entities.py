@@ -47,7 +47,6 @@ class DatabaseEntity(ABC):
         Returns:
             dict[str, Any]: Dictionary containing all entity fields
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -61,7 +60,6 @@ class DatabaseEntity(ABC):
         Returns:
             DatabaseEntity: New instance of the entity
         """
-        pass
 
     @abstractmethod
     def get_primary_key(self) -> Any:
@@ -71,7 +69,6 @@ class DatabaseEntity(ABC):
         Returns:
             Any: The primary key value
         """
-        pass
 
     def __repr__(self) -> str:
         """String representation of the entity"""
@@ -261,10 +258,12 @@ class BurgerItemTopping(DatabaseEntity):
     def __init__(
         self,
         topping_id: int,
-        burger_order_id: int
+        burger_order_id: int,
+        topping_count: int = 1
     ):
         self.topping_id = topping_id
         self.burger_order_id = burger_order_id
+        self.topping_count = topping_count
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -276,7 +275,8 @@ class BurgerItemTopping(DatabaseEntity):
     def from_dict(cls, data: dict[str, Any]) -> 'BurgerItemTopping':
         return cls(
             topping_id=data.get("TOPPING_ID"),
-            burger_order_id=data.get("BURGER_ORDER_ID")
+            burger_order_id=data.get("BURGER_ORDER_ID"),
+            topping_count=data.get("TOPPING_COUNT", 1)
         )
 
     def get_primary_key(self) -> tuple[int, int]:

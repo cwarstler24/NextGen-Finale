@@ -78,3 +78,19 @@ class PattyTypeDAO(DatabaseAccessObject):
         set_clause = ", ".join(set_clauses)
         values = list(updates.values())
         return (set_clause, values)
+
+    def decrement_stock(self, patty_id: int, amount: int, cursor=None):
+        '''
+        Decrement the stock quantity for a patty type by the specified amount.
+        Uses optimized single UPDATE query instead of SELECT + UPDATE.
+
+        Args:
+            patty_id (int): The ID of the patty type to decrement
+            amount (int): The amount to decrement by
+            cursor: Optional cursor for shared transactions
+
+        Returns:
+            ResponseCode: Result of the stock decrement operation
+        '''
+        # Use atomic UPDATE operation (single query instead of SELECT + UPDATE)
+        return self.update_field_by_delta(patty_id, "STOCK_QUANTITY", -amount, cursor=cursor)

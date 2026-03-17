@@ -11,7 +11,7 @@
 		"test": "vitest run --config testing/frontend/vitest.config.ts --coverage",
 		"test:watch": "vitest --config testing/frontend/vitest.config.ts",
 		"lint": "eslint \"main/frontend/src/**/*.{js,mjs,cjs,ts,vue}\" \"testing/frontend/**/*.{js,mjs,cjs,ts}\" --debug"
-		},
+	},
 	"dependencies": {
 		"vue": "^3.5.13",
 		"vue-router": "^4.6.4"

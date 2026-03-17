@@ -1,0 +1,59 @@
+{
+  "environment": "TEST",
+  "schemas": {
+    "PRODUCTION": "SKYFAL",
+    "TEST": "TSTFAL"
+  },
+  "test_data": {
+    "TBBUN_TYPES": [
+      {"BUN_ID": 1, "BUN_NAME": "Brioche", "STOCK_QUANTITY": 200, "PRICE": 3.50},
+      {"BUN_ID": 2, "BUN_NAME": "Sesame", "STOCK_QUANTITY": 250, "PRICE": 3.50},
+      {"BUN_ID": 3, "BUN_NAME": "Whole Wheat", "STOCK_QUANTITY": 180, "PRICE": 3.50}
+    ],
+    "TBPATTY_TYPES": [
+      {"PATTY_ID": 1, "PATTY_NAME": "Beef", "STOCK_QUANTITY": 500, "PRICE": 3.50},
+      {"PATTY_ID": 2, "PATTY_NAME": "Chicken", "STOCK_QUANTITY": 300, "PRICE": 3.50},
+      {"PATTY_ID": 3, "PATTY_NAME": "Veggie", "STOCK_QUANTITY": 150, "PRICE": 3.50}
+    ],
+    "TBTOPPINGS": [
+      {"TOPPING_ID": 1, "TOPPING_NAME": "Lettuce", "STOCK_QUANTITY": 1000, "PRICE": 3.50},
+      {"TOPPING_ID": 2, "TOPPING_NAME": "Tomato", "STOCK_QUANTITY": 950, "PRICE": 3.50},
+      {"TOPPING_ID": 3, "TOPPING_NAME": "Onion", "STOCK_QUANTITY": 900, "PRICE": 3.50},
+      {"TOPPING_ID": 4, "TOPPING_NAME": "Pickles", "STOCK_QUANTITY": 850, "PRICE": 3.50},
+      {"TOPPING_ID": 5, "TOPPING_NAME": "Cheese", "STOCK_QUANTITY": 800, "PRICE": 3.50},
+      {"TOPPING_ID": 6, "TOPPING_NAME": "Bacon", "STOCK_QUANTITY": 600, "PRICE": 3.50},
+      {"TOPPING_ID": 7, "TOPPING_NAME": "Jalapenos", "STOCK_QUANTITY": 500, "PRICE": 3.50},
+      {"TOPPING_ID": 8, "TOPPING_NAME": "Mushrooms", "STOCK_QUANTITY": 550, "PRICE": 3.50},
+      {"TOPPING_ID": 9, "TOPPING_NAME": "Ketchup", "STOCK_QUANTITY": 1200, "PRICE": 3.50},
+      {"TOPPING_ID": 10, "TOPPING_NAME": "Mustard", "STOCK_QUANTITY": 1100, "PRICE": 3.50}
+    ],
+    "TBFRY_SIZES": [
+      {"FRY_SIZE_ID": 1, "FRY_SIZE": 8, "PRICE": 1.99},
+      {"FRY_SIZE_ID": 2, "FRY_SIZE": 12, "PRICE": 2.49},
+      {"FRY_SIZE_ID": 3, "FRY_SIZE": 16, "PRICE": 2.99},
+      {"FRY_SIZE_ID": 4, "FRY_SIZE": 20, "PRICE": 3.49}
+    ],
+    "TBFRY_TYPES": [
+      {"FRY_TYPE_ID": 1, "FRY_TYPE_NAME": "Shoestring", "STOCK_QUANTITY": 1200, "PRICE": 2.49},
+      {"FRY_TYPE_ID": 2, "FRY_TYPE_NAME": "Waffle", "STOCK_QUANTITY": 900, "PRICE": 2.99},
+      {"FRY_TYPE_ID": 3, "FRY_TYPE_NAME": "Curly", "STOCK_QUANTITY": 850, "PRICE": 3.29},
+      {"FRY_TYPE_ID": 4, "FRY_TYPE_NAME": "Steak", "STOCK_QUANTITY": 700, "PRICE": 3.49},
+      {"FRY_TYPE_ID": 5, "FRY_TYPE_NAME": "Sweet Potato", "STOCK_QUANTITY": 600, "PRICE": 3.79}
+    ],
+    "TBFRY_SEASONINGS": [
+      {"FRY_SEASONING_ID": 1, "FRY_SEASONING_NAME": "Sea Salt", "STOCK_QUANTITY": 2000, "PRICE": 0.00},
+      {"FRY_SEASONING_ID": 2, "FRY_SEASONING_NAME": "Cajun", "STOCK_QUANTITY": 1500, "PRICE": 0.49},
+      {"FRY_SEASONING_ID": 3, "FRY_SEASONING_NAME": "Garlic Parm", "STOCK_QUANTITY": 1200, "PRICE": 0.69},
+      {"FRY_SEASONING_ID": 4, "FRY_SEASONING_NAME": "Chili Lime", "STOCK_QUANTITY": 1000, "PRICE": 0.59},
+      {"FRY_SEASONING_ID": 5, "FRY_SEASONING_NAME": "Truffle Salt", "STOCK_QUANTITY": 600, "PRICE": 0.99}
+    ],
+    "TBCUSTOMER": [
+      {"EMAIL": "test@example.com", "NAME": "Test Customer", "BILL_ADDR": "123 Test St", "SHIP_ADDR": "123 Test St"}
+    ],
+    "TBORDERS": [],
+    "TBORDER_ITEMS": [],
+    "TBBURGER_ITEMS": [],
+    "TBBURGER_TOPPINGS": [],
+    "TBFRY_ITEMS": []
+  }
+}
