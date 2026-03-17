@@ -630,8 +630,9 @@ async def create_order(order: OrderRequest):
             burger_items_to_create = []
 
             # Batch-fetch all unique buns, patties, and toppings in 3 queries
-            bun_ids = list(set(b["bun_id"] for b in sanitized_burgers))
-            patty_ids = list(set(b["patty_id"] for b in sanitized_burgers))
+            # Filter out None values since buns and patties are now optional
+            bun_ids = list(set(b["bun_id"] for b in sanitized_burgers if b.get("bun_id") is not None))
+            patty_ids = list(set(b["patty_id"] for b in sanitized_burgers if b.get("patty_id") is not None))
             topping_ids = list(set(
                 t["topping_id"]
                 for b in sanitized_burgers
@@ -666,35 +667,39 @@ async def create_order(order: OrderRequest):
             topping_lookup = _build_lookup(topping_dao, topping_ids, "TOPPING_ID")
 
             for burger in sanitized_burgers:
-                bun_data = bun_lookup.get(burger["bun_id"])
-                patty_data = patty_lookup.get(burger["patty_id"])
-
-                if not bun_data:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Invalid bun ID: {burger['bun_id']}")
-                if not patty_data:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Invalid patty ID: {burger['patty_id']}")
-
-                # Check inventory availability
+                burger_price = 0.0
+                
+                # Handle optional bun
+                bun_id = burger.get("bun_id")
+                if bun_id is not None:
+                    bun_data = bun_lookup.get(bun_id)
+                    if not bun_data:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Invalid bun ID: {bun_id}")
+                    bun_stock = bun_data.get("STOCK_QUANTITY", float("inf"))
+                    if bun_stock < 1:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Insufficient stock for bun ID {bun_id}")
+                    burger_price += float(bun_data["PRICE"])
+                
+                # Handle optional patty
+                patty_id = burger.get("patty_id")
                 patty_count = burger.get("patty_count", 1)
-                bun_stock = bun_data.get("STOCK_QUANTITY", float("inf"))
-                patty_stock = patty_data.get("STOCK_QUANTITY", float("inf"))
-                if bun_stock < 1:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Insufficient stock for bun ID {burger['bun_id']}")
-                if patty_stock < patty_count:
-                    raise HTTPException(
-                        status_code=400, detail=f"Insufficient stock for patty ID {
-                            burger['patty_id']} (need {patty_count}, have {
-                            patty_stock})")
-
-                bun_price = float(bun_data["PRICE"])
-                patty_price = float(patty_data["PRICE"])
-                burger_price = bun_price + patty_price
+                if patty_id is not None:
+                    patty_data = patty_lookup.get(patty_id)
+                    if not patty_data:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Invalid patty ID: {patty_id}")
+                    patty_stock = patty_data.get("STOCK_QUANTITY", float("inf"))
+                    if patty_stock < patty_count:
+                        raise HTTPException(
+                            status_code=400, detail=f"Insufficient stock for patty ID {
+                                patty_id} (need {patty_count}, have {
+                                patty_stock})")
+                    burger_price += float(patty_data["PRICE"]) * patty_count
 
                 # Validate and add topping prices
                 for topping in burger["toppings"]:
@@ -819,8 +824,8 @@ async def create_order(order: OrderRequest):
                 all_burger_items.append({
                     "BURGER_ID": next_burger_id,
                     "ORDER_ITEM_ID": next_order_item_id,
-                    "BUN_TYPE": burger["bun_id"],
-                    "PATTY_TYPE": burger["patty_id"],
+                    "BUN_TYPE": burger.get("bun_id"),
+                    "PATTY_TYPE": burger.get("patty_id"),
                     "PATTY_COUNT": burger.get("patty_count", 1)
                 })
 
@@ -885,13 +890,17 @@ async def create_order(order: OrderRequest):
 
             for burger_item_data in burger_items_to_create:
                 burger = burger_item_data["burger_data"]
-                patty_count = burger.get("patty_count", 1)
+                
+                # Only decrement if bun is present (buns are optional)
+                bun_id = burger.get("bun_id")
+                if bun_id is not None:
+                    bun_decrements[bun_id] = bun_decrements.get(bun_id, 0) - 1
 
-                bun_id = burger["bun_id"]
-                bun_decrements[bun_id] = bun_decrements.get(bun_id, 0) - 1
-
-                patty_id = burger["patty_id"]
-                patty_decrements[patty_id] = patty_decrements.get(patty_id, 0) - patty_count
+                # Only decrement if patty is present (patties are optional)
+                patty_id = burger.get("patty_id")
+                if patty_id is not None:
+                    patty_count = burger.get("patty_count", 1)
+                    patty_decrements[patty_id] = patty_decrements.get(patty_id, 0) - patty_count
 
                 for topping in burger["toppings"]:
                     tid = topping["topping_id"]

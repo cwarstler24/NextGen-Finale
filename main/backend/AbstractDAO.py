@@ -481,7 +481,7 @@ class DatabaseAccessObject(ABC):
             ResponseCode: ResponseCode with the max ID value, or 0 if table is empty
         '''
         self._logger.debug(f"Getting max {self._primary_key} from {self.__class__.__name__}.")
-        
+
         with self._cursor_context(cursor) as cur:
             sql = f"SELECT MAX({self._primary_key}) as MAX_ID FROM {self._table_name}"
             cur.execute(sql)
@@ -505,7 +505,7 @@ class DatabaseAccessObject(ABC):
             ResponseCode: ResponseCode with success status
         '''
         self._logger.debug(f"Updating {field_name} by {delta} for {self.__class__.__name__} with {self._primary_key}={key_value}.")
-        
+
         with self._cursor_context(cursor) as cur:
             sql = f"UPDATE {self._table_name} SET {field_name} = {field_name} + ? WHERE {self._primary_key} = ?"
             cur.execute(sql, (delta, key_value))
