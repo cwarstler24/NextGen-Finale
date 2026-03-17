@@ -132,6 +132,8 @@ const productData = computed(() => {
 });
 
 const rawProductOptions = ref({});
+const optionsLoadState = ref('idle');
+const optionsReloadToken = ref(0);
 
 const customizationComponent = computed(() => {
     switch (product.value) {
@@ -149,6 +151,15 @@ const selectedOptions = ref({});
 const selectedIndex = ref(0);
 const quantity = ref(1);
 const cartFeedbackMessage = ref('');
+const isLoadingOptions = computed(() => optionsLoadState.value === 'loading');
+const isOptionsUnavailable = computed(() => optionsLoadState.value === 'error');
+const isOrderingDisabled = computed(() => {
+    if (!customizationComponent.value) {
+        return false;
+    }
+
+    return isLoadingOptions.value || isOptionsUnavailable.value || optionGroups.value.length === 0;
+});
 
 let cartFeedbackTimeoutId = null;
 
@@ -179,14 +190,19 @@ watch(
     { immediate: true }
 );
 
+function retryLoadingOptions() {
+    optionsReloadToken.value += 1;
+}
+
 watch(
-    product,
-    async (productKey, _previousProductKey, onCleanup) => {
+    [product, optionsReloadToken],
+    async ([productKey], _previousValues, onCleanup) => {
         selectedIndex.value = 0;
         quantity.value = 1;
         cartFeedbackMessage.value = '';
         clearCartFeedbackTimeout();
         rawProductOptions.value = {};
+        optionsLoadState.value = 'idle';
 
         const endpoint = PRODUCT_OPTIONS_ENDPOINTS[productKey];
         if (!endpoint) {
@@ -195,6 +211,7 @@ watch(
 
         const abortController = new AbortController();
         onCleanup(() => abortController.abort());
+        optionsLoadState.value = 'loading';
 
         try {
             const response = await fetch(endpoint, { signal: abortController.signal });
@@ -203,11 +220,13 @@ watch(
             }
 
             rawProductOptions.value = await response.json();
+            optionsLoadState.value = 'success';
         } catch (error) {
             if (error.name === 'AbortError') {
                 return;
             }
 
+            optionsLoadState.value = 'error';
             console.error(`Unable to fetch ${productKey} options`, error);
         }
     },
@@ -248,6 +267,10 @@ const goMainPage = () => {
 };
 
 const addToCart = () => {
+    if (isOrderingDisabled.value) {
+        return;
+    }
+
     addItem({
         id: product.value,
         name: productData.value.name,
@@ -357,12 +380,19 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="product-actions">
-                <button class="primary" type="button" @click="addToCart">
+                <button class="primary" type="button" :disabled="isOrderingDisabled" @click="addToCart">
                     Add to Cart
                 </button>
                 <label class="quantity-input-group" for="quantity">
                     <span>Qty</span>
-                    <input id="quantity" v-model.number="quantity" class="quantity-input" type="number" min="1" />
+                    <input
+                        id="quantity"
+                        v-model.number="quantity"
+                        class="quantity-input"
+                        type="number"
+                        min="1"
+                        :disabled="isOrderingDisabled"
+                    />
                 </label>
             </div>
 
@@ -374,14 +404,65 @@ onBeforeUnmount(() => {
             >
                 {{ cartFeedbackMessage }}
             </div>
+
+            <div
+                v-else-if="isLoadingOptions"
+                class="product-status product-status--loading"
+                role="status"
+                aria-live="polite"
+            >
+                Loading available options for this item...
+            </div>
+
+            <div
+                v-else-if="isOptionsUnavailable"
+                class="product-status product-status--error"
+                role="alert"
+            >
+                Ordering is temporarily unavailable while we reconnect to our product service.
+            </div>
         </div>
     </div>
 
     <div class="details-grid" name="product-customization">
         <div class="customization card">
+            <div
+                v-if="isOptionsUnavailable"
+                class="service-unavailable"
+                role="alert"
+            >
+                <span class="service-unavailable__eyebrow">Service update</span>
+                <h3>We&rsquo;re having trouble loading product options right now.</h3>
+                <p>
+                    Our ordering service is temporarily unavailable, so customization and checkout are paused for this item.
+                    Please try again in a few minutes.
+                </p>
+                <div class="service-unavailable__actions">
+                    <button class="secondary" type="button" @click="retryLoadingOptions">
+                        Retry
+                    </button>
+                    <button class="secondary" type="button" @click="goMainPage">
+                        Return Home
+                    </button>
+                </div>
+            </div>
+
+            <div
+                v-else-if="isLoadingOptions"
+                class="service-unavailable service-unavailable--loading"
+                role="status"
+                aria-live="polite"
+            >
+                <span class="service-unavailable__eyebrow">Loading options</span>
+                <h3>We&rsquo;re preparing your customization choices.</h3>
+                <p>
+                    Please wait a moment while we load the latest options for this item.
+                </p>
+            </div>
+
             <component
                 :is="customizationComponent"
-                v-if="customizationComponent"
+                v-else-if="customizationComponent"
                 v-model="selectedOptions"
                 :option-groups="optionGroups"
             />
