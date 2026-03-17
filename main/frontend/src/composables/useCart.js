@@ -8,6 +8,28 @@ let hasStorageListener = false;
 
 function normalizeOptionValue(value) {
     if (Array.isArray(value)) {
+        if (value.every((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))) {
+            return value
+                .map((entry) => ({
+                    ...('id' in entry && entry.id !== null && entry.id !== undefined ? { id: String(entry.id) } : {}),
+                    ...('name' in entry && entry.name !== null && entry.name !== undefined ? { name: String(entry.name) } : {}),
+                    quantity: Math.max(1, Number.parseInt(entry.quantity ?? 1, 10) || 1),
+                }))
+                .sort((left, right) => {
+                    const idComparison = String(left.id ?? '').localeCompare(String(right.id ?? ''));
+                    if (idComparison !== 0) {
+                        return idComparison;
+                    }
+
+                    const nameComparison = String(left.name ?? '').localeCompare(String(right.name ?? ''));
+                    if (nameComparison !== 0) {
+                        return nameComparison;
+                    }
+
+                    return left.quantity - right.quantity;
+                });
+        }
+
         return [...new Set(value)].sort((left, right) => String(left).localeCompare(String(right)));
     }
 

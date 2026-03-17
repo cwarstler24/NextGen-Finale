@@ -8,7 +8,7 @@ import { useCart } from '../composables/useCart';
 const OPTION_GROUP_METADATA = {
     burger: {
         buns: { label: 'Bun', selectionMode: 'single' },
-        patties: { label: 'Patty', selectionMode: 'single' },
+        patties: { label: 'Patty', selectionMode: 'single_quantity' },
         toppings: { label: 'Toppings', selectionMode: 'multiple' },
     },
     fries: {
@@ -26,21 +26,57 @@ const PRODUCT_OPTIONS_ENDPOINTS = {
 const router = useRouter();
 const { addItem } = useCart();
 
+function isMultipleSelectionGroup(group) {
+    return group.selectionMode === 'multiple';
+}
+
+function isSingleQuantitySelectionGroup(group) {
+    return group.selectionMode === 'single_quantity';
+}
+
 function getDefaultSelection(group) {
-    if (group.selectionMode === 'multiple') {
+    if (isMultipleSelectionGroup(group)) {
         return [];
     }
 
     const defaultItem = group.items.find((item) => item.quantity > 0) ?? group.items[0];
-    return defaultItem?.id ?? null;
-}
-
-function getSelectionIds(group, selection) {
-    if (group.selectionMode === 'multiple') {
-        return Array.isArray(selection) ? selection : [];
+    if (!defaultItem) {
+        return null;
     }
 
-    return selection ? [selection] : [];
+    if (isSingleQuantitySelectionGroup(group)) {
+        return {
+            id: defaultItem.id,
+            quantity: 1,
+        };
+    }
+
+    return defaultItem.id;
+}
+
+function getMultiSelections(selection) {
+    if (!Array.isArray(selection)) {
+        return [];
+    }
+
+    return selection
+        .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
+        .map((entry) => ({
+            id: String(entry.id),
+            quantity: Math.max(1, Number.parseInt(entry.quantity ?? 1, 10) || 1),
+        }))
+        .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function getSingleQuantitySelection(selection) {
+    if (!selection || typeof selection !== 'object' || Array.isArray(selection)) {
+        return null;
+    }
+
+    return {
+        id: String(selection.id ?? ''),
+        quantity: Math.max(1, Number.parseInt(selection.quantity ?? 1, 10) || 1),
+    };
 }
 
 function normalizeProductOptions(productKey, optionsByGroup) {
@@ -179,12 +215,23 @@ watch(
 const totalPrice = computed(() => {
     const base = Number(productData.value.price) || 0;
     const optionTotal = optionGroups.value.reduce((runningTotal, group) => {
-        const selectedIds = getSelectionIds(group, selectedOptions.value[group.key]);
+        if (isMultipleSelectionGroup(group)) {
+            const multiSelections = getMultiSelections(selectedOptions.value[group.key]);
 
-        return runningTotal + selectedIds.reduce((groupTotal, selectedId) => {
-            const selectedItem = group.items.find((item) => item.id === selectedId);
-            return groupTotal + (selectedItem?.price ?? 0);
-        }, 0);
+            return runningTotal + multiSelections.reduce((groupTotal, selection) => {
+                const selectedItem = group.items.find((item) => item.id === selection.id);
+                return groupTotal + ((selectedItem?.price ?? 0) * selection.quantity);
+            }, 0);
+        }
+
+        if (isSingleQuantitySelectionGroup(group)) {
+            const selection = getSingleQuantitySelection(selectedOptions.value[group.key]);
+            const selectedItem = group.items.find((item) => item.id === selection?.id);
+            return runningTotal + ((selectedItem?.price ?? 0) * (selection?.quantity ?? 1));
+        }
+
+        const selectedItem = group.items.find((item) => item.id === selectedOptions.value[group.key]);
+        return runningTotal + (selectedItem?.price ?? 0);
     }, 0);
 
     return `${(base + optionTotal).toFixed(2)}`;
@@ -204,19 +251,62 @@ const addToCart = () => {
         name: productData.value.name,
         image: productImages.value[0],
         unitPrice: Number(totalPrice.value),
-        quantity: 1,
+        quantity: Number(document.getElementById('quantity').value) || 1,
         options: optionGroups.value.map((group) => {
-            const selectedIds = getSelectionIds(group, selectedOptions.value[group.key]);
-            const selectedItems = group.items.filter((item) => selectedIds.includes(item.id));
+            if (isMultipleSelectionGroup(group)) {
+                const selectedItemsById = new Map(group.items.map((item) => [item.id, item]));
+                const structuredSelections = getMultiSelections(selectedOptions.value[group.key])
+                    .map((selection) => {
+                        const selectedItem = selectedItemsById.get(selection.id);
+                        if (!selectedItem) {
+                            return null;
+                        }
+
+                        return {
+                            id: selectedItem.id,
+                            name: selectedItem.name,
+                            quantity: selection.quantity,
+                        };
+                    })
+                    .filter(Boolean);
+
+                return {
+                    id: structuredSelections.map((selection) => ({
+                        id: selection.id,
+                        quantity: selection.quantity,
+                    })),
+                    name: group.label,
+                    value: structuredSelections.map((selection) => ({
+                        id: selection.id,
+                        name: selection.name,
+                        quantity: selection.quantity,
+                    })),
+                };
+            }
+
+            if (isSingleQuantitySelectionGroup(group)) {
+                const selection = getSingleQuantitySelection(selectedOptions.value[group.key]);
+                const selectedItem = group.items.find((item) => item.id === selection?.id);
+
+                return {
+                    id: selectedItem?.id ?? null,
+                    name: group.label,
+                    value: selectedItem
+                        ? [{
+                            id: selectedItem.id,
+                            name: selectedItem.name,
+                            quantity: selection?.quantity ?? 1,
+                        }]
+                        : null,
+                };
+            }
+
+            const selectedItem = group.items.find((item) => item.id === selectedOptions.value[group.key]);
 
             return {
-                id: group.selectionMode === 'multiple'
-                    ? selectedItems.map((item) => item.id).sort((left, right) => left.localeCompare(right))
-                    : selectedItems[0]?.id ?? null,
+                id: selectedItem?.id ?? null,
                 name: group.label,
-                value: group.selectionMode === 'multiple'
-                    ? selectedItems.map((item) => item.name).sort((left, right) => left.localeCompare(right))
-                    : selectedItems[0]?.name ?? null,
+                value: selectedItem?.name ?? null,
             };
         }),
     });
@@ -268,6 +358,10 @@ onBeforeUnmount(() => {
                 <button class="primary" type="button" @click="addToCart">
                     Add to Cart
                 </button>
+                <label class="quantity-input-group" for="quantity">
+                    <span>Qty</span>
+                    <input id="quantity" class="quantity-input" type="number" min="1" value="1" />
+                </label>
             </div>
 
             <div
