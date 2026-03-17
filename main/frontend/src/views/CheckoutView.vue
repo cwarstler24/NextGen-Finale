@@ -8,6 +8,7 @@ const ORDER_ENDPOINT = 'http://localhost:8000/Order/';
 const router = useRouter();
 const { cartEntries, cartTotal, clearCart } = useCart();
 const isSubmitting = ref(false);
+const isOrderComplete = ref(false);
 
 function formatCurrency(value) {
     return `$${value.toFixed(2)}`;
@@ -200,9 +201,15 @@ const purchase = async () => {
             ));
         }
 
+        const orderSummary = {
+            orderId: responseData?.order_id ?? null,
+            totalPrice: responseData?.total_price ?? cartTotal.value,
+            customerName: userData.name.trim(),
+        };
+
+        isOrderComplete.value = true;
         clearCart();
-        alert(`Order placed successfully${responseData?.order_id ? ` (#${responseData.order_id})` : ''}.`);
-        router.push({ name: 'main' });
+        router.push({ name: 'confirm', state: orderSummary });
     } catch (error) {
         console.error('Unable to place order');
         alert(error instanceof Error ? error.message : 'Unable to place order.');
@@ -222,7 +229,7 @@ const emptyCart = () => {
 watch(
     () => cartEntries.value.length,
     (count) => {
-        if (count === 0) {
+        if (count === 0 && !isOrderComplete.value) {
             router.replace({ name: 'cart' });
         }
     },
