@@ -80,6 +80,28 @@ function getSingleQuantitySelection(selection) {
     };
 }
 
+function normalizeSelectionId(value) {
+    if (value === null || value === undefined) {
+        return null;
+    }
+
+    return String(value);
+}
+
+function getOptionItemPrice(item) {
+    const price = Number(item?.price);
+    return Number.isFinite(price) ? price : 0;
+}
+
+function findGroupItem(group, selectionId) {
+    const normalizedSelectionId = normalizeSelectionId(selectionId);
+    if (!group || normalizedSelectionId === null) {
+        return null;
+    }
+
+    return group.items.find((item) => item.id === normalizedSelectionId) ?? null;
+}
+
 function normalizeProductOptions(productKey, optionsByGroup) {
     const metadata = OPTION_GROUP_METADATA[productKey] ?? {};
 
@@ -220,19 +242,19 @@ const totalPrice = computed(() => {
             const multiSelections = getMultiSelections(selectedOptions.value[group.key]);
 
             return runningTotal + multiSelections.reduce((groupTotal, selection) => {
-                const selectedItem = group.items.find((item) => item.id === selection.id);
-                return groupTotal + ((selectedItem?.price ?? 0) * selection.quantity);
+                const selectedItem = findGroupItem(group, selection.id);
+                return groupTotal + (getOptionItemPrice(selectedItem) * selection.quantity);
             }, 0);
         }
 
         if (isSingleQuantitySelectionGroup(group)) {
             const selection = getSingleQuantitySelection(selectedOptions.value[group.key]);
-            const selectedItem = group.items.find((item) => item.id === selection?.id);
-            return runningTotal + ((selectedItem?.price ?? 0) * (selection?.quantity ?? 1));
+            const selectedItem = findGroupItem(group, selection?.id);
+            return runningTotal + (getOptionItemPrice(selectedItem) * (selection?.quantity ?? 1));
         }
 
-        const selectedItem = group.items.find((item) => item.id === selectedOptions.value[group.key]);
-        return runningTotal + (selectedItem?.price ?? 0);
+        const selectedItem = findGroupItem(group, selectedOptions.value[group.key]);
+        return runningTotal + getOptionItemPrice(selectedItem);
     }, 0);
 
     return `${(base + optionTotal).toFixed(2)}`;
@@ -250,7 +272,7 @@ function getSelectedSingleOptionDetails(groupKey) {
 
     if (isSingleQuantitySelectionGroup(group)) {
         const selection = getSingleQuantitySelection(selectedOptions.value[groupKey]);
-        const selectedItem = group.items.find((item) => item.id === selection?.id);
+        const selectedItem = findGroupItem(group, selection?.id);
 
         if (!selectedItem) {
             return null;
@@ -262,7 +284,7 @@ function getSelectedSingleOptionDetails(groupKey) {
         };
     }
 
-    const selectedItem = group.items.find((item) => item.id === selectedOptions.value[groupKey]);
+    const selectedItem = findGroupItem(group, selectedOptions.value[groupKey]);
     return selectedItem ? { ...selectedItem } : null;
 }
 
@@ -274,7 +296,7 @@ function getSelectedMultiOptionDetails(groupKey) {
 
     return getMultiSelections(selectedOptions.value[groupKey])
         .map((selection) => {
-            const selectedItem = group.items.find((item) => item.id === selection.id);
+            const selectedItem = findGroupItem(group, selection.id);
             if (!selectedItem) {
                 return null;
             }
@@ -348,7 +370,7 @@ const addToCart = () => {
 
             if (isSingleQuantitySelectionGroup(group)) {
                 const selection = getSingleQuantitySelection(selectedOptions.value[group.key]);
-                const selectedItem = group.items.find((item) => item.id === selection?.id);
+                const selectedItem = findGroupItem(group, selection?.id);
 
                 return {
                     id: selectedItem?.id ?? null,
@@ -363,7 +385,7 @@ const addToCart = () => {
                 };
             }
 
-            const selectedItem = group.items.find((item) => item.id === selectedOptions.value[group.key]);
+            const selectedItem = findGroupItem(group, selectedOptions.value[group.key]);
 
             return {
                 id: selectedItem?.id ?? null,

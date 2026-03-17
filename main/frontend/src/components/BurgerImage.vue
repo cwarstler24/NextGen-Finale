@@ -52,6 +52,16 @@ const itemImageMap = {
                 "height": 50,
             },
         },
+        "None": {
+            0: {
+                "src": '/images/items/blank_png.png',
+                "height": 0,
+            },
+            1: {
+                "src": '/images/items/blank_png.png',
+                "height": 0,
+            },
+        },
     },
     patties: {
         "Beef": {
@@ -65,6 +75,10 @@ const itemImageMap = {
         "Veggie": {
             "src": '/images/items/veggie_patty.png',
             "height": 70,
+        },
+        "None": {
+            "src": '/images/items/blank_png.png',
+            "height": 0,
         },
     },
     toppings: {
