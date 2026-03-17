@@ -268,8 +268,7 @@ class BurgerItemTopping(DatabaseEntity):
     def to_dict(self) -> dict[str, Any]:
         return {
             "TOPPING_ID": self.topping_id,
-            "BURGER_ORDER_ID": self.burger_order_id,
-            "TOPPING_COUNT": self.topping_count
+            "BURGER_ORDER_ID": self.burger_order_id
         }
 
     @classmethod
@@ -498,16 +497,19 @@ class FrySize(DatabaseEntity):
         self,
         fry_size_id: int,
         fry_size: int,
+        stock_quantity: int,
         price: Decimal
     ):
         self.fry_size_id = fry_size_id
         self.fry_size = fry_size
+        self.stock_quantity = stock_quantity
         self.price = price
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "FRY_SIZE_ID": self.fry_size_id,
             "FRY_SIZE": self.fry_size,
+            "STOCK_QUANTITY": self.stock_quantity,
             "PRICE": float(self.price) if self.price else None
         }
 
@@ -516,6 +518,7 @@ class FrySize(DatabaseEntity):
         return cls(
             fry_size_id=data.get("FRY_SIZE_ID"),
             fry_size=data.get("FRY_SIZE"),
+            stock_quantity=data.get("STOCK_QUANTITY"),
             price=Decimal(str(data.get("PRICE"))) if data.get("PRICE") else None
         )
 

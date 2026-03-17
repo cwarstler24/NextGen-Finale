@@ -168,7 +168,7 @@ class BurgerItemDAO(DatabaseAccessObject):
         '''
         # Get base burger details
         burger_result = self.get_burger_with_details(burger_id)
-        if burger_result.error_tag:
+        if not burger_result.success:
             return burger_result
 
         # Get toppings
@@ -177,7 +177,7 @@ class BurgerItemDAO(DatabaseAccessObject):
         # Combine results - burger_result.data is a list, get first item
         if burger_result.data and len(burger_result.data) > 0:
             burger_data = burger_result.data[0].copy()
-            if not toppings_result.error_tag and toppings_result.data:
+            if toppings_result.success and toppings_result.data:
                 burger_data["TOPPINGS"] = toppings_result.data
             else:
                 burger_data["TOPPINGS"] = []

@@ -83,19 +83,23 @@ class DB2ConnectionPool:
         self._min_connections = 2
         self._max_connections = 10
         self._current_size = 0
-        self._schema = None
-        self._environment = None
-        self._test_data = None
-        self._pool_initialized = True
+        self._schema = "SKYFAL"
+        self._environment = "PRODUCTION"
+        self._test_data = {}
+        self._pool_initialized = False
 
-        # Load database setup configuration
-        self._load_database_setup()
+    def _ensure_pool_initialized(self):
+        """Lazily initialize the pool the first time it is needed."""
+        if self._pool_initialized:
+            return
 
-        # Load credentials and build connection string
-        self._load_credentials()
-
-        # Create minimum number of connections
-        self._initialize_pool()
+        with self._connections_lock:
+            if self._pool_initialized:
+                return
+            self._load_database_setup()
+            self._load_credentials()
+            self._initialize_pool()
+            self._pool_initialized = True
 
     def _load_database_setup(self):
         """Load database setup configuration from database_setup.json"""
@@ -178,6 +182,8 @@ class DB2ConnectionPool:
         Raises:
             Exception: If unable to get a connection
         """
+        self._ensure_pool_initialized()
+
         try:
             # Try to get an existing connection from the pool
             conn = self._pool.get(timeout=timeout)
@@ -334,6 +340,8 @@ class DB2ConnectionPool:
         Returns:
             dict: Status of population operation with counts per table
         """
+        self._ensure_pool_initialized()
+
         if not self.is_test_environment():
             self.logger.warning(
                 "Attempted to populate test data in non-TEST environment. Operation blocked."

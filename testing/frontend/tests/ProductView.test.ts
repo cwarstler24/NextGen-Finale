@@ -138,8 +138,16 @@ describe('ProductView', () => {
             name: 'Classic Burger',
             options: [
                 { id: '102', name: 'Bun', value: 'Pretzel' },
-                { id: '202', name: 'Patty', value: 'Vegan' },
-                { id: ['301'], name: 'Toppings', value: ['Lettuce'] },
+                {
+                    id: '202',
+                    name: 'Patty',
+                    value: [{ id: '202', name: 'Vegan', quantity: 1 }],
+                },
+                {
+                    id: [{ id: '301', quantity: 1 }],
+                    name: 'Toppings',
+                    value: [{ id: '301', name: 'Lettuce', quantity: 1 }],
+                },
             ],
             quantity: 1,
             unitPrice: 6,
