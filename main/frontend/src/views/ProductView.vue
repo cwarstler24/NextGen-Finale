@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import BurgerOptionsComp from '../components/BurgerOptionsComp.vue';
 import FriesOptionsComp from '../components/FriesOptionsComp.vue';
+import BurgerImage from '../components/BurgerImage.vue';
 import { useCart } from '../composables/useCart';
 
 const OPTION_GROUP_METADATA = {
@@ -237,6 +238,67 @@ const totalPrice = computed(() => {
     return `${(base + optionTotal).toFixed(2)}`;
 });
 
+function getOptionGroup(groupKey) {
+    return optionGroups.value.find((group) => group.key === groupKey) ?? null;
+}
+
+function getSelectedSingleOptionDetails(groupKey) {
+    const group = getOptionGroup(groupKey);
+    if (!group) {
+        return null;
+    }
+
+    if (isSingleQuantitySelectionGroup(group)) {
+        const selection = getSingleQuantitySelection(selectedOptions.value[groupKey]);
+        const selectedItem = group.items.find((item) => item.id === selection?.id);
+
+        if (!selectedItem) {
+            return null;
+        }
+
+        return {
+            ...selectedItem,
+            quantity: selection?.quantity ?? 1,
+        };
+    }
+
+    const selectedItem = group.items.find((item) => item.id === selectedOptions.value[groupKey]);
+    return selectedItem ? { ...selectedItem } : null;
+}
+
+function getSelectedMultiOptionDetails(groupKey) {
+    const group = getOptionGroup(groupKey);
+    if (!group) {
+        return [];
+    }
+
+    return getMultiSelections(selectedOptions.value[groupKey])
+        .map((selection) => {
+            const selectedItem = group.items.find((item) => item.id === selection.id);
+            if (!selectedItem) {
+                return null;
+            }
+
+            return {
+                ...selectedItem,
+                quantity: selection.quantity,
+            };
+        })
+        .filter(Boolean);
+}
+
+const selectedBurgerBun = computed(() => (product.value === 'burger'
+    ? getSelectedSingleOptionDetails('buns')
+    : null));
+
+const selectedBurgerPatty = computed(() => (product.value === 'burger'
+    ? getSelectedSingleOptionDetails('patties')
+    : null));
+
+const selectedBurgerToppings = computed(() => (product.value === 'burger'
+    ? getSelectedMultiOptionDetails('toppings')
+    : []));
+
 const selectThumbnail = (index) => {
     selectedIndex.value = index;
 };
@@ -325,7 +387,15 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="product-grid">
-        <div name="product-gallery" class="product-gallery card">
+        <component
+            :is="BurgerImage"
+            v-if="product === 'burger'"
+            :image-src="productImages[selectedIndex]"
+            :selected-bun="selectedBurgerBun"
+            :selected-patty="selectedBurgerPatty"
+            :selected-toppings="selectedBurgerToppings"
+        />
+        <div v-else name="product-gallery" class="product-gallery card">
             <img name="product-image" class="product-hero" :src="productImages[selectedIndex]" alt="Product hero" />
             <div class="thumbnail-row">
                 <button
@@ -340,7 +410,6 @@ onBeforeUnmount(() => {
                 </button>
             </div>
         </div>
-
         <div class="product-info card">
             <div class="product-header">
                 <div>
