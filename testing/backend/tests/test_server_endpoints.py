@@ -13,6 +13,16 @@ from main.utilities.error_handler import ResponseCode
 client = TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def _no_real_db(monkeypatch):
+    """Prevent every test in this module from ever touching a real DB2 connection."""
+    fake_cursor = MagicMock()
+    mock_cm = MagicMock()
+    mock_cm.__enter__ = MagicMock(return_value=fake_cursor)
+    mock_cm.__exit__ = MagicMock(return_value=False)
+    monkeypatch.setattr("main.backend.server.get_db_cursor", lambda: mock_cm)
+
+
 def _ok(data=None):
     """Build a mock ResponseCode that reports success."""
     rc = MagicMock()
@@ -179,8 +189,18 @@ def _patch_customer_dao(data=None, ok=True):
     else:
         customer_dao.get_customer_with_orders.return_value = _fail()
 
+    order_item_dao = MagicMock()
+    order_item_dao.get_all_order_items_with_details.return_value = _ok({"burgers": [], "fries": []})
+
+    burger_item_dao = MagicMock()
+    burger_item_dao.get_burger_toppings.return_value = _ok([])
+
     def dao_factory(name):
-        return {"CustomerDAO": customer_dao}[name]
+        return {
+            "CustomerDAO": customer_dao,
+            "OrderItemDAO": order_item_dao,
+            "BurgerItemDAO": burger_item_dao,
+        }[name]
 
     return patch("main.backend.server.DAOFactory.get_or_create_dao", side_effect=dao_factory)
 
@@ -254,6 +274,20 @@ def _build_order_payload(burgers=None, fries=None, date=None):
     return payload
 
 
+from contextlib import contextmanager
+
+
+@contextmanager
+def _mock_db_cursor():
+    """Patch get_db_cursor in the server module so no real DB connection is attempted."""
+    fake_cursor = MagicMock()
+    mock_cm = MagicMock()
+    mock_cm.__enter__ = MagicMock(return_value=fake_cursor)
+    mock_cm.__exit__ = MagicMock(return_value=False)
+    with patch("main.backend.server.get_db_cursor", return_value=mock_cm):
+        yield fake_cursor
+
+
 def _build_order_daos(
     customer_exists=True, order_create_ok=True,
     order_item_create_ok=True, burger_create_ok=True, topping_create_ok=True,
@@ -314,7 +348,29 @@ def _build_order_daos(
         "FrySizeDAO": fry_size_dao,
         "FrySeasoningDAO": fry_seasoning_dao,
     }
-    return patch("main.backend.server.DAOFactory.get_or_create_dao", side_effect=lambda n: dao_map[n])
+    from contextlib import ExitStack
+    from unittest.mock import patch as _patch
+
+    class _Combined:
+        """Combines the DAO patch and the get_db_cursor patch in one context manager."""
+        def __enter__(self):
+            self._stack = ExitStack()
+            fake_cursor = MagicMock()
+            mock_cm = MagicMock()
+            mock_cm.__enter__ = MagicMock(return_value=fake_cursor)
+            mock_cm.__exit__ = MagicMock(return_value=False)
+            self._stack.enter_context(
+                _patch("main.backend.server.get_db_cursor", return_value=mock_cm)
+            )
+            self._stack.enter_context(
+                _patch("main.backend.server.DAOFactory.get_or_create_dao", side_effect=lambda n: dao_map[n])
+            )
+            return self
+
+        def __exit__(self, *args):
+            return self._stack.__exit__(*args)
+
+    return _Combined()
 
 
 class TestCreateOrder:
