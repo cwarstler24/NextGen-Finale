@@ -13,6 +13,8 @@
 .address-card,
 .orders-card,
 .orders-list,
+.order-details,
+.order-items-list,
 .empty-state {
     display: grid;
     gap: 1rem;
@@ -29,6 +31,7 @@
 .orders-card h2,
 .address-card p,
 .orders-header,
+.order-summary,
 .profile-email {
     margin: 0;
 }
@@ -42,7 +45,9 @@
 .profile-email,
 .address-card p,
 .empty-state p,
-.order-row p {
+.order-summary-main p,
+.order-item-name,
+.order-items-empty {
     margin: 0;
     color: #64748b;
 }
@@ -106,7 +111,7 @@
 
 .profile-header,
 .orders-header,
-.order-row {
+.order-summary {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
@@ -130,7 +135,7 @@
 .stat-tile,
 .address-card,
 .empty-state,
-.order-row {
+.order-card {
     padding: 1rem 1.1rem;
     border-radius: 1rem;
     border: 1px solid #e2e8f0;
@@ -155,8 +160,97 @@
     list-style: none;
 }
 
-.order-row {
+.orders-list-item {
+    list-style: none;
+}
+
+.order-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.order-summary {
+    cursor: pointer;
+    padding: 1rem 1.1rem;
+    list-style: none;
+}
+
+.order-summary::-webkit-details-marker {
+    display: none;
+}
+
+.order-summary-main,
+.order-summary-side,
+.order-item-copy {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.order-summary-topline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.order-item-count,
+.order-summary-toggle,
+.item-type-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.order-item-count,
+.order-summary-toggle {
+    padding: 0.25rem 0.65rem;
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.order-summary-side {
+    justify-items: end;
+}
+
+.order-price,
+.order-item-price {
+    font-size: 1rem;
+}
+
+.order-details {
+    padding: 0 1.1rem 1.1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.order-items-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.order-item-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
     align-items: flex-start;
+    padding: 0.9rem 0;
+}
+
+.order-item-row + .order-item-row {
+    border-top: 1px solid #e2e8f0;
+}
+
+.item-type-badge {
+    width: fit-content;
+    padding: 0.2rem 0.6rem;
+    background: #e0f2fe;
+    color: #0c4a6e;
+}
+
+.order-item-name {
+    color: #0f172a;
 }
 
 @media (max-width: 900px) {
@@ -173,12 +267,17 @@
 @media (max-width: 640px) {
     .profile-header,
     .orders-header,
-    .order-row {
+    .order-summary,
+    .order-item-row {
         flex-direction: column;
         align-items: stretch;
     }
 
     .profile-badge {
         justify-self: start;
+    }
+
+    .order-summary-side {
+        justify-items: start;
     }
 }

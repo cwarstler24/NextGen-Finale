@@ -37,7 +37,8 @@ class FrySizeDAO(DatabaseAccessObject):
         return {
             "FRY_SIZE_ID": row[0],
             "FRY_SIZE": row[1],
-            "PRICE": row[2]
+            "STOCK_QUANTITY": row[2],
+            "PRICE": row[3]
         }
 
     def _build_insert_sql(self, entry: dict[str, Any]) -> tuple[str, list]:
@@ -52,12 +53,13 @@ class FrySizeDAO(DatabaseAccessObject):
         '''
         sql = f"""
             INSERT INTO {self._table_name}
-            (FRY_SIZE_ID, FRY_SIZE, PRICE)
-            VALUES (?, ?, ?)
+            (FRY_SIZE_ID, FRY_SIZE, STOCK_QUANTITY, PRICE)
+            VALUES (?, ?, ?, ?)
         """
         values = [
             entry.get("FRY_SIZE_ID"),
             entry.get("FRY_SIZE"),
+            entry.get("STOCK_QUANTITY"),
             entry.get("PRICE")
         ]
         return (sql, values)

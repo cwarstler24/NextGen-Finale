@@ -103,15 +103,15 @@ class DatabaseAccessObject(ABC):
             cursor: Optional cursor to use. If None, creates a new cursor.
             
         Yields:
-            tuple: (cursor, should_commit) where should_commit is True if we created the cursor
+            cursor: The cursor to use for database operations
         '''
         if cursor is not None:
             # Use provided cursor, don't commit (caller will handle it)
-            yield cursor, False
+            yield cursor
         else:
             # Create new cursor, commit after operation
             with get_db_cursor() as new_cursor:
-                yield new_cursor, True
+                yield new_cursor
 
     def _prepare_entry(self, entry: dict[str, Any]) -> dict[str, Any]:
         '''
@@ -179,7 +179,7 @@ class DatabaseAccessObject(ABC):
         '''
         self._logger.debug( f"Getting {self.__class__.__name__} record by {self._primary_key}={key_value}.")
 
-        with self._cursor_context(cursor) as (cur, should_commit):
+        with self._cursor_context(cursor) as cur:
             sql = f"SELECT * FROM {self._table_name} WHERE {self._primary_key} = ?"
             cur.execute(sql, (key_value,))
             row = cur.fetchone()
@@ -210,7 +210,7 @@ class DatabaseAccessObject(ABC):
         unique_keys = list(set(key_values))
         placeholders = ", ".join(["?"] * len(unique_keys))
 
-        with self._cursor_context(cursor) as (cur, should_commit):
+        with self._cursor_context(cursor) as cur:
             sql = f"SELECT * FROM {self._table_name} WHERE {self._primary_key} IN ({placeholders})"
             cur.execute(sql, unique_keys)
             rows = cur.fetchall()
@@ -258,7 +258,7 @@ class DatabaseAccessObject(ABC):
         '''
         self._logger.debug(f"Getting all {self.__class__.__name__} records with limit {limit}.")
 
-        with self._cursor_context(cursor) as (cur, should_commit):
+        with self._cursor_context(cursor) as cur:
             sql = f"SELECT * FROM {self._table_name}"
             if limit is not None:
                 sql += f" FETCH FIRST {limit} ROWS ONLY"
@@ -329,7 +329,7 @@ class DatabaseAccessObject(ABC):
         set_clause, values = self._build_update_sql(updates)
         values.append(key_value)  # Add primary key value for WHERE clause
 
-        with self._cursor_context(cursor) as (cur, should_commit):
+        with self._cursor_context(cursor) as cur:
             sql = f"UPDATE {self._table_name} SET {set_clause} WHERE {self._primary_key} = ?"
             cur.execute(sql, values)
             # Check if any rows were updated
@@ -355,7 +355,7 @@ class DatabaseAccessObject(ABC):
         # Build INSERT SQL using subclass implementation
         insert_sql, values = self._build_insert_sql(entry)
 
-        with self._cursor_context(cursor) as (cur, should_commit):
+        with self._cursor_context(cursor) as cur:
             cur.execute(insert_sql, values)
             # Get the inserted primary key value
             inserted_id = entry.get(self._primary_key, "unknown")
@@ -388,7 +388,7 @@ class DatabaseAccessObject(ABC):
         # Build the values list for all entries
         all_values = [self._build_insert_sql(entry)[1] for entry in prepared]
 
-        with self._cursor_context(cursor) as (cur, should_commit):
+        with self._cursor_context(cursor) as cur:
             cur.executemany(insert_sql, all_values)
             return {"inserted_count": len(prepared)}
 
@@ -412,7 +412,7 @@ class DatabaseAccessObject(ABC):
         self._logger.debug(
             f"Batch updating {field_name} for {len(deltas)} {self.__class__.__name__} records.")
 
-        with self._cursor_context(cursor) as (cur, should_commit):
+        with self._cursor_context(cursor) as cur:
             updated = 0
             for key_value, delta in deltas.items():
                 sql = f"UPDATE {self._table_name} SET {field_name} = {field_name} + ? WHERE {self._primary_key} = ?"
@@ -482,7 +482,7 @@ class DatabaseAccessObject(ABC):
         '''
         self._logger.debug(f"Getting max {self._primary_key} from {self.__class__.__name__}.")
         
-        with self._cursor_context(cursor) as (cur, should_commit):
+        with self._cursor_context(cursor) as cur:
             sql = f"SELECT MAX({self._primary_key}) as MAX_ID FROM {self._table_name}"
             cur.execute(sql)
             row = cur.fetchone()
@@ -506,7 +506,7 @@ class DatabaseAccessObject(ABC):
         '''
         self._logger.debug(f"Updating {field_name} by {delta} for {self.__class__.__name__} with {self._primary_key}={key_value}.")
         
-        with self._cursor_context(cursor) as (cur, should_commit):
+        with self._cursor_context(cursor) as cur:
             sql = f"UPDATE {self._table_name} SET {field_name} = {field_name} + ? WHERE {self._primary_key} = ?"
             cur.execute(sql, (delta, key_value))
             if cur.rowcount == 0:

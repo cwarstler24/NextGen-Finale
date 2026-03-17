@@ -147,6 +147,7 @@ const customizationComponent = computed(() => {
 const optionGroups = computed(() => normalizeProductOptions(product.value, rawProductOptions.value));
 const selectedOptions = ref({});
 const selectedIndex = ref(0);
+const quantity = ref(1);
 const cartFeedbackMessage = ref('');
 
 let cartFeedbackTimeoutId = null;
@@ -182,6 +183,7 @@ watch(
     product,
     async (productKey, _previousProductKey, onCleanup) => {
         selectedIndex.value = 0;
+        quantity.value = 1;
         cartFeedbackMessage.value = '';
         clearCartFeedbackTimeout();
         rawProductOptions.value = {};
@@ -251,7 +253,7 @@ const addToCart = () => {
         name: productData.value.name,
         image: productImages.value[0],
         unitPrice: Number(totalPrice.value),
-        quantity: Number(document.getElementById('quantity').value) || 1,
+        quantity: Math.max(1, Number(quantity.value) || 1),
         options: optionGroups.value.map((group) => {
             if (isMultipleSelectionGroup(group)) {
                 const selectedItemsById = new Map(group.items.map((item) => [item.id, item]));
@@ -360,7 +362,7 @@ onBeforeUnmount(() => {
                 </button>
                 <label class="quantity-input-group" for="quantity">
                     <span>Qty</span>
-                    <input id="quantity" class="quantity-input" type="number" min="1" value="1" />
+                    <input id="quantity" v-model.number="quantity" class="quantity-input" type="number" min="1" />
                 </label>
             </div>
 

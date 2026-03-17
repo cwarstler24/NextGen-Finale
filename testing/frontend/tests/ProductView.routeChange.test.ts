@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { fetchMock } from '../mocks/browserMocks';
 
 async function loadProductViewWithRoute(product = 'Burger') {
     vi.resetModules();
@@ -35,6 +36,43 @@ async function loadProductViewWithRoute(product = 'Burger') {
 describe('ProductView route changes', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        fetchMock.mockReset();
+        fetchMock.mockImplementation((input: unknown) => {
+            const requestUrl = typeof input === 'string'
+                ? input
+                : input instanceof URL
+                    ? input.toString()
+                    : (input as { url: string }).url;
+
+            if (requestUrl.includes('/Items/Burger')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => ({
+                        buns: [{ id: 101, name: 'Sesame', price: 1, quantity: 5 }],
+                        patties: [{ id: 201, name: 'Beef', price: 2.5, quantity: 5 }],
+                        toppings: [],
+                    }),
+                });
+            }
+
+            if (requestUrl.includes('/Items/Fries')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: async () => ({
+                        sizes: [{ id: 401, name: 'Small', price: 0.5, quantity: 5 }],
+                        types: [{ id: 501, name: 'Shoestring', price: 0, quantity: 5 }],
+                        seasonings: [{ id: 601, name: 'Salt', price: 0, quantity: 5 }],
+                    }),
+                });
+            }
+
+            return Promise.resolve({
+                ok: false,
+                status: 404,
+                statusText: 'Not Found',
+                json: async () => ({}),
+            });
+        });
     });
 
     afterEach(() => {
@@ -56,6 +94,7 @@ describe('ProductView route changes', () => {
 
         await wrapper.findAll('button.thumb')[2].trigger('click');
         await wrapper.get('button.primary').trigger('click');
+        await nextTick();
 
         expect(wrapper.get('img.product-hero').attributes('src')).toContain('/images/Burger3.png');
         expect(wrapper.text()).toContain('Classic Burger added to cart.');

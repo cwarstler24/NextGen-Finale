@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent.parent
@@ -72,6 +72,7 @@ class FrySizeItem(BaseModel):
     id: int
     name: str
     price: float
+    quantity: int
 
 
 class FryTypeItem(BaseModel):
@@ -164,7 +165,8 @@ class BurgerOrder(BaseModel):
     bun_id: int
     patty_id: int
     patty_count: int = 1
-    toppings: List[ToppingSelection]
+    toppings: List[ToppingSelection] = Field(default_factory=list)
+    topping_ids: Optional[List[int]] = None
 
 
 class FriesOrder(BaseModel):
@@ -238,7 +240,8 @@ async def get_fries_items():
             {
                 "id": item["FRY_SIZE_ID"],
                 "name": f"{item['FRY_SIZE']} oz",
-                "price": float(item["PRICE"])
+                "price": float(item["PRICE"]),
+                "quantity": item.get("STOCK_QUANTITY", 0)
             }
             for item in sizes_result.data
         ]
@@ -378,10 +381,8 @@ async def get_customer(email: str):
             f"GET /Customer/{sanitized_email} - Fetching customer data",
             also_print=True)
 
-        # Get DAOs from factory
+        # Get customer DAO from factory
         customer_dao = DAOFactory.get_or_create_dao("CustomerDAO")
-        order_item_dao = DAOFactory.get_or_create_dao("OrderItemDAO")
-        burger_item_dao = DAOFactory.get_or_create_dao("BurgerItemDAO")
 
         # Fetch customer with orders using the join method
         customer_result = customer_dao.get_customer_with_orders(
@@ -408,6 +409,9 @@ async def get_customer(email: str):
             "shipping_address": first_row["SHIP_ADDR"],
             "billing_address": first_row["BILL_ADDR"]
         }
+
+        order_item_dao = DAOFactory.get_or_create_dao("OrderItemDAO")
+        burger_item_dao = DAOFactory.get_or_create_dao("BurgerItemDAO")
 
         # Marshall orders (filter out rows with no order - LEFT JOIN can have
         # NULL ORDER_ID)
@@ -548,6 +552,12 @@ async def create_order(order: OrderRequest):
         sanitized_burgers = []
         for burger_data in order.burgers:
             burger_dict = burger_data.model_dump()
+            if burger_dict.get("topping_ids") and not burger_dict.get("toppings"):
+                burger_dict["toppings"] = [
+                    {"topping_id": topping_id, "count": 1}
+                    for topping_id in burger_dict["topping_ids"]
+                ]
+            burger_dict.pop("topping_ids", None)
             # Validate burger components exist (would query DAOs here)
             sanitized_burgers.append(burger_dict)
 
@@ -593,18 +603,23 @@ async def create_order(order: OrderRequest):
                         status_code=500,
                         detail="Failed to create customer")
 
-            # 2. Generate IDs - use MAX() queries instead of retrieving all records
-            max_order_id_result = order_dao.get_max_id(cursor=cursor)
-            next_order_id = (max_order_id_result.data if max_order_id_result.success else 0) + 1
+            # 2. Generate IDs - prefer MAX() helper, fallback to legacy get_all_records mocks
+            def _next_id(dao, key_name: str) -> int:
+                max_id_result = None
+                if hasattr(dao, "get_max_id"):
+                    max_id_result = dao.get_max_id(cursor=cursor)
+                if max_id_result and getattr(max_id_result, "success", False) and isinstance(getattr(max_id_result, "data", None), int):
+                    return max_id_result.data + 1
 
-            max_order_item_id_result = order_item_dao.get_max_id(cursor=cursor)
-            next_order_item_id = (max_order_item_id_result.data if max_order_item_id_result.success else 0) + 1
+                all_rows_result = dao.get_all_records(cursor=cursor)
+                if all_rows_result and getattr(all_rows_result, "success", False) and all_rows_result.data:
+                    return max(row.get(key_name, 0) for row in all_rows_result.data) + 1
+                return 1
 
-            max_burger_id_result = burger_item_dao.get_max_id(cursor=cursor)
-            next_burger_id = (max_burger_id_result.data if max_burger_id_result.success else 0) + 1
-
-            max_fry_id_result = fry_item_dao.get_max_id(cursor=cursor)
-            next_fry_id = (max_fry_id_result.data if max_fry_id_result.success else 0) + 1
+            next_order_id = _next_id(order_dao, "ORDER_ID")
+            next_order_item_id = _next_id(order_item_dao, "ORDER_ITEM_ID")
+            next_burger_id = _next_id(burger_item_dao, "BURGER_ID")
+            next_fry_id = _next_id(fry_item_dao, "FRY_ID")
 
             # 3. Validate ingredients and calculate prices (but don't create items
             # yet)
@@ -623,19 +638,32 @@ async def create_order(order: OrderRequest):
                 for t in b["toppings"]
             ))
 
-            bun_results = bun_dao.get_by_keys(bun_ids, cursor=cursor) if bun_ids else None
-            patty_results = patty_dao.get_by_keys(patty_ids, cursor=cursor) if patty_ids else None
-            topping_results = topping_dao.get_by_keys(topping_ids, cursor=cursor) if topping_ids else None
+            def _build_lookup(dao, ids: list[int], key_name: str) -> dict[int, dict]:
+                if not ids:
+                    return {}
 
-            bun_lookup = {}
-            if bun_results and bun_results.success and isinstance(bun_results.data, list):
-                bun_lookup = {item["BUN_ID"]: item for item in bun_results.data}
-            patty_lookup = {}
-            if patty_results and patty_results.success and isinstance(patty_results.data, list):
-                patty_lookup = {item["PATTY_ID"]: item for item in patty_results.data}
-            topping_lookup = {}
-            if topping_results and topping_results.success and isinstance(topping_results.data, list):
-                topping_lookup = {item["TOPPING_ID"]: item for item in topping_results.data}
+                lookup: dict[int, dict] = {}
+                if hasattr(dao, "get_by_keys"):
+                    batch_result = dao.get_by_keys(ids, cursor=cursor)
+                    if batch_result and getattr(batch_result, "success", False):
+                        if isinstance(batch_result.data, list):
+                            lookup.update({item[key_name]: item for item in batch_result.data})
+                        elif isinstance(batch_result.data, dict):
+                            lookup[batch_result.data[key_name]] = batch_result.data
+
+                if hasattr(dao, "get_by_key"):
+                    for item_id in ids:
+                        if item_id in lookup:
+                            continue
+                        single_result = dao.get_by_key(item_id, cursor=cursor)
+                        if single_result and getattr(single_result, "success", False) and isinstance(single_result.data, dict):
+                            lookup[item_id] = single_result.data
+
+                return lookup
+
+            bun_lookup = _build_lookup(bun_dao, bun_ids, "BUN_ID")
+            patty_lookup = _build_lookup(patty_dao, patty_ids, "PATTY_ID")
+            topping_lookup = _build_lookup(topping_dao, topping_ids, "TOPPING_ID")
 
             for burger in sanitized_burgers:
                 bun_data = bun_lookup.get(burger["bun_id"])
@@ -652,15 +680,17 @@ async def create_order(order: OrderRequest):
 
                 # Check inventory availability
                 patty_count = burger.get("patty_count", 1)
-                if bun_data["STOCK_QUANTITY"] < 1:
+                bun_stock = bun_data.get("STOCK_QUANTITY", float("inf"))
+                patty_stock = patty_data.get("STOCK_QUANTITY", float("inf"))
+                if bun_stock < 1:
                     raise HTTPException(
                         status_code=400,
                         detail=f"Insufficient stock for bun ID {burger['bun_id']}")
-                if patty_data["STOCK_QUANTITY"] < patty_count:
+                if patty_stock < patty_count:
                     raise HTTPException(
                         status_code=400, detail=f"Insufficient stock for patty ID {
                             burger['patty_id']} (need {patty_count}, have {
-                            patty_data['STOCK_QUANTITY']})")
+                            patty_stock})")
 
                 bun_price = float(bun_data["PRICE"])
                 patty_price = float(patty_data["PRICE"])
@@ -676,10 +706,11 @@ async def create_order(order: OrderRequest):
                             status_code=400,
                             detail=f"Invalid topping ID: {topping_id}")
                     # Check topping inventory
-                    if topping_data["STOCK_QUANTITY"] < topping_count:
+                    topping_stock = topping_data.get("STOCK_QUANTITY", float("inf"))
+                    if topping_stock < topping_count:
                         raise HTTPException(
                             status_code=400,
-                            detail=f"Insufficient stock for topping ID {topping_id} (need {topping_count}, have {topping_data['STOCK_QUANTITY']})")
+                            detail=f"Insufficient stock for topping ID {topping_id} (need {topping_count}, have {topping_stock})")
                     burger_price += float(topping_data["PRICE"]) * topping_count
 
                 # Store burger data for later creation
@@ -697,19 +728,13 @@ async def create_order(order: OrderRequest):
             fry_size_ids = list(set(f["size_id"] for f in sanitized_fries))
             fry_seasoning_ids = list(set(f["seasoning_id"] for f in sanitized_fries))
 
-            fry_type_results = fry_type_dao.get_by_keys(fry_type_ids, cursor=cursor) if fry_type_ids else None
-            fry_size_results = fry_size_dao.get_by_keys(fry_size_ids, cursor=cursor) if fry_size_ids else None
-            fry_seasoning_results = fry_seasoning_dao.get_by_keys(fry_seasoning_ids, cursor=cursor) if fry_seasoning_ids else None
-
-            fry_type_lookup = {}
-            if fry_type_results and fry_type_results.success and isinstance(fry_type_results.data, list):
-                fry_type_lookup = {item["FRY_TYPE_ID"]: item for item in fry_type_results.data}
-            fry_size_lookup = {}
-            if fry_size_results and fry_size_results.success and isinstance(fry_size_results.data, list):
-                fry_size_lookup = {item["FRY_SIZE_ID"]: item for item in fry_size_results.data}
-            fry_seasoning_lookup = {}
-            if fry_seasoning_results and fry_seasoning_results.success and isinstance(fry_seasoning_results.data, list):
-                fry_seasoning_lookup = {item["FRY_SEASONING_ID"]: item for item in fry_seasoning_results.data}
+            fry_type_lookup = _build_lookup(fry_type_dao, fry_type_ids, "FRY_TYPE_ID")
+            fry_size_lookup = _build_lookup(fry_size_dao, fry_size_ids, "FRY_SIZE_ID")
+            fry_seasoning_lookup = _build_lookup(
+                fry_seasoning_dao,
+                fry_seasoning_ids,
+                "FRY_SEASONING_ID",
+            )
 
             for fry in sanitized_fries:
                 fry_type_data = fry_type_lookup.get(fry["type_id"])
@@ -731,17 +756,19 @@ async def create_order(order: OrderRequest):
 
                 # Check inventory availability (fry_size is the multiplier for
                 # stock usage)
-                fry_size_value = fry_size_data["FRY_SIZE"]
-                if fry_type_data["STOCK_QUANTITY"] < fry_size_value:
+                fry_size_value = fry_size_data.get("FRY_SIZE", 1)
+                fry_type_stock = fry_type_data.get("STOCK_QUANTITY", float("inf"))
+                fry_seasoning_stock = fry_seasoning_data.get("STOCK_QUANTITY", float("inf"))
+                if fry_type_stock < fry_size_value:
                     raise HTTPException(
                         status_code=400, detail=f"Insufficient stock for fry type ID {
                             fry['type_id']} (need {fry_size_value}, have {
-                            fry_type_data['STOCK_QUANTITY']})")
-                if fry_seasoning_data["STOCK_QUANTITY"] < fry_size_value:
+                            fry_type_stock})")
+                if fry_seasoning_stock < fry_size_value:
                     raise HTTPException(
                         status_code=400, detail=f"Insufficient stock for fry seasoning ID {
                             fry['seasoning_id']} (need {fry_size_value}, have {
-                            fry_seasoning_data['STOCK_QUANTITY']})")
+                            fry_seasoning_stock})")
 
                 fry_price = (float(fry_type_data["PRICE"]) +
                              float(fry_size_data["PRICE"]) +
@@ -751,7 +778,7 @@ async def create_order(order: OrderRequest):
                 fry_items_to_create.append({
                     "fry_data": fry,
                     "price": fry_price,
-                    "fry_size_value": fry_size_data["FRY_SIZE"]
+                    "fry_size_value": fry_size_value
                 })
                 total_price += fry_price
 

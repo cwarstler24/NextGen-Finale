@@ -78,24 +78,31 @@ class DB2ConnectionPool:
         self._initialized = True
         self._pool = Queue()
         self._all_connections = []
-        self._connections_lock = threading.Lock()
+        # Re-entrant lock prevents deadlock during lazy init when
+        # _ensure_pool_initialized -> _initialize_pool -> _create_connection
+        # re-enters connection accounting.
+        self._connections_lock = threading.RLock()
         self._conn_str = None
         self._min_connections = 2
         self._max_connections = 10
         self._current_size = 0
-        self._schema = None
-        self._environment = None
-        self._test_data = None
-        self._pool_initialized = True
+        self._schema = "SKYFAL"
+        self._environment = "PRODUCTION"
+        self._test_data = {}
+        self._pool_initialized = False
 
-        # Load database setup configuration
-        self._load_database_setup()
+    def _ensure_pool_initialized(self):
+        """Lazily initialize the pool the first time it is needed."""
+        if self._pool_initialized:
+            return
 
-        # Load credentials and build connection string
-        self._load_credentials()
-
-        # Create minimum number of connections
-        self._initialize_pool()
+        with self._connections_lock:
+            if self._pool_initialized:
+                return
+            self._load_database_setup()
+            self._load_credentials()
+            self._initialize_pool()
+            self._pool_initialized = True
 
     def _load_database_setup(self):
         """Load database setup configuration from database_setup.json"""
@@ -131,14 +138,14 @@ class DB2ConnectionPool:
         self.logger.info("Database credentials loaded successfully")
 
     def _create_connection(self):
-        """Create a new DB2 connection"""
+        """Create a new DB2 connection using persistent connection for pooling"""
         if ibm_db is None or ibm_db_dbi is None:
             raise RuntimeError(
                 "DB2 driver is not available. Install ibm_db and configure DB2 client libraries.")
 
         try:
-            # Create raw ibm_db connection
-            conn = ibm_db.connect(self._conn_str, "", "")
+            # Create persistent ibm_db connection for proper pooling
+            conn = ibm_db.pconnect(self._conn_str, "", "")
             # Wrap it in ibm_db_dbi for thread-safe operations
             dbi_conn = ibm_db_dbi.Connection(conn)
 
@@ -178,6 +185,8 @@ class DB2ConnectionPool:
         Raises:
             Exception: If unable to get a connection
         """
+        self._ensure_pool_initialized()
+
         try:
             # Try to get an existing connection from the pool
             conn = self._pool.get(timeout=timeout)
@@ -334,6 +343,8 @@ class DB2ConnectionPool:
         Returns:
             dict: Status of population operation with counts per table
         """
+        self._ensure_pool_initialized()
+
         if not self.is_test_environment():
             self.logger.warning(
                 "Attempted to populate test data in non-TEST environment. Operation blocked."
