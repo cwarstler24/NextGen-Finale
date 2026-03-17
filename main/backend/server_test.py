@@ -563,6 +563,208 @@ def test_order_history_with_toppings():
             also_print=True)
 
 
+def test_optional_bun_and_patty():
+    """Test POST /Order/ with optional buns and patties"""
+    LOGGER.info("=" * 60, also_print=True)
+    LOGGER.info("TEST 10: POST /Order/ - Optional Bun and Patty", also_print=True)
+    LOGGER.info("=" * 60, also_print=True)
+
+    # Get available items first
+    burger_response = client.get("/Items/Burger")
+    if burger_response.status_code != 200:
+        LOGGER.error("[FAIL] Could not fetch burger items\n", also_print=True)
+        return
+
+    burger_data = burger_response.json()
+
+    # Get initial stock quantities
+    initial_bun_stock = burger_data['buns'][0].get('quantity', 0)
+    initial_patty_stock = burger_data['patties'][0].get('quantity', 0)
+    initial_topping_stock = burger_data['toppings'][0].get('quantity', 0) if burger_data.get('toppings') else 0
+
+    LOGGER.info("Initial Stock Quantities:", also_print=True)
+    LOGGER.info(f"  - Bun: {initial_bun_stock}", also_print=True)
+    LOGGER.info(f"  - Patty: {initial_patty_stock}", also_print=True)
+    LOGGER.info(f"  - Topping: {initial_topping_stock}", also_print=True)
+
+    # Test Case 1: Burger with NO bun (patty + toppings only)
+    LOGGER.info("\n--- Test Case 1: Burger without bun ---", also_print=True)
+    order_data_no_bun = {
+        "customer": {
+            "name": "Test Customer",
+            "email": "testoptional1@example.com",
+            "shipping_address": "123 Test St",
+            "billing_address": "123 Test St"
+        },
+        "burgers": [
+            {
+                "patty_id": burger_data['patties'][0]['id'],
+                "patty_count": 1,
+                "toppings": [
+                    {"topping_id": burger_data['toppings'][0]['id'], "count": 1}
+                ] if burger_data.get('toppings') else []
+            }
+        ],
+        "fries": [],
+        "date": datetime.now().isoformat()
+    }
+
+    response = client.post("/Order/", json=order_data_no_bun)
+    LOGGER.info(f"Status Code: {response.status_code}", also_print=True)
+
+    if response.status_code == 200:
+        data = response.json()
+        LOGGER.info(f"Order ID: {data.get('order_id')}", also_print=True)
+        LOGGER.info(f"Total Price: ${data.get('total_price', 0):.2f}", also_print=True)
+
+        # Verify bun stock was NOT decremented
+        burger_response_after = client.get("/Items/Burger")
+        if burger_response_after.status_code == 200:
+            burger_data_after = burger_response_after.json()
+            final_bun_stock = burger_data_after['buns'][0].get('quantity', 0)
+            final_patty_stock = burger_data_after['patties'][0].get('quantity', 0)
+            final_topping_stock = burger_data_after['toppings'][0].get('quantity', 0) if burger_data_after.get('toppings') else 0
+
+            bun_change = initial_bun_stock - final_bun_stock
+            patty_change = initial_patty_stock - final_patty_stock
+            topping_change = initial_topping_stock - final_topping_stock
+
+            LOGGER.info(f"Bun change: -{bun_change} (expected 0)", also_print=True)
+            LOGGER.info(f"Patty change: -{patty_change} (expected -1)", also_print=True)
+            LOGGER.info(f"Topping change: -{topping_change} (expected -1)", also_print=True)
+
+            assert bun_change == 0, f"Bun stock should NOT change when no bun ordered, but changed by {bun_change}"
+            assert patty_change == 1, f"Patty stock should decrease by 1, but decreased by {patty_change}"
+            if burger_data.get('toppings'):
+                assert topping_change == 1, f"Topping stock should decrease by 1, but decreased by {topping_change}"
+
+            LOGGER.info("[PASS] Burger without bun - inventory correct\n", also_print=True)
+
+            # Update initial stocks for next test
+            initial_bun_stock = final_bun_stock
+            initial_patty_stock = final_patty_stock
+            initial_topping_stock = final_topping_stock
+    else:
+        LOGGER.error(f"[FAIL] Order without bun failed: {response.json()}\n", also_print=True)
+        return
+
+    # Test Case 2: Burger with NO patty (bun + toppings only)
+    LOGGER.info("--- Test Case 2: Burger without patty ---", also_print=True)
+    order_data_no_patty = {
+        "customer": {
+            "name": "Test Customer",
+            "email": "testoptional2@example.com",
+            "shipping_address": "123 Test St",
+            "billing_address": "123 Test St"
+        },
+        "burgers": [
+            {
+                "bun_id": burger_data['buns'][0]['id'],
+                "toppings": [
+                    {"topping_id": burger_data['toppings'][0]['id'], "count": 1}
+                ] if burger_data.get('toppings') else []
+            }
+        ],
+        "fries": [],
+        "date": datetime.now().isoformat()
+    }
+
+    response = client.post("/Order/", json=order_data_no_patty)
+    LOGGER.info(f"Status Code: {response.status_code}", also_print=True)
+
+    if response.status_code == 200:
+        data = response.json()
+        LOGGER.info(f"Order ID: {data.get('order_id')}", also_print=True)
+        LOGGER.info(f"Total Price: ${data.get('total_price', 0):.2f}", also_print=True)
+
+        # Verify patty stock was NOT decremented
+        burger_response_after = client.get("/Items/Burger")
+        if burger_response_after.status_code == 200:
+            burger_data_after = burger_response_after.json()
+            final_bun_stock = burger_data_after['buns'][0].get('quantity', 0)
+            final_patty_stock = burger_data_after['patties'][0].get('quantity', 0)
+            final_topping_stock = burger_data_after['toppings'][0].get('quantity', 0) if burger_data_after.get('toppings') else 0
+
+            bun_change = initial_bun_stock - final_bun_stock
+            patty_change = initial_patty_stock - final_patty_stock
+            topping_change = initial_topping_stock - final_topping_stock
+
+            LOGGER.info(f"Bun change: -{bun_change} (expected -1)", also_print=True)
+            LOGGER.info(f"Patty change: -{patty_change} (expected 0)", also_print=True)
+            LOGGER.info(f"Topping change: -{topping_change} (expected -1)", also_print=True)
+
+            assert bun_change == 1, f"Bun stock should decrease by 1, but decreased by {bun_change}"
+            assert patty_change == 0, f"Patty stock should NOT change when no patty ordered, but changed by {patty_change}"
+            if burger_data.get('toppings'):
+                assert topping_change == 1, f"Topping stock should decrease by 1, but decreased by {topping_change}"
+
+            LOGGER.info("[PASS] Burger without patty - inventory correct\n", also_print=True)
+
+            # Update initial stocks for next test
+            initial_bun_stock = final_bun_stock
+            initial_patty_stock = final_patty_stock
+            initial_topping_stock = final_topping_stock
+    else:
+        LOGGER.error(f"[FAIL] Order without patty failed: {response.json()}\n", also_print=True)
+        return
+
+    # Test Case 3: Burger with NEITHER bun nor patty (toppings only)
+    LOGGER.info("--- Test Case 3: Burger with only toppings ---", also_print=True)
+    order_data_toppings_only = {
+        "customer": {
+            "name": "Test Customer",
+            "email": "testoptional3@example.com",
+            "shipping_address": "123 Test St",
+            "billing_address": "123 Test St"
+        },
+        "burgers": [
+            {
+                "toppings": [
+                    {"topping_id": burger_data['toppings'][0]['id'], "count": 3}
+                ] if burger_data.get('toppings') else []
+            }
+        ],
+        "fries": [],
+        "date": datetime.now().isoformat()
+    }
+
+    response = client.post("/Order/", json=order_data_toppings_only)
+    LOGGER.info(f"Status Code: {response.status_code}", also_print=True)
+
+    if response.status_code == 200:
+        data = response.json()
+        LOGGER.info(f"Order ID: {data.get('order_id')}", also_print=True)
+        LOGGER.info(f"Total Price: ${data.get('total_price', 0):.2f}", also_print=True)
+
+        # Verify bun and patty stock were NOT decremented, only toppings
+        burger_response_after = client.get("/Items/Burger")
+        if burger_response_after.status_code == 200:
+            burger_data_after = burger_response_after.json()
+            final_bun_stock = burger_data_after['buns'][0].get('quantity', 0)
+            final_patty_stock = burger_data_after['patties'][0].get('quantity', 0)
+            final_topping_stock = burger_data_after['toppings'][0].get('quantity', 0) if burger_data_after.get('toppings') else 0
+
+            bun_change = initial_bun_stock - final_bun_stock
+            patty_change = initial_patty_stock - final_patty_stock
+            topping_change = initial_topping_stock - final_topping_stock
+
+            LOGGER.info(f"Bun change: -{bun_change} (expected 0)", also_print=True)
+            LOGGER.info(f"Patty change: -{patty_change} (expected 0)", also_print=True)
+            LOGGER.info(f"Topping change: -{topping_change} (expected -3)", also_print=True)
+
+            assert bun_change == 0, f"Bun stock should NOT change when no bun ordered, but changed by {bun_change}"
+            assert patty_change == 0, f"Patty stock should NOT change when no patty ordered, but changed by {patty_change}"
+            if burger_data.get('toppings'):
+                assert topping_change == 3, f"Topping stock should decrease by 3, but decreased by {topping_change}"
+
+            LOGGER.info("[PASS] Burger with only toppings - inventory correct\n", also_print=True)
+    else:
+        LOGGER.error(f"[FAIL] Order with only toppings failed: {response.json()}\n", also_print=True)
+        return
+
+    LOGGER.info("[PASS] All optional bun/patty tests passed\n", also_print=True)
+
+
 def run_all_tests():
     """Run all test functions"""
     LOGGER.info("\n" + "=" * 60, also_print=True)
@@ -578,7 +780,8 @@ def run_all_tests():
         test_create_order,
         test_create_order_invalid_ingredient,
         test_insufficient_inventory,
-        test_order_history_with_toppings
+        test_order_history_with_toppings,
+        test_optional_bun_and_patty
     ]
 
     passed = 0
