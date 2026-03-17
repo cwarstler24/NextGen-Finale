@@ -170,6 +170,7 @@ const customizationComponent = computed(() => {
 const optionGroups = computed(() => normalizeProductOptions(product.value, rawProductOptions.value));
 const selectedOptions = ref({});
 const selectedIndex = ref(0);
+const quantity = ref(1);
 const cartFeedbackMessage = ref('');
 
 let cartFeedbackTimeoutId = null;
@@ -205,6 +206,7 @@ watch(
     product,
     async (productKey, _previousProductKey, onCleanup) => {
         selectedIndex.value = 0;
+        quantity.value = 1;
         cartFeedbackMessage.value = '';
         clearCartFeedbackTimeout();
         rawProductOptions.value = {};
@@ -235,7 +237,13 @@ watch(
     { immediate: true }
 );
 
-const totalPrice = computed(() => {
+const normalizedQuantity = computed(() => Math.max(1, Number.parseInt(quantity.value, 10) || 1));
+
+function syncQuantityInput() {
+    quantity.value = normalizedQuantity.value;
+}
+
+const unitPrice = computed(() => {
     const base = Number(productData.value.price) || 0;
     const optionTotal = optionGroups.value.reduce((runningTotal, group) => {
         if (isMultipleSelectionGroup(group)) {
@@ -257,8 +265,10 @@ const totalPrice = computed(() => {
         return runningTotal + getOptionItemPrice(selectedItem);
     }, 0);
 
-    return `${(base + optionTotal).toFixed(2)}`;
+    return base + optionTotal;
 });
+
+const totalPrice = computed(() => `${(unitPrice.value * normalizedQuantity.value).toFixed(2)}`);
 
 function getOptionGroup(groupKey) {
     return optionGroups.value.find((group) => group.key === groupKey) ?? null;
@@ -334,8 +344,8 @@ const addToCart = () => {
         id: product.value,
         name: productData.value.name,
         image: productImages.value[0],
-        unitPrice: Number(totalPrice.value),
-        quantity: Number(document.getElementById('quantity').value) || 1,
+        unitPrice: unitPrice.value,
+        quantity: normalizedQuantity.value,
         options: optionGroups.value.map((group) => {
             if (isMultipleSelectionGroup(group)) {
                 const selectedItemsById = new Map(group.items.map((item) => [item.id, item]));
@@ -451,7 +461,15 @@ onBeforeUnmount(() => {
                 </button>
                 <label class="quantity-input-group" for="quantity">
                     <span>Qty</span>
-                    <input id="quantity" class="quantity-input" type="number" min="1" value="1" />
+                    <input
+                        id="quantity"
+                        v-model="quantity"
+                        class="quantity-input"
+                        type="number"
+                        min="1"
+                        @blur="syncQuantityInput"
+                        @change="syncQuantityInput"
+                    />
                 </label>
             </div>
 

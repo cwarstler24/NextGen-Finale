@@ -29,7 +29,7 @@ const itemImageMap = {
             },
             1: {
                 "src": '/images/items/whole_wheat_bun_top.png',
-                "height": 90,
+                "height": 80,
             },
         },
         "Sesame": {
@@ -39,17 +39,17 @@ const itemImageMap = {
             },
             1: {
                 "src": '/images/items/sesame_bun_top.png',
-                "height": 140,
+                "height": 80,
             },
         },
         "Brioche": {
             0: {
                 "src": '/images/items/brioche_bun_bottom.png',
-                "height": 50,
+                "height": 100,
             },
             1: {
                 "src": '/images/items/brioche_bun_top.png',
-                "height": 50,
+                "height": 80,
             },
         },
         "None": {
@@ -66,11 +66,11 @@ const itemImageMap = {
     patties: {
         "Beef": {
             "src": '/images/items/beef_patty.png',
-            "height": 50,
+            "height": 70,
         },
         "Chicken": {
             "src": '/images/items/chicken_patty.png',
-            "height": 50,
+            "height": 65,
         },
         "Veggie": {
             "src": '/images/items/veggie_patty.png',
@@ -96,19 +96,19 @@ const itemImageMap = {
         },
         "Pickles": {
             "src": '/images/items/pickels.png',
-            "height": 5,
+            "height": 10,
         },
         "Cheese": {
             "src": '/images/items/cheese.png',
-            "height": 50,
+            "height": 10,
         },
         "Bacon": {
             "src": '/images/items/bacon.png',
-            "height": 50,
+            "height": 30,
         },
         "Jalapeno": {
             "src": '/images/items/jalepeno.png',
-            "height": 50,
+            "height": 80,
         },
         "Mushroom": {
             "src": '/images/items/mushroom.png',
@@ -121,6 +121,18 @@ const itemImageMap = {
         "Mustard": {
             "src": '/images/items/mustard.png',
             "height": 50,
+        },
+        "Mayonnaise": {
+            "src": '/images/items/mayonnaise.png',
+            "height": 50,
+        },
+        "Avocado": {
+            "src": '/images/items/avocado.png',
+            "height": 15,
+        },
+        "None": {
+            "src": '/images/items/blank_png.png',
+            "height": 0,
         },
     },
 };
