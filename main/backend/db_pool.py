@@ -135,14 +135,14 @@ class DB2ConnectionPool:
         self.logger.info("Database credentials loaded successfully")
 
     def _create_connection(self):
-        """Create a new DB2 connection"""
+        """Create a new DB2 connection using persistent connection for pooling"""
         if ibm_db is None or ibm_db_dbi is None:
             raise RuntimeError(
                 "DB2 driver is not available. Install ibm_db and configure DB2 client libraries.")
 
         try:
-            # Create raw ibm_db connection
-            conn = ibm_db.connect(self._conn_str, "", "")
+            # Create persistent ibm_db connection for proper pooling
+            conn = ibm_db.pconnect(self._conn_str, "", "")
             # Wrap it in ibm_db_dbi for thread-safe operations
             dbi_conn = ibm_db_dbi.Connection(conn)
 

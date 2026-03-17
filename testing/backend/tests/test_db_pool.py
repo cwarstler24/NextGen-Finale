@@ -127,7 +127,7 @@ class TestCreateConnection:
         fake_dbi_conn = MagicMock()
         with patch("main.backend.db_pool.ibm_db") as mock_ibm_db, \
              patch("main.backend.db_pool.ibm_db_dbi") as mock_ibm_db_dbi:
-            mock_ibm_db.connect.return_value = MagicMock()
+            mock_ibm_db.pconnect.return_value = MagicMock()
             mock_ibm_db_dbi.Connection.return_value = fake_dbi_conn
             pool._create_connection()
         assert pool._current_size == 1
@@ -137,7 +137,7 @@ class TestCreateConnection:
         fake_dbi_conn = MagicMock()
         with patch("main.backend.db_pool.ibm_db") as mock_ibm_db, \
              patch("main.backend.db_pool.ibm_db_dbi") as mock_ibm_db_dbi:
-            mock_ibm_db.connect.return_value = MagicMock()
+            mock_ibm_db.pconnect.return_value = MagicMock()
             mock_ibm_db_dbi.Connection.return_value = fake_dbi_conn
             pool._create_connection()
         assert fake_dbi_conn in pool._all_connections
@@ -147,7 +147,7 @@ class TestCreateConnection:
         fake_dbi_conn = MagicMock()
         with patch("main.backend.db_pool.ibm_db") as mock_ibm_db, \
              patch("main.backend.db_pool.ibm_db_dbi") as mock_ibm_db_dbi:
-            mock_ibm_db.connect.return_value = MagicMock()
+            mock_ibm_db.pconnect.return_value = MagicMock()
             mock_ibm_db_dbi.Connection.return_value = fake_dbi_conn
             result = pool._create_connection()
         assert result is fake_dbi_conn
@@ -158,7 +158,7 @@ class TestCreateConnection:
         with patch("main.backend.db_pool.ibm_db") as mock_ibm_db, \
              patch("main.backend.db_pool.ibm_db_dbi"), \
              patch("main.backend.db_pool.ResponseCode"):
-            mock_ibm_db.connect.side_effect = Exception("connection refused")
+            mock_ibm_db.pconnect.side_effect = Exception("connection refused")
             with pytest.raises(Exception, match="connection refused"):
                 pool._create_connection()
 
@@ -168,7 +168,7 @@ class TestCreateConnection:
         with patch("main.backend.db_pool.ibm_db") as mock_ibm_db, \
              patch("main.backend.db_pool.ibm_db_dbi"), \
              patch("main.backend.db_pool.ResponseCode"):
-            mock_ibm_db.connect.side_effect = Exception("boom")
+            mock_ibm_db.pconnect.side_effect = Exception("boom")
             with pytest.raises(Exception):
                 pool._create_connection()
         dummy.error.assert_called()
@@ -177,7 +177,7 @@ class TestCreateConnection:
         pool, _ = _make_pool()
         with patch("main.backend.db_pool.ibm_db") as mock_ibm_db, \
              patch("main.backend.db_pool.ibm_db_dbi") as mock_ibm_db_dbi:
-            mock_ibm_db.connect.return_value = MagicMock()
+            mock_ibm_db.pconnect.return_value = MagicMock()
             mock_ibm_db_dbi.Connection.side_effect = [MagicMock(), MagicMock()]
             pool._create_connection()
             pool._create_connection()

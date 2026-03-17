@@ -304,17 +304,21 @@ def _build_order_daos(
     order_item_dao = MagicMock()
     order_item_dao.get_all_records.return_value = _ok([{"ORDER_ITEM_ID": 3}])
     order_item_dao.create_record.return_value = _ok() if order_item_create_ok else _fail()
+    order_item_dao.create_records_batch.return_value = _ok() if order_item_create_ok else _fail()
 
     burger_item_dao = MagicMock()
     burger_item_dao.get_all_records.return_value = _ok([{"BURGER_ID": 2}])
     burger_item_dao.create_record.return_value = _ok() if burger_create_ok else _fail()
+    burger_item_dao.create_records_batch.return_value = _ok() if burger_create_ok else _fail()
 
     burger_topping_dao = MagicMock()
     burger_topping_dao.create_record.return_value = _ok() if topping_create_ok else _fail()
+    burger_topping_dao.create_records_batch.return_value = _ok() if topping_create_ok else _fail()
 
     fry_item_dao = MagicMock()
     fry_item_dao.get_all_records.return_value = _ok([{"FRY_ID": 1}])
     fry_item_dao.create_record.return_value = _ok() if fry_create_ok else _fail()
+    fry_item_dao.create_records_batch.return_value = _ok() if fry_create_ok else _fail()
 
     bun_dao = MagicMock()
     bun_dao.get_by_key.return_value = _ok({"PRICE": 1.00})
