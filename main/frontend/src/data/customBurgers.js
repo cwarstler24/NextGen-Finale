@@ -179,6 +179,23 @@ export const customBurger = [
             { type: "Ranch", qty: 1 },
         ],
     },
+    {
+        id: 17,
+        name: "The Big Wet",
+        description: "This \"burger\" will \"wet\" your appetite. Its a slurry of several sauces! Does it taste good? Probably not, but try it out anyways to justify us putting it on the menu.",
+        bun: "None",
+        patty: "None",
+        toppings: [
+            { type: "Mayonnaise", qty: 3 },
+            { type: "Ketchup", qty: 3 },
+            { type: "Mustard", qty: 3 },
+            { type: "Ranch", qty: 3 },
+            { type: "Special Slime Sauce", qty: 3 },
+            { type: "Jalapeno Jelly", qty: 3 },
+            { type: "Honey", qty: 3 },
+            { type: "Peanut Butter", qty: 1 },
+        ],
+    }
 ];
 
 
