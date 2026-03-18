@@ -450,7 +450,6 @@ onBeforeUnmount(() => {
         <component
             :is="BurgerImage"
             v-if="product === 'burger'"
-            :image-src="productImages[selectedIndex]"
             :selected-bun="selectedBurgerBun"
             :selected-patty="selectedBurgerPatty"
             :selected-toppings="selectedBurgerToppings"

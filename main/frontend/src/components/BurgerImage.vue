@@ -206,6 +206,7 @@ watch(
             for (const topping of selectedToppings) {
                 for (toppingCount = 0; toppingCount < topping.quantity; toppingCount++) {
                     let item = getTopping(topping.name);
+                    if (!item) continue;
                     item.isFlipped = toppingCount % 2 === 1;
                     reversedToppings.push(item);
                 }
@@ -230,22 +231,30 @@ watch(
 
 function getBunTop(bun){
     if (!bun) return null;
-    return createStackItem(itemImageMap.buns[bun][0], `Image of ${bun} bun top`);
+    const bunImages = itemImageMap.buns[bun];
+    if (!bunImages) return null;
+    return createStackItem(bunImages[0], `Image of ${bun} bun top`);
 }
 
 function getBunBottom(bun){
     if (!bun) return null;
-    return createStackItem(itemImageMap.buns[bun][1], `Image of ${bun} bun bottom`);
+    const bunImages = itemImageMap.buns[bun];
+    if (!bunImages) return null;
+    return createStackItem(bunImages[1], `Image of ${bun} bun bottom`);
 }
 
 function getPatty(patty){
     if (!patty) return null;
-    return createStackItem(itemImageMap.patties[patty], `Image of ${patty}`);
+    const pattyImage = itemImageMap.patties[patty];
+    if (!pattyImage) return null;
+    return createStackItem(pattyImage, `Image of ${patty}`);
 }
 
 function getTopping(topping){
     if (!topping) return null;
-    return createStackItem(itemImageMap.toppings[topping], `Image of ${topping}`);
+    const toppingImage = itemImageMap.toppings[topping];
+    if (!toppingImage) return null;
+    return createStackItem(toppingImage, `Image of ${topping}`);
 }
 
 function createStackItem(item, alt){
