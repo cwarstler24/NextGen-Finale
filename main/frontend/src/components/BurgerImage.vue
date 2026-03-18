@@ -29,7 +29,7 @@ const itemImageMap = {
             },
             1: {
                 "src": '/images/items/whole_wheat_bun_top.png',
-                "height": 80,
+                "height": 120,
             },
         },
         "Sesame": {
@@ -49,7 +49,7 @@ const itemImageMap = {
             },
             1: {
                 "src": '/images/items/brioche_bun_top.png',
-                "height": 80,
+                "height": 140,
             },
         },
         "None": {
@@ -106,25 +106,25 @@ const itemImageMap = {
             "src": '/images/items/bacon.png',
             "height": 30,
         },
-        "Jalapeno": {
+        "Jalapenos": {
             "src": '/images/items/jalepeno.png',
-            "height": 80,
+            "height": 20,
         },
-        "Mushroom": {
+        "Mushrooms": {
             "src": '/images/items/mushroom.png',
-            "height": 50,
+            "height": 10,
         },
         "Ketchup": {
             "src": '/images/items/ketchup.png',
-            "height": 50,
+            "height": 5,
         },
         "Mustard": {
             "src": '/images/items/mustard.png',
-            "height": 50,
+            "height": 5,
         },
         "Mayonnaise": {
             "src": '/images/items/mayonnaise.png',
-            "height": 50,
+            "height": 5,
         },
         "Avocado": {
             "src": '/images/items/avocado.png',

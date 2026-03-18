@@ -363,6 +363,11 @@ const addToCart = () => {
         return;
     }
 
+    if (totalPrice.value === '0.00') {
+        showCartFeedback('Please select at least one option before adding to cart.');
+        return;
+    }
+
     addItem({
         id: product.value,
         name: productData.value.name,
