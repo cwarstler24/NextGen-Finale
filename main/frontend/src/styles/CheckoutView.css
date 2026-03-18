@@ -1,0 +1,126 @@
+.checkout-page {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.9fr);
+    align-items: start;
+}
+
+.checkout-summary,
+.checkout-customer,
+.order-summary-content,
+.checkout-form,
+.form-group,
+.order-item-info {
+    display: grid;
+    gap: 1rem;
+}
+
+.checkout-customer {
+    position: sticky;
+    top: 1rem;
+}
+
+.order-items {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.order-item-info,
+.order-item-info h2,
+.order-item-info p,
+.checkout-summary h1,
+.checkout-customer h1 {
+    margin: 0;
+}
+
+.order-item-info p {
+    color: #64748b;
+}
+
+.order-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.order-total {
+    padding-top: 1rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.35);
+    font-size: 1.05rem;
+}
+
+.input {
+    width: 100%;
+    margin: 0;
+    display: grid;
+    gap: 0.4rem;
+    box-sizing: border-box;
+}
+
+.input label {
+    font-weight: 600;
+}
+
+.input input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #0f172a;
+    font: inherit;
+    box-sizing: border-box;
+}
+
+.input input:focus {
+    outline: 2px solid rgba(56, 189, 248, 0.2);
+    outline-offset: 1px;
+    border-color: #38bdf8;
+}
+
+.input input::placeholder {
+    color: #94a3b8;
+}
+
+.checkout-actions {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.checkout-actions button {
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .checkout-page {
+        grid-template-columns: 1fr;
+    }
+
+    .checkout-customer {
+        position: static;
+    }
+}
+
+@media (max-width: 600px) {
+    .order-item,
+    .order-total {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

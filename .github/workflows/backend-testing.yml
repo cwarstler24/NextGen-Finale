@@ -1,0 +1,36 @@
+name: Backend Tests
+
+on:
+  pull_request:
+    paths:
+      - 'testing/backend/**'
+      - 'main/backend/**'
+      - '.github/workflows/backend-testing.yml'
+  push:
+    branches:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: testing/backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r ../../requirements.txt
+
+      - name: Run Pytest
+        run: |
+          echo "::group::Pytest Results"
+          pytest -o addopts="-ra -vv --tb=short --color=yes --cov=main.backend --cov=main.utilities --cov-report=html:pytestCov.html --cov-fail-under=90"
+          echo "::endgroup::"
