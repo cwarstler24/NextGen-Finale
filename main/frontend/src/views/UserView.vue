@@ -32,10 +32,48 @@ function formatOrderDate(value) {
     return orderDateFormatter.format(parsedDate);
 }
 
+function formatItemCount(count) {
+    return `${count} item${count === 1 ? '' : 's'}`;
+}
+
+function normalizeOrderItem(item) {
+    return {
+        item_type: typeof item?.item_type === 'string' && item.item_type.trim() !== ''
+            ? item.item_type
+            : 'Item',
+        name: typeof item?.name === 'string' && item.name.trim() !== ''
+            ? item.name
+            : 'Unnamed item',
+        price: Number(item?.price) || 0,
+    };
+}
+
 const orders = computed(() => {
     const userOrders = Array.isArray(user.value?.orders) ? user.value.orders : [];
 
-    return [...userOrders].sort((left, right) => new Date(right.date) - new Date(left.date));
+    return userOrders
+        .map((order, index) => {
+            const items = Array.isArray(order?.items)
+                ? order.items.map((item) => normalizeOrderItem(item))
+                : [];
+            const parsedDate = new Date(order?.date);
+            const sortTimestamp = Number.isNaN(parsedDate.getTime()) ? 0 : parsedDate.getTime();
+            const orderId = Number.isInteger(order?.order_id)
+                ? order.order_id
+                : null;
+
+            return {
+                orderKey: orderId !== null ? `order-${orderId}` : `order-${index}-${order?.date ?? 'unknown'}`,
+                orderIdLabel: orderId !== null ? `Order #${orderId}` : `Order ${index + 1}`,
+                date: order?.date ?? '',
+                displayDate: formatOrderDate(order?.date ?? ''),
+                price: Number(order?.price) || 0,
+                items,
+                itemCount: items.length,
+                sortTimestamp,
+            };
+        })
+        .sort((left, right) => right.sortTimestamp - left.sortTimestamp);
 });
 
 const totalSpent = computed(() => {
@@ -203,15 +241,47 @@ async function getUser() {
 
                 <ul v-else class="orders-list">
                     <li
-                        v-for="(order, index) in orders"
-                        :key="`${order.date}-${index}`"
-                        class="order-row"
+                        v-for="order in orders"
+                        :key="order.orderKey"
+                        class="orders-list-item"
                     >
-                        <div>
-                            <strong>{{ formatOrderDate(order.date) }}</strong>
-                            <p>Order #{{ orders.length - index }}</p>
-                        </div>
-                        <strong>{{ formatCurrency(order.price) }}</strong>
+                        <details class="order-card" :open="orders.length === 1">
+                            <summary class="order-summary">
+                                <div class="order-summary-main">
+                                    <div class="order-summary-topline">
+                                        <strong>{{ order.orderIdLabel }}</strong>
+                                        <span class="order-item-count">{{ formatItemCount(order.itemCount) }}</span>
+                                    </div>
+                                    <p>{{ order.displayDate }}</p>
+                                </div>
+                                <div class="order-summary-side">
+                                    <strong class="order-price">{{ formatCurrency(order.price) }}</strong>
+                                    <span class="order-summary-toggle">View items</span>
+                                </div>
+                            </summary>
+
+                            <div class="order-details">
+                                <ul v-if="order.items.length > 0" class="order-items-list">
+                                    <li
+                                        v-for="(item, itemIndex) in order.items"
+                                        :key="`${order.orderKey}-item-${itemIndex}`"
+                                        class="order-item-row"
+                                    >
+                                        <div class="order-item-copy">
+                                            <span class="item-type-badge">{{ item.item_type }}</span>
+                                            <p class="order-item-name">
+                                                {{ item.name }}
+                                            </p>
+                                        </div>
+                                        <strong class="order-item-price">{{ formatCurrency(item.price) }}</strong>
+                                    </li>
+                                </ul>
+
+                                <p v-else class="order-items-empty">
+                                    No item details were returned for this order.
+                                </p>
+                            </div>
+                        </details>
                     </li>
                 </ul>
             </article>

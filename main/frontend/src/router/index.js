@@ -4,6 +4,7 @@ import ProductView from '../views/ProductView.vue'
 import CartView from '../views/CartView.vue'
 import CheckoutView from '../views/CheckoutView.vue'
 import UserView from '../views/UserView.vue'
+import ConfirmationView from '../views/ConfirmationView.vue'
 
 const routes = [
     {
@@ -31,6 +32,11 @@ const routes = [
         name: "user",
         component: UserView,
     },
+    {
+        path: "/confirmation",
+        name: "confirm",
+        component: ConfirmationView,
+    }
 ]
 
 const router = createRouter({
