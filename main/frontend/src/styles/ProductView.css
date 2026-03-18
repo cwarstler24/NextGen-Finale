@@ -168,6 +168,30 @@
     box-shadow: 0 12px 30px rgba(22, 101, 52, 0.08);
 }
 
+.preset-status {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 0.85rem 1rem;
+    border-radius: 14px;
+    border: 1px solid #bae6fd;
+    background: #f0f9ff;
+    color: #0c4a6e;
+    font-weight: 600;
+}
+
+.preset-status__message {
+    flex: 1 1 18rem;
+}
+
+.preset-status__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
 .product-status {
     padding: 0.85rem 1rem;
     border-radius: 14px;
@@ -330,6 +354,15 @@
 
     .details-grid {
         grid-template-columns: 1fr;
+    }
+
+    .preset-status {
+        align-items: stretch;
+    }
+
+    .preset-status__actions .secondary {
+        width: 100%;
+        justify-content: center;
     }
 }
 
