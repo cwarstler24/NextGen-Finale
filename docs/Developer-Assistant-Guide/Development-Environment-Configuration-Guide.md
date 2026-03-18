@@ -1,10 +1,10 @@
 ---
-description: To test The Frying Saucer application, you must have a virtual environment established and packages installed.
+description: You must have a virtual environment established and packages installed to test The Frying Saucer application.
 ---
 
 # Development Environment Configuration Guide
 
-To test The Frying Saucer application, you must have a virtual environment established and packages installed.
+You must have a virtual environment established and packages installed to test The Frying Saucer application.
 
 **Prerequisites**  
 

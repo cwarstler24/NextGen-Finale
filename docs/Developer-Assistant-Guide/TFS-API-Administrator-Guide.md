@@ -24,9 +24,25 @@ The TFS API is designed for:
 - Python
 - Git
 
+!!! note "note"
+    You must be on Rocket's VPN to access the TFS API.
+
 **Start the API**  
 
 - Run `uvicorn main.backend.server:app --reload`
+
+## TFS API Error Codes
+
+| Status Code | Description |
+| ----------- | ----------- |
+| 200 OK | Successful request |
+| 400 Bad Request | Invalid input or missing required fields |
+| 403 Forbidden | Access denied to the resource |
+| 404 Not Found | Resource not found |
+| 405 Method Not Allowed | HTTP method not supported for the endpoint |
+| 409 Conflict | Resource conflict (e.g., duplicate order) |
+| 500 Internal Server Error | Unexpected error on the server |
+| 503 Database Connection Failed | Unable to connect to the database |
 
 ## Endpoints
 

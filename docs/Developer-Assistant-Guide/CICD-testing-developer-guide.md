@@ -20,7 +20,7 @@ Automates linting, testing, and dependency management. Runs automatically on **e
 A form of **static code analysis**. Linting checks for code inconsistences, potential bugs, overall code structure, and code smells.
 
 **Testing the Frontend and Backend Pipelines**  
-Testing in this project is split between the frontend and backend so both layers are validated in CI. The frontend uses **Vitest** with the Vue toolchain to run fast component and browser-like tests, while the backend uses **Pytest** for automated Python test execution. These test workflows run through **GitHub Actions** on every push, helping catch regressions before changes are merged.
+Testing in this project is split between the frontend and backend so both layers are validated in CI. The frontend uses **Vitest** with the Vue toolchain to run fast component tests, while the backend uses **Pytest** for automated Python test execution. These test workflows run through **GitHub Actions** on every push, helping catch regressions before changes are merged.
 
 ## GitHub Actions Overview
 
