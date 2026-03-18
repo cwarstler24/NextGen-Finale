@@ -93,12 +93,12 @@ class TestGetFriesItems:
             response = client.get("/Items/Fries")
         assert response.status_code == 500
 
-    def test_returns_correct_price_and_quantity(self):
+    def test_returns_correct_price_and_no_quantity(self):
         with _patch_fries_daos():
             response = client.get("/Items/Fries")
         size = response.json()["sizes"][0]
         assert size["price"] == pytest.approx(0.50)
-        assert size["quantity"] == 10
+        assert "quantity" not in size
 
 
 # ==================== GET /Items/Burger ====================

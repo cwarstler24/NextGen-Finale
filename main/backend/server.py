@@ -72,7 +72,7 @@ class FrySizeItem(BaseModel):
     id: int
     name: str
     price: float
-    quantity: int
+    # Note: No quantity field - sizes are multipliers, not inventory
 
 
 class FryTypeItem(BaseModel):
@@ -162,8 +162,8 @@ class ToppingSelection(BaseModel):
 
 
 class BurgerOrder(BaseModel):
-    bun_id: int
-    patty_id: int
+    bun_id: Optional[int] = None
+    patty_id: Optional[int] = None
     patty_count: int = 1
     toppings: List[ToppingSelection] = Field(default_factory=list)
     topping_ids: Optional[List[int]] = None
@@ -240,8 +240,8 @@ async def get_fries_items():
             {
                 "id": item["FRY_SIZE_ID"],
                 "name": f"{item['FRY_SIZE']} oz",
-                "price": float(item["PRICE"]),
-                "quantity": item.get("STOCK_QUANTITY", 0)
+                "price": float(item["PRICE"])
+                # Note: Fry sizes don't have stock_quantity - they're just size multipliers
             }
             for item in sizes_result.data
         ]
@@ -630,9 +630,9 @@ async def create_order(order: OrderRequest):
             burger_items_to_create = []
 
             # Batch-fetch all unique buns, patties, and toppings in 3 queries
-            # Filter out None values since buns and patties are now optional
-            bun_ids = list(set(b["bun_id"] for b in sanitized_burgers if b.get("bun_id") is not None))
-            patty_ids = list(set(b["patty_id"] for b in sanitized_burgers if b.get("patty_id") is not None))
+            # Filter out None and 0 (sentinel for None) since buns and patties are now optional
+            bun_ids = list(set(b["bun_id"] for b in sanitized_burgers if b.get("bun_id") not in (None, 0)))
+            patty_ids = list(set(b["patty_id"] for b in sanitized_burgers if b.get("patty_id") not in (None, 0)))
             topping_ids = list(set(
                 t["topping_id"]
                 for b in sanitized_burgers
@@ -669,9 +669,9 @@ async def create_order(order: OrderRequest):
             for burger in sanitized_burgers:
                 burger_price = 0.0
                 
-                # Handle optional bun
+                # Handle optional bun (0 = None sentinel value)
                 bun_id = burger.get("bun_id")
-                if bun_id is not None:
+                if bun_id is not None and bun_id != 0:
                     bun_data = bun_lookup.get(bun_id)
                     if not bun_data:
                         raise HTTPException(
@@ -684,10 +684,10 @@ async def create_order(order: OrderRequest):
                             detail=f"Insufficient stock for bun ID {bun_id}")
                     burger_price += float(bun_data["PRICE"])
                 
-                # Handle optional patty
+                # Handle optional patty (0 = None sentinel value)
                 patty_id = burger.get("patty_id")
                 patty_count = burger.get("patty_count", 1)
-                if patty_id is not None:
+                if patty_id is not None and patty_id != 0:
                     patty_data = patty_lookup.get(patty_id)
                     if not patty_data:
                         raise HTTPException(
@@ -824,8 +824,8 @@ async def create_order(order: OrderRequest):
                 all_burger_items.append({
                     "BURGER_ID": next_burger_id,
                     "ORDER_ITEM_ID": next_order_item_id,
-                    "BUN_TYPE": burger.get("bun_id"),
-                    "PATTY_TYPE": burger.get("patty_id"),
+                    "BUN_TYPE": burger.get("bun_id") or 0,  # Use 0 for None to avoid DB NULL constraint
+                    "PATTY_TYPE": burger.get("patty_id") or 0,  # Use 0 for None to avoid DB NULL constraint
                     "PATTY_COUNT": burger.get("patty_count", 1)
                 })
 
@@ -891,14 +891,14 @@ async def create_order(order: OrderRequest):
             for burger_item_data in burger_items_to_create:
                 burger = burger_item_data["burger_data"]
                 
-                # Only decrement if bun is present (buns are optional)
+                # Only decrement if bun is present (buns are optional, 0 = None sentinel)
                 bun_id = burger.get("bun_id")
-                if bun_id is not None:
+                if bun_id is not None and bun_id != 0:
                     bun_decrements[bun_id] = bun_decrements.get(bun_id, 0) - 1
 
-                # Only decrement if patty is present (patties are optional)
+                # Only decrement if patty is present (patties are optional, 0 = None sentinel)
                 patty_id = burger.get("patty_id")
-                if patty_id is not None:
+                if patty_id is not None and patty_id != 0:
                     patty_count = burger.get("patty_count", 1)
                     patty_decrements[patty_id] = patty_decrements.get(patty_id, 0) - patty_count
 

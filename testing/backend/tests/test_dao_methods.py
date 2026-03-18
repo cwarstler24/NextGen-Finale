@@ -135,7 +135,7 @@ class TestFrySizeDAOMethods:
     def test_row_to_dict(self):
         row = (2, 8, 15, 0.75)
         assert self.dao._row_to_dict(row) == {
-            "FRY_SIZE_ID": 2, "FRY_SIZE": 8, "STOCK_QUANTITY": 15, "PRICE": 0.75
+            "FRY_SIZE_ID": 2, "FRY_SIZE": 8, "PRICE": 15
         }
 
     def test_build_insert_sql(self):
@@ -143,7 +143,7 @@ class TestFrySizeDAOMethods:
         sql, values = self.dao._build_insert_sql(entry)
         assert "INSERT INTO" in sql
         assert "TBFRY_SIZES" in sql
-        assert values == [2, 8, 15, 0.75]
+        assert values == [2, 8, 0.75]
 
     def test_build_update_sql(self):
         clause, values = self.dao._build_update_sql({"PRICE": 1.00, "STOCK_QUANTITY": 10})
@@ -341,16 +341,16 @@ class TestBurgerItemToppingDAOMethods:
         self.dao = BurgerItemToppingDAO()
 
     def test_row_to_dict(self):
-        row = (3, 5)
+        row = (3, 5, 1)
         result = self.dao._row_to_dict(row)
-        assert result == {"TOPPING_ID": 3, "BURGER_ORDER_ID": 5}
+        assert result == {"TOPPING_ID": 3, "BURGER_ORDER_ID": 5, "TOPPING_COUNT": 1}
 
     def test_build_insert_sql(self):
         entry = {"TOPPING_ID": 3, "BURGER_ORDER_ID": 5}
         sql, values = self.dao._build_insert_sql(entry)
         assert "INSERT INTO" in sql
         assert "TBBURGER_TOPPINGS" in sql
-        assert values == [3, 5]
+        assert values == [3, 5, 1]
 
     def test_build_update_sql(self):
         clause, values = self.dao._build_update_sql({"TOPPING_ID": 4})

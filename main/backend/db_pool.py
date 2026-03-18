@@ -80,7 +80,7 @@ class DB2ConnectionPool:
         self._all_connections = []
         self._connections_lock = threading.Lock()
         self._conn_str = None
-        self._min_connections = 2
+        self._min_connections = 1  # Temporarily reduced for VPN testing
         self._max_connections = 10
         self._current_size = 0
         self._schema = "SKYFAL"
@@ -131,6 +131,7 @@ class DB2ConnectionPool:
             f"UID={credentials['uid']};"
             f"PWD={credentials['pwd']};"
             f"CURRENTSCHEMA={self._schema};"
+            f"CONNECTTIMEOUT=5;"  # 5 second connection timeout for faster VPN failure
         )
         self.logger.info("Database credentials loaded successfully")
 
@@ -141,21 +142,35 @@ class DB2ConnectionPool:
                 "DB2 driver is not available. Install ibm_db and configure DB2 client libraries.")
 
         try:
-            # Create persistent ibm_db connection for proper pooling
-            conn = ibm_db.pconnect(self._conn_str, "", "")
+            # Log connection attempt (without credentials)
+            self.logger.info(f"Attempting DB2 connection to {self._schema} schema...")
+            
+            # Use regular connect() - pconnect() has cursor state issues with executemany()
+            conn = ibm_db.connect(self._conn_str, "", "")
+            self.logger.info("Raw DB2 connection established, wrapping in DBI...")
+            
             # Wrap it in ibm_db_dbi for thread-safe operations
             dbi_conn = ibm_db_dbi.Connection(conn)
+            self.logger.info("DBI wrapper created successfully")
 
-            with self._connections_lock:
-                self._all_connections.append(dbi_conn)
-                self._current_size += 1
+            # Note: No lock needed here - this is only called from _initialize_pool()
+            # which is already protected by _connections_lock in _ensure_pool_initialized()
+            self._all_connections.append(dbi_conn)
+            self._current_size += 1
+            self.logger.info(f"Connection added to tracking list (pool size: {self._current_size})")
 
             self.logger.info(
                 f"Created new DB2 connection (pool size: {self._current_size})")
             return dbi_conn
 
         except Exception as e:
-            self.logger.error(f"Failed to create DB2 connection: {e}")
+            error_message = str(e)
+            # Check if it's a timeout error
+            if "timeout" in error_message.lower() or "timed out" in error_message.lower():
+                self.logger.error(
+                    f"DB2 connection timeout - check VPN/network connectivity: {e}")
+            else:
+                self.logger.error(f"Failed to create DB2 connection: {e}")
             # Create error response for connection failure
             ResponseCode("DB_CONNECTION_FAILED", data=str(e))
             raise
@@ -164,9 +179,13 @@ class DB2ConnectionPool:
         """Initialize the pool with minimum connections"""
         self.logger.info(
             f"Initializing connection pool with {self._min_connections} connections")
-        for _ in range(self._min_connections):
+        for i in range(self._min_connections):
+            self.logger.info(f"Creating connection {i+1}/{self._min_connections}...")
             conn = self._create_connection()
+            self.logger.info(f"Connection {i+1} created, adding to pool queue...")
             self._pool.put(conn)
+            self.logger.info(f"Connection {i+1} added to pool queue successfully")
+        self.logger.info(f"Connection pool initialized with {self._min_connections} connections")
 
     def get_connection(self, timeout=5):
         """
