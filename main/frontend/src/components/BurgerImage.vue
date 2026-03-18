@@ -20,119 +20,148 @@ const props = defineProps({
     },
 });
 
+// Define the image sources and dimensions for each item type
+// src: image source for the item
+// imageHeight: sets how far down the image is displayed from the item above it
+// stackOffset: adjust how much the item is covered by the item above it 
 const itemImageMap = {
     buns: {
         "Whole Wheat": {
             0: {
                 "src": '/images/items/whole_wheat_bun_bottom.png',
-                "height": 100,
+                "imageHeight": 50,
+                "stackOffset": 15,
             },
             1: {
                 "src": '/images/items/whole_wheat_bun_top.png',
-                "height": 120,
+                "imageHeight": 100,
+                "stackOffset": 0,
             },
         },
         "Sesame": {
             0: {
                 "src": '/images/items/sesame_bun_bottom.png',
-                "height": 100,
+                "imageHeight": 40,
+                "stackOffset": 0,
             },
             1: {
                 "src": '/images/items/sesame_bun_top.png',
-                "height": 80,
+                "imageHeight": 80,
+                "stackOffset": -10,
             },
         },
         "Brioche": {
             0: {
                 "src": '/images/items/brioche_bun_bottom.png',
-                "height": 100,
+                "imageHeight": 50,
+                "stackOffset": 15,
             },
             1: {
                 "src": '/images/items/brioche_bun_top.png',
-                "height": 140,
+                "imageHeight": 130,
+                "stackOffset": 0,
             },
         },
         "None": {
             0: {
                 "src": '/images/items/blank_png.png',
-                "height": 0,
+                "imageHeight": 0,
+                "stackOffset": 0,
             },
             1: {
                 "src": '/images/items/blank_png.png',
-                "height": 0,
+                "imageHeight": 0,
+                "stackOffset": 0,
             },
         },
     },
     patties: {
         "Beef": {
             "src": '/images/items/beef_patty.png',
-            "height": 70,
+            "imageHeight": 70,
+            "stackOffset": 0,
         },
         "Chicken": {
             "src": '/images/items/chicken_patty.png',
-            "height": 65,
+            "imageHeight": 55,
+            "stackOffset": 5,
         },
         "Veggie": {
             "src": '/images/items/veggie_patty.png',
-            "height": 70,
+            "imageHeight": 70,
+            "stackOffset": 0,
         },
         "None": {
             "src": '/images/items/blank_png.png',
-            "height": 0,
+            "imageHeight": 0,
+            "stackOffset": 0,
         },
     },
     toppings: {
         "Lettuce": {
             "src": '/images/items/lettuce.png',
-            "height": 35,
+            "imageHeight": 65,
+            "stackOffset": 10,
         },
         "Tomato": {
             "src": '/images/items/tomato.png',
-            "height": 20,
+            "imageHeight": 10,
+            "stackOffset": -10,
         },
         "Onion": {
             "src": '/images/items/onion.png',
-            "height": 10,
+            "imageHeight": 10,
+            "stackOffset": -15,
         },
         "Pickles": {
             "src": '/images/items/pickels.png',
-            "height": 10,
+            "imageHeight": 15,
+            "stackOffset": -15,
         },
         "Cheese": {
             "src": '/images/items/cheese.png',
-            "height": 10,
+            "imageHeight": 5,
+            "stackOffset": 5,
         },
         "Bacon": {
             "src": '/images/items/bacon.png',
-            "height": 30,
+            "imageHeight": 20,
+            "stackOffset": 10,
         },
         "Jalapenos": {
             "src": '/images/items/jalepeno.png',
-            "height": 20,
+            "imageHeight": 20,
+            "stackOffset": 0,
         },
         "Mushrooms": {
             "src": '/images/items/mushroom.png',
-            "height": 10,
+            "imageHeight": 10,
+            "stackOffset": 0,
         },
         "Ketchup": {
             "src": '/images/items/ketchup.png',
-            "height": 5,
+            "imageHeight": 5,
+            "stackOffset": 0,
         },
         "Mustard": {
             "src": '/images/items/mustard.png',
-            "height": 5,
+            "imageHeight": 5,
+            "stackOffset": 0,
         },
         "Mayonnaise": {
             "src": '/images/items/mayonnaise.png',
-            "height": 5,
+            "imageHeight": 5,
+            "stackOffset": 0,
         },
         "Avocado": {
             "src": '/images/items/avocado.png',
-            "height": 15,
+            "imageHeight": 0,
+            "stackOffset": 5,
         },
         "None": {
             "src": '/images/items/blank_png.png',
-            "height": 0,
+            "imageHeight": 0,
+            "stackOffset": 0,
         },
     },
 };
@@ -147,11 +176,11 @@ const positionedItemStack = computed(() => {
         const positionedItem = {
             ...item,
             key: `${item.alt}-${index}`,
-            top: currentY,
+            top: currentY - item.stackOffset,
             zIndex: totalItems - index,
         };
 
-        currentY += item.height;
+        currentY += item.imageHeight;
         return positionedItem;
     });
 });
@@ -162,7 +191,7 @@ const stackCanvasHeight = computed(() => {
     }
 
     const lastItem = positionedItemStack.value[positionedItemStack.value.length - 1];
-    return Math.max(lastItem.top + lastItem.height, 320);
+    return Math.max(lastItem.top + lastItem.imageHeight + 50, 320);
 });
 
 watch(
@@ -180,7 +209,9 @@ watch(
         if (selectedToppings.length > 0) {
             for (const topping of selectedToppings) {
                 for (toppingCount = 0; toppingCount < topping.quantity; toppingCount++) {
-                    reversedToppings.push(getTopping(topping.name));
+                    let item = getTopping(topping.name);
+                    item.isFlipped = toppingCount % 2 === 1;
+                    reversedToppings.push(item);
                 }
             }
             stack.push(...reversedToppings.reverse());
@@ -203,37 +234,31 @@ watch(
 
 function getBunTop(bun){
     if (!bun) return null;
-    return {
-        src: itemImageMap.buns[bun][0].src,
-        height: itemImageMap.buns[bun][0].height,
-        alt: `Image of ${bun} bun top`,
-    };
+    return createStackItem(itemImageMap.buns[bun][0], `Image of ${bun} bun top`);
 }
 
 function getBunBottom(bun){
     if (!bun) return null;
-    return {
-        src: itemImageMap.buns[bun][1].src,
-        height: itemImageMap.buns[bun][1].height,
-        alt: `Image of ${bun} bun bottom`,
-    };
+    return createStackItem(itemImageMap.buns[bun][1], `Image of ${bun} bun bottom`);
 }
 
 function getPatty(patty){
     if (!patty) return null;
-    return {
-        src: itemImageMap.patties[patty].src,
-        height: itemImageMap.patties[patty].height,
-        alt: `Image of ${patty}`,
-    };
+    return createStackItem(itemImageMap.patties[patty], `Image of ${patty}`);
 }
 
 function getTopping(topping){
     if (!topping) return null;
+    return createStackItem(itemImageMap.toppings[topping], `Image of ${topping}`);
+}
+
+function createStackItem(item, alt){
     return {
-        src: itemImageMap.toppings[topping].src,
-        height: itemImageMap.toppings[topping].height,
-        alt: `Image of ${topping}`,
+        src: item.src,
+        imageHeight: item.imageHeight,
+        stackOffset: item.stackOffset,
+        isFlipped: false,
+        alt,
     };
 }
 
@@ -252,6 +277,7 @@ function getTopping(topping){
                 :src="item.src"
                 :alt="item.alt"
                 class="burger-layer"
+                :class="{ flipped: item.isFlipped }"
             />
         </div>
 
@@ -284,5 +310,8 @@ function getTopping(topping){
     display: block;
     width: 100%;
     height: auto;
+}
+.burger-layer.flipped {
+    transform: scaleX(-1);
 }
 </style>
