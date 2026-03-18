@@ -30,11 +30,11 @@ const itemImageMap = {
             0: {
                 "src": '/images/items/whole_wheat_bun_bottom.png',
                 "imageHeight": 50,
-                "stackOffset": 15,
+                "stackOffset": 5,
             },
             1: {
                 "src": '/images/items/whole_wheat_bun_top.png',
-                "imageHeight": 100,
+                "imageHeight": 105,
                 "stackOffset": 0,
             },
         },
@@ -42,23 +42,47 @@ const itemImageMap = {
             0: {
                 "src": '/images/items/sesame_bun_bottom.png',
                 "imageHeight": 40,
-                "stackOffset": 0,
+                "stackOffset": -15,
             },
             1: {
                 "src": '/images/items/sesame_bun_top.png',
-                "imageHeight": 80,
+                "imageHeight": 90,
                 "stackOffset": -10,
             },
         },
         "Brioche": {
             0: {
                 "src": '/images/items/brioche_bun_bottom.png',
-                "imageHeight": 50,
-                "stackOffset": 15,
+                "imageHeight": 70,
+                "stackOffset": 5,
             },
             1: {
                 "src": '/images/items/brioche_bun_top.png',
-                "imageHeight": 130,
+                "imageHeight": 100,
+                "stackOffset": 0,
+            },
+        },
+        "Pretzel": {
+            0: {
+                "src": '/images/items/pretzle_bun_bottom.png',
+                "imageHeight": 80,
+                "stackOffset": 5,
+            },
+            1: {
+                "src": '/images/items/pretzle_bun_top.png',
+                "imageHeight": 135,
+                "stackOffset": 0,
+            },
+        },
+        "Dirt": {
+            0: {
+                "src": '/images/items/dirt_bun_bottom.png',
+                "imageHeight": 90,
+                "stackOffset": 0,
+            },
+            1: {
+                "src": '/images/items/dirt_bun_top.png',
+                "imageHeight": 80,
                 "stackOffset": 0,
             },
         },
@@ -78,17 +102,32 @@ const itemImageMap = {
     patties: {
         "Beef": {
             "src": '/images/items/beef_patty.png',
-            "imageHeight": 70,
+            "imageHeight": 50,
             "stackOffset": 0,
         },
         "Chicken": {
             "src": '/images/items/chicken_patty.png',
-            "imageHeight": 55,
-            "stackOffset": 5,
+            "imageHeight": 45,
+            "stackOffset": 10,
         },
         "Veggie": {
             "src": '/images/items/veggie_patty.png',
-            "imageHeight": 70,
+            "imageHeight": 60,
+            "stackOffset": 5,
+        },
+        "Fish": {
+            "src": '/images/items/fish_patty.png',
+            "imageHeight": 45,
+            "stackOffset": 0,
+        },
+        "Smash": {
+            "src": '/images/items/smash_patty.png',
+            "imageHeight": 20,
+            "stackOffset": 0,
+        },
+        "Dirt": {
+            "src": '/images/items/dirt_patty.png',
+            "imageHeight": 55,
             "stackOffset": 0,
         },
         "None": {
@@ -100,22 +139,22 @@ const itemImageMap = {
     toppings: {
         "Lettuce": {
             "src": '/images/items/lettuce.png',
-            "imageHeight": 65,
+            "imageHeight": 45,
             "stackOffset": 10,
         },
         "Tomato": {
             "src": '/images/items/tomato.png',
             "imageHeight": 10,
-            "stackOffset": -10,
+            "stackOffset": -5,
         },
         "Onion": {
             "src": '/images/items/onion.png',
             "imageHeight": 10,
-            "stackOffset": -15,
+            "stackOffset": -10,
         },
         "Pickles": {
             "src": '/images/items/pickels.png',
-            "imageHeight": 15,
+            "imageHeight": 5,
             "stackOffset": -15,
         },
         "Cheese": {
@@ -125,8 +164,8 @@ const itemImageMap = {
         },
         "Bacon": {
             "src": '/images/items/bacon.png',
-            "imageHeight": 20,
-            "stackOffset": 10,
+            "imageHeight": 15,
+            "stackOffset": 15,
         },
         "Jalapenos": {
             "src": '/images/items/jalepeno.png',
@@ -157,6 +196,76 @@ const itemImageMap = {
             "src": '/images/items/avocado.png',
             "imageHeight": 0,
             "stackOffset": 5,
+        },
+        "Barbecue": {
+            "src": '/images/items/barbecue.png',
+            "imageHeight": 5,
+            "stackOffset": 0,
+        },
+        "Blue Cheese": {
+            "src": '/images/items/blue_cheese.png',
+            "imageHeight": 5,
+            "stackOffset": 5,
+        },
+        "Cheeze Wiz": {
+            "src": '/images/items/cheez_wiz.png',
+            "imageHeight": 5,
+            "stackOffset": 0,
+        },
+        "Colby Jack": {
+            "src": '/images/items/colby_jack.png',
+            "imageHeight": 5,
+            "stackOffset": 5,
+        },
+        "Crispy Onions": {
+            "src": '/images/items/crispy_onions.png',
+            "imageHeight": 10,
+            "stackOffset": 40,
+        },
+        "Egg": {
+            "src": '/images/items/egg.png',
+            "imageHeight": 20,
+            "stackOffset": 5,
+        },
+        "Honey": {
+            "src": '/images/items/honey.png',
+            "imageHeight": 5,
+            "stackOffset": 0,
+        },
+        "Jalapeno Jelly": {
+            "src": '/images/items/jalepeno_jelly.png',
+            "imageHeight": 10,
+            "stackOffset": 0,
+        },
+        "Mac and Cheese": {
+            "src": '/images/items/mac_and_cheese.png',
+            "imageHeight": 25,
+            "stackOffset": 10,
+        },
+        "Peanut Butter": {
+            "src": '/images/items/peanut_butter.png',
+            "imageHeight": 5,
+            "stackOffset": 0,
+        },
+        "Ranch": {
+            "src": '/images/items/ranch.png',
+            "imageHeight": 5,
+            "stackOffset": 0,
+        },
+        "Special Slime Sauce": {
+            "src": '/images/items/special_slime_sauce.png',
+            "imageHeight": 5,
+            "stackOffset": 0,
+        },
+        "Swiss Cheese": {
+            "src": '/images/items/swiss_cheese.png',
+            "imageHeight": 5,
+            "stackOffset": 5,
+        },
+        "Tarter Sauce": {
+            "src": '/images/items/tartar_sauce.png',
+            "imageHeight": 5,
+            "stackOffset": 0,
         },
         "None": {
             "src": '/images/items/blank_png.png',
