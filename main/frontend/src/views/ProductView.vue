@@ -6,6 +6,7 @@ import FriesOptionsComp from '../components/FriesOptionsComp.vue';
 import BurgerImage from '../components/BurgerImage.vue';
 import { useCart } from '../composables/useCart';
 import customBurger from '../data/customBurgers.js';
+import { buildBurgerSelectionsFromPreset } from '../data/presetBurgerOptions.js';
 
 const OPTION_GROUP_METADATA = {
     burger: {
@@ -110,22 +111,6 @@ function findGroupItem(group, selectionId) {
     return group.items.find((item) => item.id === normalizedSelectionId) ?? null;
 }
 
-function normalizeOptionName(value) {
-    return String(value ?? '').trim().toLowerCase();
-}
-
-function findAvailableGroupItemByName(group, itemName) {
-    const normalizedItemName = normalizeOptionName(itemName);
-    if (!group || normalizedItemName === '') {
-        return null;
-    }
-
-    return group.items.find((item) => (
-        normalizeOptionName(item.name) === normalizedItemName
-        && Number.parseInt(item.quantity ?? 0, 10) > 0
-    )) ?? null;
-}
-
 function formatList(values) {
     if (values.length <= 1) {
         return values[0] ?? '';
@@ -136,61 +121,6 @@ function formatList(values) {
     }
 
     return `${values.slice(0, -1).join(', ')}, and ${values[values.length - 1]}`;
-}
-
-function buildSelectionsFromPreset(groups, presetBurger) {
-    const nextSelections = getDefaultSelections(groups);
-    const unavailableIngredients = [];
-    const adjustedIngredients = [];
-
-    const bunGroup = groups.find((group) => group.key === 'buns');
-    const pattyGroup = groups.find((group) => group.key === 'patties');
-    const toppingsGroup = groups.find((group) => group.key === 'toppings');
-
-    const bunItem = findAvailableGroupItemByName(bunGroup, presetBurger.bun);
-    if (bunItem) {
-        nextSelections.buns = bunItem.id;
-    } else if (presetBurger.bun) {
-        unavailableIngredients.push(presetBurger.bun);
-    }
-
-    const pattyItem = findAvailableGroupItemByName(pattyGroup, presetBurger.patty);
-    if (pattyItem) {
-        nextSelections.patties = {
-            id: pattyItem.id,
-            quantity: 1,
-        };
-    } else if (presetBurger.patty) {
-        unavailableIngredients.push(presetBurger.patty);
-    }
-
-    nextSelections.toppings = [];
-    for (const topping of presetBurger.toppings ?? []) {
-        const toppingItem = findAvailableGroupItemByName(toppingsGroup, topping.type);
-        if (!toppingItem) {
-            unavailableIngredients.push(topping.type);
-            continue;
-        }
-
-        const requestedQuantity = Math.max(1, Number.parseInt(topping.qty ?? 1, 10) || 1);
-        const availableQuantity = Math.max(1, Number.parseInt(toppingItem.quantity ?? 1, 10) || 1);
-        const appliedQuantity = Math.min(requestedQuantity, availableQuantity);
-
-        nextSelections.toppings.push({
-            id: toppingItem.id,
-            quantity: appliedQuantity,
-        });
-
-        if (appliedQuantity < requestedQuantity) {
-            adjustedIngredients.push(`${toppingItem.name} x${appliedQuantity}`);
-        }
-    }
-
-    return {
-        selections: nextSelections,
-        unavailableIngredients: [...new Set(unavailableIngredients)],
-        adjustedIngredients,
-    };
 }
 
 function normalizeProductOptions(productKey, optionsByGroup) {
@@ -292,6 +222,7 @@ const selectedIndex = ref(0);
 const quantity = ref(1);
 const cartFeedbackMessage = ref('');
 const presetLoadMessage = ref('');
+const isPresetNoticeVisible = ref(false);
 const isLoadingOptions = computed(() => optionsLoadState.value === 'loading');
 const isOptionsUnavailable = computed(() => optionsLoadState.value === 'error');
 const isOrderingDisabled = computed(() => {
@@ -303,11 +234,19 @@ const isOrderingDisabled = computed(() => {
 });
 
 let cartFeedbackTimeoutId = null;
+let presetNoticeTimeoutId = null;
 
 function clearCartFeedbackTimeout() {
     if (cartFeedbackTimeoutId !== null) {
         clearTimeout(cartFeedbackTimeoutId);
         cartFeedbackTimeoutId = null;
+    }
+}
+
+function clearPresetNoticeTimeout() {
+    if (presetNoticeTimeoutId !== null) {
+        clearTimeout(presetNoticeTimeoutId);
+        presetNoticeTimeoutId = null;
     }
 }
 
@@ -320,6 +259,26 @@ function showCartFeedback(message) {
     }, 3000);
 }
 
+function showPresetNotice() {
+    if (!presetLoadMessage.value) {
+        isPresetNoticeVisible.value = false;
+        clearPresetNoticeTimeout();
+        return;
+    }
+
+    isPresetNoticeVisible.value = true;
+    clearPresetNoticeTimeout();
+    presetNoticeTimeoutId = window.setTimeout(() => {
+        isPresetNoticeVisible.value = false;
+        presetNoticeTimeoutId = null;
+    }, 5000);
+}
+
+function dismissPresetNotice() {
+    isPresetNoticeVisible.value = false;
+    clearPresetNoticeTimeout();
+}
+
 watch(
     [optionGroups, presetBurgerId],
     ([groups]) => {
@@ -328,24 +287,28 @@ watch(
         if (groups.length === 0) {
             selectedOptions.value = defaultSelections;
             presetLoadMessage.value = '';
+            dismissPresetNotice();
             return;
         }
 
         if (product.value !== 'burger') {
             selectedOptions.value = defaultSelections;
             presetLoadMessage.value = '';
+            dismissPresetNotice();
             return;
         }
 
         if (presetRouteParam.value !== null && presetBurger.value === null) {
             selectedOptions.value = defaultSelections;
             presetLoadMessage.value = 'We could not find that signature burger, so the standard burger builder is loaded instead.';
+            showPresetNotice();
             return;
         }
 
         if (!presetBurger.value) {
             selectedOptions.value = defaultSelections;
             presetLoadMessage.value = '';
+            dismissPresetNotice();
             return;
         }
 
@@ -353,7 +316,7 @@ watch(
             selections,
             unavailableIngredients,
             adjustedIngredients,
-        } = buildSelectionsFromPreset(groups, presetBurger.value);
+        } = buildBurgerSelectionsFromPreset(groups, presetBurger.value);
 
         selectedOptions.value = selections;
 
@@ -369,6 +332,7 @@ watch(
         }
 
         presetLoadMessage.value = messageParts.join(' ');
+        showPresetNotice();
     },
     { immediate: true }
 );
@@ -519,6 +483,7 @@ const goMainPage = () => {
 };
 
 const startFromScratch = () => {
+    dismissPresetNotice();
     router.push({ name: 'product', params: { product: 'Burger' } });
 };
 
@@ -601,6 +566,7 @@ const addToCart = () => {
 
 onBeforeUnmount(() => {
     clearCartFeedbackTimeout();
+    clearPresetNoticeTimeout();
 });
 </script>
 
@@ -647,20 +613,25 @@ onBeforeUnmount(() => {
             </div>
 
             <div
-                v-if="presetLoadMessage"
+                v-if="presetLoadMessage && isPresetNoticeVisible"
                 class="preset-status"
                 role="status"
                 aria-live="polite"
             >
-                <span>{{ presetLoadMessage }}</span>
-                <button
-                    v-if="product === 'burger' && presetBurger"
-                    class="secondary"
-                    type="button"
-                    @click="startFromScratch"
-                >
-                    Start from scratch
-                </button>
+                <span class="preset-status__message">{{ presetLoadMessage }}</span>
+                <div class="preset-status__actions">
+                    <button
+                        v-if="product === 'burger' && presetBurger"
+                        class="secondary"
+                        type="button"
+                        @click="startFromScratch"
+                    >
+                        Start from scratch
+                    </button>
+                    <button class="secondary" type="button" @click="dismissPresetNotice">
+                        Dismiss
+                    </button>
+                </div>
             </div>
 
             <div class="product-actions">

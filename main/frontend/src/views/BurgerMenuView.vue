@@ -1,14 +1,33 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useCart } from '../composables/useCart';
 import customBurger from '../data/customBurgers.js';
 import { toBurgerImageProps } from '../data/customBurgerImageMapper.js';
+import {
+    buildBurgerCartOptions,
+    buildBurgerSelectionsFromPreset,
+    calculateBurgerSelectionsUnitPrice,
+    normalizeBurgerOptionGroups,
+} from '../data/presetBurgerOptions.js';
 import BurgerImage from '../components/BurgerImage.vue';
 
+const BURGER_OPTIONS_ENDPOINT = 'http://localhost:8000/Items/Burger';
 const router = useRouter();
+const { addItem } = useCart();
 
 const searchQuery = ref('');
 const activeFilter = ref('all');
+const rawBurgerOptions = ref({});
+const burgerOptionsLoadState = ref('idle');
+const isAddingBurgerId = ref(null);
+const menuCartFeedback = ref({
+    burgerId: null,
+    type: '',
+    message: '',
+});
+let burgerOptionsPromise = null;
+let menuCartFeedbackTimeoutId = null;
 
 const preferredPattyOrder = ['Beef', 'Chicken', 'Fish', 'Veggie', 'Smash', 'None'];
 
@@ -26,6 +45,44 @@ function formatToppingLabel(topping) {
         ? `${topping.type} x${quantity}`
         : topping.type;
 }
+
+function formatList(values) {
+    if (values.length <= 1) {
+        return values[0] ?? '';
+    }
+
+    if (values.length === 2) {
+        return `${values[0]} and ${values[1]}`;
+    }
+
+    return `${values.slice(0, -1).join(', ')}, and ${values[values.length - 1]}`;
+}
+
+function clearMenuCartFeedbackTimeout() {
+    if (menuCartFeedbackTimeoutId !== null) {
+        clearTimeout(menuCartFeedbackTimeoutId);
+        menuCartFeedbackTimeoutId = null;
+    }
+}
+
+function showMenuCartFeedback(burgerId, type, message) {
+    menuCartFeedback.value = {
+        burgerId,
+        type,
+        message,
+    };
+    clearMenuCartFeedbackTimeout();
+    menuCartFeedbackTimeoutId = window.setTimeout(() => {
+        menuCartFeedback.value = {
+            burgerId: null,
+            type: '',
+            message: '',
+        };
+        menuCartFeedbackTimeoutId = null;
+    }, 4000);
+}
+
+const burgerOptionGroups = computed(() => normalizeBurgerOptionGroups(rawBurgerOptions.value));
 
 const mappedBurgers = computed(() => customBurger.map((burger) => {
     const imageProps = toBurgerImageProps(burger);
@@ -137,6 +194,97 @@ function goToPresetBurger(burgerId) {
         },
     });
 }
+
+async function loadBurgerOptions() {
+    if (burgerOptionsPromise) {
+        return burgerOptionsPromise;
+    }
+
+    burgerOptionsLoadState.value = 'loading';
+    burgerOptionsPromise = fetch(BURGER_OPTIONS_ENDPOINT)
+        .then(async (response) => {
+            if (!response.ok) {
+                throw new Error(`Failed to load burger options: ${response.status} ${response.statusText}`);
+            }
+
+            rawBurgerOptions.value = await response.json();
+            burgerOptionsLoadState.value = 'success';
+        })
+        .catch((error) => {
+            burgerOptionsLoadState.value = 'error';
+            console.error('Unable to fetch burger options for menu cart actions', error);
+        })
+        .finally(() => {
+            burgerOptionsPromise = null;
+        });
+
+    return burgerOptionsPromise;
+}
+
+async function addPresetBurgerToCart(burger) {
+    if (burgerOptionsLoadState.value !== 'success') {
+        await loadBurgerOptions();
+    }
+
+    if (burgerOptionsLoadState.value !== 'success') {
+        showMenuCartFeedback(
+            burger.id,
+            'error',
+            'This burger cannot be added right now because ordering options are unavailable.'
+        );
+        return;
+    }
+
+    isAddingBurgerId.value = burger.id;
+
+    try {
+        const {
+            selections,
+            unavailableIngredients,
+            unavailableCoreSelections,
+            adjustedIngredients,
+        } = buildBurgerSelectionsFromPreset(burgerOptionGroups.value, burger);
+
+        if (unavailableCoreSelections.length > 0) {
+            showMenuCartFeedback(
+                burger.id,
+                'error',
+                `This burger cannot be added directly because ${formatList(unavailableCoreSelections)} is unavailable. Load it in the builder to adjust the recipe.`
+            );
+            return;
+        }
+
+        addItem({
+            id: 'burger',
+            name: burger.name,
+            image: '/images/Burger1.png',
+            unitPrice: calculateBurgerSelectionsUnitPrice(burgerOptionGroups.value, selections),
+            quantity: 1,
+            options: buildBurgerCartOptions(burgerOptionGroups.value, selections),
+        });
+
+        const messageParts = [`${burger.name} added to cart.`];
+        const skippedToppings = unavailableIngredients.filter((ingredient) => !unavailableCoreSelections.includes(ingredient));
+        if (skippedToppings.length > 0) {
+            messageParts.push(`Skipped unavailable toppings: ${formatList(skippedToppings)}.`);
+        }
+        if (adjustedIngredients.length > 0) {
+            messageParts.push(`Reduced quantities for: ${formatList(adjustedIngredients)}.`);
+        }
+
+        showMenuCartFeedback(burger.id, 'success', messageParts.join(' '));
+    } finally {
+        isAddingBurgerId.value = null;
+    }
+}
+
+onMounted(() => {
+    loadBurgerOptions();
+});
+
+onBeforeUnmount(() => {
+    clearMenuCartFeedbackTimeout();
+});
 </script>
 
 <template>
@@ -289,10 +437,28 @@ function goToPresetBurger(burgerId) {
                     </p>
 
                     <div class="burger-menu-card__actions">
-                        <button class="primary" type="button" @click="goToPresetBurger(burger.id)">
+                        <button
+                            class="primary"
+                            type="button"
+                            :disabled="isAddingBurgerId === burger.id"
+                            @click="addPresetBurgerToCart(burger)"
+                        >
+                            {{ isAddingBurgerId === burger.id ? 'Adding...' : 'Add to Cart' }}
+                        </button>
+                        <button class="secondary" type="button" @click="goToPresetBurger(burger.id)">
                             Load This Burger
                         </button>
                     </div>
+
+                    <p
+                        v-if="menuCartFeedback.burgerId === burger.id"
+                        class="burger-menu-card__feedback"
+                        :class="`is-${menuCartFeedback.type}`"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        {{ menuCartFeedback.message }}
+                    </p>
                 </div>
             </article>
         </div>
