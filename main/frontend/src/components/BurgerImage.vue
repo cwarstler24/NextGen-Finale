@@ -2,10 +2,6 @@
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
-    imageSrc: {
-        type: String,
-        required: true,
-    },
     selectedBun: {
         type: Object,
         default: null,
