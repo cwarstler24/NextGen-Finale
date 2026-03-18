@@ -13,7 +13,7 @@ const routes = [
         component: MainView,
     },
     {
-        path: "/product/:product",
+        path: "/product/:product/:presetId?",
         name: "product",
         component: ProductView,
     },

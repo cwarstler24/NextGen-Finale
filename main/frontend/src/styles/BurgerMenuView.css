@@ -212,11 +212,11 @@
 .burger-grid {
     display: grid;
     gap: 1.25rem;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .burger-menu-card {
-    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
     align-items: start;
     gap: 1.25rem;
     overflow: hidden;
@@ -224,14 +224,15 @@
 
 .burger-preview {
     display: grid;
-    align-items: center;
-    min-height: 100%;
-    padding: 0.25rem;
+    align-items: start;
+    justify-items: center;
+    padding: 0.25rem 0;
 }
 
 .burger-preview .card {
-    height: 100%;
-    padding: 1rem;
+    width: 100%;
+    max-width: 13rem;
+    padding: 0.75rem;
     border: 1px solid #e2e8f0;
     border-radius: 18px;
     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
@@ -239,21 +240,23 @@
 }
 
 .burger-preview .burger-stack {
-    width: min(100%, 13rem);
+    width: min(100%, 11.5rem);
 }
 
 .burger-preview__fallback {
     display: grid;
     place-items: center;
-    min-height: 260px;
-    padding: 1rem;
+    width: 100%;
+    max-width: 13rem;
+    min-height: 210px;
+    padding: 0.75rem;
     border: 1px solid #e2e8f0;
     border-radius: 18px;
     background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
 
 .burger-preview__fallback-image {
-    width: min(100%, 12rem);
+    width: min(100%, 10rem);
     height: auto;
     object-fit: contain;
 }
@@ -261,6 +264,12 @@
 .burger-menu-card__content {
     display: grid;
     gap: 1rem;
+}
+
+.burger-menu-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
 }
 
 .burger-badge-row {
@@ -356,6 +365,11 @@
     .burger-menu-stats {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+
+    .burger-preview .card,
+    .burger-preview__fallback {
+        max-width: 15rem;
+    }
 }
 
 @media (max-width: 720px) {
@@ -385,7 +399,8 @@
 
     .burger-menu-link,
     .menu-toolbar__reset,
-    .burger-empty-state .secondary {
+    .burger-empty-state .secondary,
+    .burger-menu-card__actions .primary {
         width: 100%;
         justify-content: center;
     }

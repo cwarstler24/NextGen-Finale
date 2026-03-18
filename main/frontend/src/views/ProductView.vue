@@ -5,6 +5,7 @@ import BurgerOptionsComp from '../components/BurgerOptionsComp.vue';
 import FriesOptionsComp from '../components/FriesOptionsComp.vue';
 import BurgerImage from '../components/BurgerImage.vue';
 import { useCart } from '../composables/useCart';
+import customBurger from '../data/customBurgers.js';
 
 const OPTION_GROUP_METADATA = {
     burger: {
@@ -55,6 +56,13 @@ function getDefaultSelection(group) {
     return defaultItem.id;
 }
 
+function getDefaultSelections(groups) {
+    return groups.reduce((nextSelections, group) => {
+        nextSelections[group.key] = getDefaultSelection(group);
+        return nextSelections;
+    }, {});
+}
+
 function getMultiSelections(selection) {
     if (!Array.isArray(selection)) {
         return [];
@@ -102,6 +110,89 @@ function findGroupItem(group, selectionId) {
     return group.items.find((item) => item.id === normalizedSelectionId) ?? null;
 }
 
+function normalizeOptionName(value) {
+    return String(value ?? '').trim().toLowerCase();
+}
+
+function findAvailableGroupItemByName(group, itemName) {
+    const normalizedItemName = normalizeOptionName(itemName);
+    if (!group || normalizedItemName === '') {
+        return null;
+    }
+
+    return group.items.find((item) => (
+        normalizeOptionName(item.name) === normalizedItemName
+        && Number.parseInt(item.quantity ?? 0, 10) > 0
+    )) ?? null;
+}
+
+function formatList(values) {
+    if (values.length <= 1) {
+        return values[0] ?? '';
+    }
+
+    if (values.length === 2) {
+        return `${values[0]} and ${values[1]}`;
+    }
+
+    return `${values.slice(0, -1).join(', ')}, and ${values[values.length - 1]}`;
+}
+
+function buildSelectionsFromPreset(groups, presetBurger) {
+    const nextSelections = getDefaultSelections(groups);
+    const unavailableIngredients = [];
+    const adjustedIngredients = [];
+
+    const bunGroup = groups.find((group) => group.key === 'buns');
+    const pattyGroup = groups.find((group) => group.key === 'patties');
+    const toppingsGroup = groups.find((group) => group.key === 'toppings');
+
+    const bunItem = findAvailableGroupItemByName(bunGroup, presetBurger.bun);
+    if (bunItem) {
+        nextSelections.buns = bunItem.id;
+    } else if (presetBurger.bun) {
+        unavailableIngredients.push(presetBurger.bun);
+    }
+
+    const pattyItem = findAvailableGroupItemByName(pattyGroup, presetBurger.patty);
+    if (pattyItem) {
+        nextSelections.patties = {
+            id: pattyItem.id,
+            quantity: 1,
+        };
+    } else if (presetBurger.patty) {
+        unavailableIngredients.push(presetBurger.patty);
+    }
+
+    nextSelections.toppings = [];
+    for (const topping of presetBurger.toppings ?? []) {
+        const toppingItem = findAvailableGroupItemByName(toppingsGroup, topping.type);
+        if (!toppingItem) {
+            unavailableIngredients.push(topping.type);
+            continue;
+        }
+
+        const requestedQuantity = Math.max(1, Number.parseInt(topping.qty ?? 1, 10) || 1);
+        const availableQuantity = Math.max(1, Number.parseInt(toppingItem.quantity ?? 1, 10) || 1);
+        const appliedQuantity = Math.min(requestedQuantity, availableQuantity);
+
+        nextSelections.toppings.push({
+            id: toppingItem.id,
+            quantity: appliedQuantity,
+        });
+
+        if (appliedQuantity < requestedQuantity) {
+            adjustedIngredients.push(`${toppingItem.name} x${appliedQuantity}`);
+        }
+    }
+
+    return {
+        selections: nextSelections,
+        unavailableIngredients: [...new Set(unavailableIngredients)],
+        adjustedIngredients,
+    };
+}
+
 function normalizeProductOptions(productKey, optionsByGroup) {
     const metadata = OPTION_GROUP_METADATA[productKey] ?? {};
 
@@ -120,6 +211,24 @@ const product = computed(() => {
     return (router.currentRoute.value.params.product || '').toLowerCase();
 });
 
+const presetRouteParam = computed(() => router.currentRoute.value.params.presetId ?? null);
+const presetBurgerId = computed(() => {
+    if (presetRouteParam.value === null) {
+        return null;
+    }
+
+    const parsedId = Number.parseInt(String(presetRouteParam.value), 10);
+    return Number.isNaN(parsedId) ? null : parsedId;
+});
+
+const presetBurger = computed(() => {
+    if (product.value !== 'burger' || presetBurgerId.value === null) {
+        return null;
+    }
+
+    return customBurger.find((burger) => burger.id === presetBurgerId.value) ?? null;
+});
+
 const productImages = computed(() => {
     switch (product.value) {
         case 'burger':
@@ -134,6 +243,14 @@ const productImages = computed(() => {
 const productData = computed(() => {
     switch (product.value) {
         case 'burger':
+            if (presetBurger.value) {
+                return {
+                    name: presetBurger.value.name,
+                    description: presetBurger.value.description,
+                    price: 0,
+                };
+            }
+
             return {
                 name: 'Classic Burger',
                 description: 'A crave-worthy mix of crisp, golden bites with fresh toppings. Balanced, filling, and perfect for a quick lunch or family night in.',
@@ -174,6 +291,7 @@ const selectedOptions = ref({});
 const selectedIndex = ref(0);
 const quantity = ref(1);
 const cartFeedbackMessage = ref('');
+const presetLoadMessage = ref('');
 const isLoadingOptions = computed(() => optionsLoadState.value === 'loading');
 const isOptionsUnavailable = computed(() => optionsLoadState.value === 'error');
 const isOrderingDisabled = computed(() => {
@@ -203,12 +321,54 @@ function showCartFeedback(message) {
 }
 
 watch(
-    optionGroups,
-    (groups) => {
-        selectedOptions.value = groups.reduce((nextSelections, group) => {
-            nextSelections[group.key] = getDefaultSelection(group);
-            return nextSelections;
-        }, {});
+    [optionGroups, presetBurgerId],
+    ([groups]) => {
+        const defaultSelections = getDefaultSelections(groups);
+
+        if (groups.length === 0) {
+            selectedOptions.value = defaultSelections;
+            presetLoadMessage.value = '';
+            return;
+        }
+
+        if (product.value !== 'burger') {
+            selectedOptions.value = defaultSelections;
+            presetLoadMessage.value = '';
+            return;
+        }
+
+        if (presetRouteParam.value !== null && presetBurger.value === null) {
+            selectedOptions.value = defaultSelections;
+            presetLoadMessage.value = 'We could not find that signature burger, so the standard burger builder is loaded instead.';
+            return;
+        }
+
+        if (!presetBurger.value) {
+            selectedOptions.value = defaultSelections;
+            presetLoadMessage.value = '';
+            return;
+        }
+
+        const {
+            selections,
+            unavailableIngredients,
+            adjustedIngredients,
+        } = buildSelectionsFromPreset(groups, presetBurger.value);
+
+        selectedOptions.value = selections;
+
+        const messageParts = ['Signature burger loaded.'];
+        if (unavailableIngredients.length > 0) {
+            messageParts.push(`Unavailable ingredients were skipped: ${formatList(unavailableIngredients)}.`);
+        }
+        if (adjustedIngredients.length > 0) {
+            messageParts.push(`Limited stock reduced these quantities: ${formatList(adjustedIngredients)}.`);
+        }
+        if (unavailableIngredients.length === 0 && adjustedIngredients.length === 0) {
+            messageParts.push('You can adjust any option before adding it to cart.');
+        }
+
+        presetLoadMessage.value = messageParts.join(' ');
     },
     { immediate: true }
 );
@@ -358,6 +518,10 @@ const goMainPage = () => {
     router.push({ name: 'main' });
 };
 
+const startFromScratch = () => {
+    router.push({ name: 'product', params: { product: 'Burger' } });
+};
+
 const addToCart = () => {
     if (isOrderingDisabled.value) {
         return;
@@ -443,7 +607,7 @@ onBeforeUnmount(() => {
 <template>
 <section class="page product-page">
     <div class="product-breadcrumbs">
-        <span class="hover" @click="goMainPage">Home</span> / <span class="current">{{ $route.params.product }}</span>
+        <span class="hover" @click="goMainPage">Home</span> / <span class="current">{{ productData.name }}</span>
     </div>
 
     <div class="product-grid">
@@ -480,6 +644,23 @@ onBeforeUnmount(() => {
                 <div class="price-tag">
                     <span class="price">${{ totalPrice }}</span>
                 </div>
+            </div>
+
+            <div
+                v-if="presetLoadMessage"
+                class="preset-status"
+                role="status"
+                aria-live="polite"
+            >
+                <span>{{ presetLoadMessage }}</span>
+                <button
+                    v-if="product === 'burger' && presetBurger"
+                    class="secondary"
+                    type="button"
+                    @click="startFromScratch"
+                >
+                    Start from scratch
+                </button>
             </div>
 
             <div class="product-actions">

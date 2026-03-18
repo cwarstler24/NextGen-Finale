@@ -127,6 +127,16 @@ function resetFilters() {
 function goToBurgerPage() {
     router.push({ name: 'product', params: { product: 'Burger' } });
 }
+
+function goToPresetBurger(burgerId) {
+    router.push({
+        name: 'product',
+        params: {
+            product: 'Burger',
+            presetId: String(burgerId),
+        },
+    });
+}
 </script>
 
 <template>
@@ -277,6 +287,12 @@ function goToBurgerPage() {
                     <p class="burger-menu-card__note">
                         Like this combination? Use the burger builder to recreate it and adjust the details your way.
                     </p>
+
+                    <div class="burger-menu-card__actions">
+                        <button class="primary" type="button" @click="goToPresetBurger(burger.id)">
+                            Load This Burger
+                        </button>
+                    </div>
                 </div>
             </article>
         </div>

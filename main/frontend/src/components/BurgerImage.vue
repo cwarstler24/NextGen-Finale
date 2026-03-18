@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const props = defineProps({
     selectedBun: {
@@ -13,6 +13,10 @@ const props = defineProps({
     selectedToppings: {
         type: Array,
         default: () => [],
+    },
+    fallbackImageSrc: {
+        type: String,
+        default: '/images/Burger1.png',
     },
 });
 
@@ -163,16 +167,31 @@ const itemImageMap = {
 };
 
 const itemStack = ref([]);
+const stackCardElement = ref(null);
+const stackWidth = ref(0);
+const baseStackWidth = 352;
+let resizeObserver = null;
+
+const layoutScale = computed(() => {
+    if (!stackWidth.value) {
+        return 1;
+    }
+
+    return Math.min(stackWidth.value / baseStackWidth, 1);
+});
 
 const positionedItemStack = computed(() => {
     let currentY = 0;
     const totalItems = itemStack.value.length;
+    const scale = layoutScale.value;
 
     return itemStack.value.map((item, index) => {
+        const scaledHeight = item.imageHeight * scale;
         const positionedItem = {
             ...item,
             key: `${item.alt}-${index}`,
-            top: currentY - item.stackOffset,
+            top: (currentY - item.stackOffset) * scale,
+            scaledHeight,
             zIndex: totalItems - index,
         };
 
@@ -182,12 +201,14 @@ const positionedItemStack = computed(() => {
 });
 
 const stackCanvasHeight = computed(() => {
+    const scale = layoutScale.value;
+
     if (positionedItemStack.value.length === 0) {
-        return 320;
+        return Math.max(220 * scale, 180);
     }
 
     const lastItem = positionedItemStack.value[positionedItemStack.value.length - 1];
-    return Math.max(lastItem.top + lastItem.imageHeight + 50, 320);
+    return Math.max(lastItem.top + lastItem.scaledHeight + (50 * scale), Math.max(220 * scale, 180));
 });
 
 watch(
@@ -267,10 +288,31 @@ function createStackItem(item, alt){
     };
 }
 
+function syncStackWidth() {
+    stackWidth.value = stackCardElement.value?.clientWidth ?? 0;
+}
+
+onMounted(() => {
+    syncStackWidth();
+
+    if (!stackCardElement.value || typeof ResizeObserver === 'undefined') {
+        return;
+    }
+
+    resizeObserver = new ResizeObserver(() => {
+        syncStackWidth();
+    });
+    resizeObserver.observe(stackCardElement.value);
+});
+
+onBeforeUnmount(() => {
+    resizeObserver?.disconnect();
+});
+
 </script>
 
 <template>
-<div class="card">
+<div ref="stackCardElement" class="card burger-image-card">
     <div class="burger-stack" :style="{ height: `${stackCanvasHeight}px` }">
         <div
             v-for="item in positionedItemStack"
@@ -289,7 +331,7 @@ function createStackItem(item, alt){
         <img
             v-if="positionedItemStack.length === 0"
             class="burger-fallback-image"
-            :src="imageSrc"
+            :src="fallbackImageSrc"
             alt="Image of burger"
         />
     </div>
@@ -297,6 +339,10 @@ function createStackItem(item, alt){
 </template>
 
 <style scoped>
+.burger-image-card {
+    padding: 1rem;
+}
+
 .burger-stack {
     position: relative;
     width: min(100%, 22rem);
