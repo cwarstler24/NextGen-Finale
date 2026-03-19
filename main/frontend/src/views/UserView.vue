@@ -153,14 +153,49 @@ function normalizeOrderItem(item) {
     const name = typeof item?.name === 'string' && item.name.trim() !== ''
         ? item.name
         : 'Unnamed item';
+    const unitPrice = Number(item?.price) || 0;
     const visualData = getOrderItemVisualData(itemType, name);
 
     return {
         item_type: itemType,
         name,
-        price: Number(item?.price) || 0,
+        unitPrice,
+        price: unitPrice,
+        quantity: normalizeQuantity(item?.quantity),
         ...visualData,
     };
+}
+
+function getOrderItemGroupKey(item) {
+    return [
+        item.item_type.trim().toLowerCase(),
+        item.name.trim().toLowerCase(),
+        item.unitPrice.toFixed(2),
+    ].join('::');
+}
+
+function aggregateOrderItems(items) {
+    const groupedItems = new Map();
+
+    items.forEach((item) => {
+        const normalizedItem = normalizeOrderItem(item);
+        const groupKey = getOrderItemGroupKey(normalizedItem);
+        const existingItem = groupedItems.get(groupKey);
+
+        if (existingItem) {
+            existingItem.quantity += normalizedItem.quantity;
+            existingItem.price += normalizedItem.unitPrice * normalizedItem.quantity;
+            return;
+        }
+
+        groupedItems.set(groupKey, {
+            ...normalizedItem,
+            groupKey,
+            price: normalizedItem.unitPrice * normalizedItem.quantity,
+        });
+    });
+
+    return [...groupedItems.values()];
 }
 
 const orders = computed(() => {
@@ -169,7 +204,7 @@ const orders = computed(() => {
     return userOrders
         .map((order, index) => {
             const items = Array.isArray(order?.items)
-                ? order.items.map((item) => normalizeOrderItem(item))
+                ? aggregateOrderItems(order.items)
                 : [];
             const parsedDate = new Date(order?.date);
             const sortTimestamp = Number.isNaN(parsedDate.getTime()) ? 0 : parsedDate.getTime();
@@ -184,7 +219,7 @@ const orders = computed(() => {
                 displayDate: formatOrderDate(order?.date ?? ''),
                 price: Number(order?.price) || 0,
                 items,
-                itemCount: items.length,
+                itemCount: items.reduce((total, item) => total + item.quantity, 0),
                 sortTimestamp,
             };
         })
@@ -379,7 +414,7 @@ async function getUser() {
                                 <ul v-if="order.items.length > 0" class="order-items-list">
                                     <li
                                         v-for="(item, itemIndex) in order.items"
-                                        :key="`${order.orderKey}-item-${itemIndex}`"
+                                        :key="`${order.orderKey}-item-${item.groupKey}-${itemIndex}`"
                                         class="order-item-row"
                                     >
                                         <div
@@ -399,9 +434,14 @@ async function getUser() {
                                         </div>
                                         <div class="order-item-copy">
                                             <span class="item-type-badge">{{ item.item_type }}</span>
-                                            <p class="order-item-name">
-                                                {{ item.name }}
-                                            </p>
+                                            <div class="order-item-name-row">
+                                                <p class="order-item-name">
+                                                    {{ item.name }}
+                                                </p>
+                                                <span v-if="item.quantity > 1" class="item-quantity-badge">
+                                                    Qty {{ item.quantity }}
+                                                </span>
+                                            </div>
                                         </div>
                                         <strong class="order-item-price">{{ formatCurrency(item.price) }}</strong>
                                     </li>

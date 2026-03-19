@@ -183,6 +183,13 @@
     gap: 0.35rem;
 }
 
+.order-item-name-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .order-summary-topline {
     display: flex;
     flex-wrap: wrap;
@@ -192,7 +199,8 @@
 
 .order-item-count,
 .order-summary-toggle,
-.item-type-badge {
+.item-type-badge,
+.item-quantity-badge {
     display: inline-flex;
     align-items: center;
     border-radius: 999px;
@@ -245,6 +253,13 @@
     padding: 0.22rem 0.65rem;
     background: rgba(255, 221, 189, 0.8);
     color: #8a4a25;
+}
+
+.item-quantity-badge {
+    width: fit-content;
+    padding: 0.22rem 0.65rem;
+    background: rgba(244, 231, 215, 0.88);
+    color: var(--color-heading);
 }
 
 .order-item-name {
