@@ -9,6 +9,10 @@ The Frying Saucer uses CI/CD pipelines, tooling, and automated testing to mainta
 !!! info "info"
     You must be in the main directory of the repository to run tests. Tests run automatically in GitHub Actions on every push and on every branch.
 
+## Architecture Overview
+
+![TFS Architecture Diagram](../assets/images/archskyfall.png)
+
 ## CI/CD Pipeline Overview
 
 The CI/CD pipeline is responsible for automatically validating code quality, running tests, and managing dependencies.  
