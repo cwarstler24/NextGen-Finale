@@ -5,7 +5,7 @@ const { cartCount } = useCart();
 const currentYear = new Date().getFullYear();
 
 const documentation = () => {
-    alert('Documentation is currently unavailable. Please check back later!');
+    window.location.href = "http://127.0.0.1:8001"
 };
 </script>
 
