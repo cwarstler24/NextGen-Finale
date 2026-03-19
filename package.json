@@ -4,7 +4,9 @@
 	"version": "0.1.0",
 	"type": "module",
 	"scripts": {
-		"dev": "vite",
+		"dev": "node ./scripts/dev.mjs",
+		"dev:vite": "vite",
+		"docs:dev": "python -m mkdocs serve -f mkdocs.yml --dev-addr 127.0.0.1:8001",
 		"build": "vite build",
 		"preview": "vite preview",
 		"clean:artifacts": "powershell -ExecutionPolicy Bypass -File ./scripts/cleanup-artifacts.ps1",
