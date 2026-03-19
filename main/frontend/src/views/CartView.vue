@@ -1,12 +1,80 @@
 <script setup>
+import { computed } from 'vue';
 import { useCart } from '../composables/useCart';
 import { useRouter } from 'vue-router';
+import BurgerImage from '../components/BurgerImage.vue';
 
 const router = useRouter();
 const { cartEntries, cartCount, cartTotal, removeItem, clearCart } = useCart();
+const BURGER_OPTION_NAMES = {
+    bun: 'Bun',
+    patty: 'Patty',
+    toppings: 'Toppings',
+};
 
 function formatCurrency(value) {
     return `$${value.toFixed(2)}`;
+}
+
+function normalizeQuantity(value) {
+    return Math.max(1, Number.parseInt(value ?? 1, 10) || 1);
+}
+
+function getOptionByName(item, optionName) {
+    return item.options.find((option) => option.name === optionName) ?? null;
+}
+
+function getStructuredOptionEntries(optionValue) {
+    if (!Array.isArray(optionValue)) {
+        return [];
+    }
+
+    return optionValue.filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry));
+}
+
+function isMeaningfulBurgerPart(name) {
+    return Boolean(name) && name !== 'None';
+}
+
+function getBurgerImageProps(item) {
+    if (item.id !== 'burger') {
+        return null;
+    }
+
+    const bunOption = getOptionByName(item, BURGER_OPTION_NAMES.bun);
+    const pattyOption = getOptionByName(item, BURGER_OPTION_NAMES.patty);
+    const toppingsOption = getOptionByName(item, BURGER_OPTION_NAMES.toppings);
+
+    const selectedBun = typeof bunOption?.value === 'string' && bunOption.value
+        ? { name: bunOption.value }
+        : null;
+    const selectedPattyEntry = getStructuredOptionEntries(pattyOption?.value)[0] ?? null;
+    const selectedPatty = selectedPattyEntry
+        ? {
+            name: String(selectedPattyEntry.name ?? selectedPattyEntry.id ?? ''),
+            quantity: normalizeQuantity(selectedPattyEntry.quantity),
+        }
+        : null;
+    const selectedToppings = getStructuredOptionEntries(toppingsOption?.value)
+        .map((entry) => ({
+            name: String(entry.name ?? entry.id ?? ''),
+            quantity: normalizeQuantity(entry.quantity),
+        }))
+        .filter((entry) => entry.name !== '');
+
+    const hasIllustratedPreview = isMeaningfulBurgerPart(selectedBun?.name)
+        || isMeaningfulBurgerPart(selectedPatty?.name)
+        || selectedToppings.some((entry) => isMeaningfulBurgerPart(entry.name));
+
+    if (!hasIllustratedPreview) {
+        return null;
+    }
+
+    return {
+        selectedBun,
+        selectedPatty,
+        selectedToppings,
+    };
 }
 
 function formatOptionValue(value) {
@@ -22,6 +90,11 @@ function formatOptionValue(value) {
 
     return value || 'None selected';
 }
+
+const cartDisplayEntries = computed(() => cartEntries.value.map((item) => ({
+    ...item,
+    burgerImageProps: getBurgerImageProps(item),
+})));
 
 const purchase = () => {
     router.push({ name: 'checkout' });
@@ -44,8 +117,11 @@ const purchase = () => {
     </div>
 
     <div v-else class="cart-layout">
-        <article v-for="item in cartEntries" :key="item.signature" class="card cart-item">
-            <img v-if="item.image" :src="item.image" :alt="item.name" class="cart-item-image" />
+        <article v-for="item in cartDisplayEntries" :key="item.signature" class="card cart-item">
+            <div v-if="item.burgerImageProps" class="cart-item-image-preview">
+                <BurgerImage v-bind="item.burgerImageProps" />
+            </div>
+            <img v-else-if="item.image" :src="item.image" :alt="item.name" class="cart-item-image" />
             <div class="cart-item-content">
                 <div class="cart-item-top">
                     <div>

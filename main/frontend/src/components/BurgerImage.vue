@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { burgerItemImageMap } from '../data/burgerImageCatalog';
 
 const props = defineProps({
     selectedBun: {
@@ -24,256 +25,6 @@ const props = defineProps({
 // src: image source for the item
 // imageHeight: sets how far down the image is displayed from the item above it
 // stackOffset: adjust how much the item is covered by the item above it 
-const itemImageMap = {
-    buns: {
-        "Whole Wheat": {
-            0: {
-                "src": '/images/items/whole_wheat_bun_bottom.png',
-                "imageHeight": 50,
-                "stackOffset": 5,
-            },
-            1: {
-                "src": '/images/items/whole_wheat_bun_top.png',
-                "imageHeight": 105,
-                "stackOffset": 0,
-            },
-        },
-        "Sesame": {
-            0: {
-                "src": '/images/items/sesame_bun_bottom.png',
-                "imageHeight": 40,
-                "stackOffset": -15,
-            },
-            1: {
-                "src": '/images/items/sesame_bun_top.png',
-                "imageHeight": 90,
-                "stackOffset": -10,
-            },
-        },
-        "Brioche": {
-            0: {
-                "src": '/images/items/brioche_bun_bottom.png',
-                "imageHeight": 70,
-                "stackOffset": 5,
-            },
-            1: {
-                "src": '/images/items/brioche_bun_top.png',
-                "imageHeight": 100,
-                "stackOffset": 0,
-            },
-        },
-        "Pretzel": {
-            0: {
-                "src": '/images/items/pretzle_bun_bottom.png',
-                "imageHeight": 80,
-                "stackOffset": 5,
-            },
-            1: {
-                "src": '/images/items/pretzle_bun_top.png',
-                "imageHeight": 135,
-                "stackOffset": 0,
-            },
-        },
-        "Dirt": {
-            0: {
-                "src": '/images/items/dirt_bun_bottom.png',
-                "imageHeight": 90,
-                "stackOffset": 0,
-            },
-            1: {
-                "src": '/images/items/dirt_bun_top.png',
-                "imageHeight": 80,
-                "stackOffset": 0,
-            },
-        },
-        "None": {
-            0: {
-                "src": '/images/items/blank_png.png',
-                "imageHeight": 0,
-                "stackOffset": 0,
-            },
-            1: {
-                "src": '/images/items/blank_png.png',
-                "imageHeight": 0,
-                "stackOffset": 0,
-            },
-        },
-    },
-    patties: {
-        "Beef": {
-            "src": '/images/items/beef_patty.png',
-            "imageHeight": 50,
-            "stackOffset": 0,
-        },
-        "Chicken": {
-            "src": '/images/items/chicken_patty.png',
-            "imageHeight": 45,
-            "stackOffset": 10,
-        },
-        "Veggie": {
-            "src": '/images/items/veggie_patty.png',
-            "imageHeight": 60,
-            "stackOffset": 5,
-        },
-        "Fish": {
-            "src": '/images/items/fish_patty.png',
-            "imageHeight": 45,
-            "stackOffset": 0,
-        },
-        "Smash": {
-            "src": '/images/items/smash_patty.png',
-            "imageHeight": 20,
-            "stackOffset": 0,
-        },
-        "Dirt": {
-            "src": '/images/items/dirt_patty.png',
-            "imageHeight": 55,
-            "stackOffset": 0,
-        },
-        "None": {
-            "src": '/images/items/blank_png.png',
-            "imageHeight": 0,
-            "stackOffset": 0,
-        },
-    },
-    toppings: {
-        "Lettuce": {
-            "src": '/images/items/lettuce.png',
-            "imageHeight": 45,
-            "stackOffset": 10,
-        },
-        "Tomato": {
-            "src": '/images/items/tomato.png',
-            "imageHeight": 10,
-            "stackOffset": -5,
-        },
-        "Onion": {
-            "src": '/images/items/onion.png',
-            "imageHeight": 10,
-            "stackOffset": -10,
-        },
-        "Pickles": {
-            "src": '/images/items/pickels.png',
-            "imageHeight": 5,
-            "stackOffset": -15,
-        },
-        "Cheese": {
-            "src": '/images/items/cheese.png',
-            "imageHeight": 5,
-            "stackOffset": 5,
-        },
-        "Bacon": {
-            "src": '/images/items/bacon.png',
-            "imageHeight": 15,
-            "stackOffset": 15,
-        },
-        "Jalapenos": {
-            "src": '/images/items/jalepeno.png',
-            "imageHeight": 20,
-            "stackOffset": 0,
-        },
-        "Mushrooms": {
-            "src": '/images/items/mushroom.png',
-            "imageHeight": 10,
-            "stackOffset": 0,
-        },
-        "Ketchup": {
-            "src": '/images/items/ketchup.png',
-            "imageHeight": 5,
-            "stackOffset": 0,
-        },
-        "Mustard": {
-            "src": '/images/items/mustard.png',
-            "imageHeight": 5,
-            "stackOffset": 0,
-        },
-        "Mayonnaise": {
-            "src": '/images/items/mayonnaise.png',
-            "imageHeight": 5,
-            "stackOffset": 0,
-        },
-        "Avocado": {
-            "src": '/images/items/avocado.png',
-            "imageHeight": 0,
-            "stackOffset": 5,
-        },
-        "Barbecue": {
-            "src": '/images/items/barbecue.png',
-            "imageHeight": 5,
-            "stackOffset": 0,
-        },
-        "Blue Cheese": {
-            "src": '/images/items/blue_cheese.png',
-            "imageHeight": 5,
-            "stackOffset": 5,
-        },
-        "Cheeze Wiz": {
-            "src": '/images/items/cheez_wiz.png',
-            "imageHeight": 5,
-            "stackOffset": 0,
-        },
-        "Colby Jack": {
-            "src": '/images/items/colby_jack.png',
-            "imageHeight": 5,
-            "stackOffset": 5,
-        },
-        "Crispy Onions": {
-            "src": '/images/items/crispy_onions.png',
-            "imageHeight": 10,
-            "stackOffset": 40,
-        },
-        "Egg": {
-            "src": '/images/items/egg.png',
-            "imageHeight": 20,
-            "stackOffset": 5,
-        },
-        "Honey": {
-            "src": '/images/items/honey.png',
-            "imageHeight": 5,
-            "stackOffset": 0,
-        },
-        "Jalapeno Jelly": {
-            "src": '/images/items/jalepeno_jelly.png',
-            "imageHeight": 10,
-            "stackOffset": 0,
-        },
-        "Mac and Cheese": {
-            "src": '/images/items/mac_and_cheese.png',
-            "imageHeight": 25,
-            "stackOffset": 10,
-        },
-        "Peanut Butter": {
-            "src": '/images/items/peanut_butter.png',
-            "imageHeight": 5,
-            "stackOffset": 0,
-        },
-        "Ranch": {
-            "src": '/images/items/ranch.png',
-            "imageHeight": 5,
-            "stackOffset": 0,
-        },
-        "Special Slime Sauce": {
-            "src": '/images/items/special_slime_sauce.png',
-            "imageHeight": 5,
-            "stackOffset": 0,
-        },
-        "Swiss Cheese": {
-            "src": '/images/items/swiss_cheese.png',
-            "imageHeight": 5,
-            "stackOffset": 5,
-        },
-        "Tarter Sauce": {
-            "src": '/images/items/tartar_sauce.png',
-            "imageHeight": 5,
-            "stackOffset": 0,
-        },
-        "None": {
-            "src": '/images/items/blank_png.png',
-            "imageHeight": 0,
-            "stackOffset": 0,
-        },
-    },
-};
 
 const itemStack = ref([]);
 const stackCardElement = ref(null);
@@ -361,28 +112,28 @@ watch(
 
 function getBunTop(bun){
     if (!bun) return null;
-    const bunImages = itemImageMap.buns[bun];
+    const bunImages = burgerItemImageMap.buns[bun];
     if (!bunImages) return null;
     return createStackItem(bunImages[0], `Image of ${bun} bun top`);
 }
 
 function getBunBottom(bun){
     if (!bun) return null;
-    const bunImages = itemImageMap.buns[bun];
+    const bunImages = burgerItemImageMap.buns[bun];
     if (!bunImages) return null;
     return createStackItem(bunImages[1], `Image of ${bun} bun bottom`);
 }
 
 function getPatty(patty){
     if (!patty) return null;
-    const pattyImage = itemImageMap.patties[patty];
+    const pattyImage = burgerItemImageMap.patties[patty];
     if (!pattyImage) return null;
     return createStackItem(pattyImage, `Image of ${patty}`);
 }
 
 function getTopping(topping){
     if (!topping) return null;
-    const toppingImage = itemImageMap.toppings[topping];
+    const toppingImage = burgerItemImageMap.toppings[topping];
     if (!toppingImage) return null;
     return createStackItem(toppingImage, `Image of ${topping}`);
 }
