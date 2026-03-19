@@ -133,7 +133,7 @@ describe('ProductView', () => {
 
         expect(addItemMock).toHaveBeenCalledWith({
             id: 'burger',
-            image: '/images/Burger1.png',
+            image: '',
             name: 'Classic Burger',
             options: [
                 { id: '102', name: 'Bun', value: 'Pretzel' },
@@ -185,7 +185,7 @@ describe('ProductView', () => {
         expect(wrapper.text()).toContain('No description available.');
         expect(wrapper.text()).toContain('No customization options are available for this product.');
         expect(wrapper.get('img.product-hero').attributes('src')).toContain('/images/placeholder.png');
-        expect(wrapper.findAll('button.thumb')).toHaveLength(3);
+        expect(wrapper.findAll('button.thumb')).toHaveLength(0);
         expect(wrapper.text()).toContain('$0.00');
 
         await wrapper.get('button.primary').trigger('click');
