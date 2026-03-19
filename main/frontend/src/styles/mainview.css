@@ -30,3 +30,11 @@
     background-clip: padding-box;
     /* Ensures solid background for transparent PNGs */
 }
+
+.product-image-illustration {
+    background-color: #fff;
+    width: 150px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    background-clip: padding-box;
+}

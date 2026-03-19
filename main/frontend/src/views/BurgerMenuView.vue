@@ -98,9 +98,6 @@ const mappedBurgers = computed(() => customBurger.map((burger) => {
         toppingCountLabel: toppings.length === 0
             ? 'No toppings'
             : `${toppings.length} topping${toppings.length === 1 ? '' : 's'}`,
-        hasIllustratedPreview: imageProps.selectedBun?.name !== 'None'
-            || imageProps.selectedPatty?.name !== 'None'
-            || imageProps.selectedToppings.length > 0,
         searchableText: [
             burger.name,
             burger.description,
@@ -257,7 +254,7 @@ async function addPresetBurgerToCart(burger) {
         addItem({
             id: 'burger',
             name: burger.name,
-            image: '/images/Burger1.png',
+            image: '',
             unitPrice: calculateBurgerSelectionsUnitPrice(burgerOptionGroups.value, selections),
             quantity: 1,
             options: buildBurgerCartOptions(burgerOptionGroups.value, selections),
@@ -385,10 +382,7 @@ onBeforeUnmount(() => {
         <div v-if="filteredBurgers.length > 0" class="burger-grid">
             <article v-for="burger in filteredBurgers" :key="burger.id" class="card burger-menu-card">
                 <div class="burger-preview">
-                    <BurgerImage v-if="burger.hasIllustratedPreview" v-bind="burger.imageProps" />
-                    <div v-else class="burger-preview__fallback">
-                        <img src="/images/Burger1.png" alt="Burger preview" class="burger-preview__fallback-image" />
-                    </div>
+                    <BurgerImage v-bind="burger.imageProps" class="burger-preview__fallback-image" />
                 </div>
 
                 <div class="burger-menu-card__content">

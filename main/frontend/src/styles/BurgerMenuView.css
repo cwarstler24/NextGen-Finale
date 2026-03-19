@@ -243,22 +243,9 @@
     width: min(100%, 16rem);
 }
 
-.burger-preview__fallback {
-    display: grid;
-    place-items: center;
+.burger-preview__fallback-image {
     width: 100%;
     max-width: 18rem;
-    min-height: 210px;
-    padding: 0.75rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 18px;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-}
-
-.burger-preview__fallback-image {
-    width: min(100%, 14rem);
-    height: auto;
-    object-fit: contain;
 }
 
 .burger-menu-card__content {

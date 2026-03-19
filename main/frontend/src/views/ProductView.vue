@@ -479,10 +479,6 @@ const productHeroImage = computed(() => {
         return FRIES_TYPE_IMAGE_MAP[normalizedTypeName] ?? '/images/Fries1.png';
     }
 
-    if (product.value === 'burger') {
-        return '/images/Burger1.png';
-    }
-
     return '/images/placeholder.png';
 });
 
@@ -516,7 +512,7 @@ const addToCart = () => {
     addItem({
         id: product.value,
         name: productData.value.name,
-        image: productHeroImage.value,
+        image: product.value === 'burger' ? '' : productHeroImage.value,
         unitPrice: unitPrice.value,
         quantity: normalizedQuantity.value,
         options: optionGroups.value.map((group) => {
