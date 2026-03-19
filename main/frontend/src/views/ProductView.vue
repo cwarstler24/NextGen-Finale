@@ -26,6 +26,14 @@ const PRODUCT_OPTIONS_ENDPOINTS = {
     fries: 'http://localhost:8000/Items/Fries',
 };
 
+const FRIES_TYPE_IMAGE_MAP = {
+    shoestring: '/images/items/shoestring_fries.PNG',
+    waffle: '/images/items/waffle_fries.png',
+    curly: '/images/items/curly_fries.png',
+    steak: '/images/items/steak_fries.png',
+    'sweet potato': '/images/items/sweet_potato_fries.png',
+};
+
 const router = useRouter();
 const { addItem } = useCart();
 
@@ -159,17 +167,6 @@ const presetBurger = computed(() => {
     return customBurger.find((burger) => burger.id === presetBurgerId.value) ?? null;
 });
 
-const productImages = computed(() => {
-    switch (product.value) {
-        case 'burger':
-            return ['/images/Burger1.png', '/images/Burger2.png', '/images/Burger3.png'];
-        case 'fries':
-            return ['/images/Fries1.png', '/images/Fries2.png', '/images/Fries3.png'];
-        default:
-            return ['/images/placeholder.png', '/images/placeholder.png', '/images/placeholder.png'];
-    }
-});
-
 const productData = computed(() => {
     switch (product.value) {
         case 'burger':
@@ -218,7 +215,6 @@ const customizationComponent = computed(() => {
 
 const optionGroups = computed(() => normalizeProductOptions(product.value, rawProductOptions.value));
 const selectedOptions = ref({});
-const selectedIndex = ref(0);
 const quantity = ref(1);
 const cartFeedbackMessage = ref('');
 const presetLoadMessage = ref('');
@@ -344,7 +340,6 @@ function retryLoadingOptions() {
 watch(
     [product, optionsReloadToken],
     async ([productKey], _previousValues, onCleanup) => {
-        selectedIndex.value = 0;
         quantity.value = 1;
         cartFeedbackMessage.value = '';
         clearCartFeedbackTimeout();
@@ -470,13 +465,34 @@ const selectedBurgerPatty = computed(() => (product.value === 'burger'
     ? getSelectedSingleOptionDetails('patties')
     : null));
 
+const selectedFriesType = computed(() => (product.value === 'fries'
+    ? getSelectedSingleOptionDetails('types')
+    : null));
+
 const selectedBurgerToppings = computed(() => (product.value === 'burger'
     ? getSelectedMultiOptionDetails('toppings')
     : []));
 
-const selectThumbnail = (index) => {
-    selectedIndex.value = index;
-};
+const productHeroImage = computed(() => {
+    if (product.value === 'fries') {
+        const normalizedTypeName = selectedFriesType.value?.name?.trim().toLowerCase() ?? '';
+        return FRIES_TYPE_IMAGE_MAP[normalizedTypeName] ?? '/images/Fries1.png';
+    }
+
+    if (product.value === 'burger') {
+        return '/images/Burger1.png';
+    }
+
+    return '/images/placeholder.png';
+});
+
+const productHeroAlt = computed(() => {
+    if (product.value === 'fries' && selectedFriesType.value?.name) {
+        return `${selectedFriesType.value.name} fries`;
+    }
+
+    return `${productData.value.name} hero image`;
+});
 
 const goMainPage = () => {
     router.push({ name: 'main' });
@@ -500,7 +516,7 @@ const addToCart = () => {
     addItem({
         id: product.value,
         name: productData.value.name,
-        image: productImages.value[0],
+        image: productHeroImage.value,
         unitPrice: unitPrice.value,
         quantity: normalizedQuantity.value,
         options: optionGroups.value.map((group) => {
@@ -585,19 +601,12 @@ onBeforeUnmount(() => {
             :selected-toppings="selectedBurgerToppings"
         />
         <div v-else name="product-gallery" class="product-gallery card">
-            <img name="product-image" class="product-hero" :src="productImages[selectedIndex]" alt="Product hero" />
-            <div class="thumbnail-row">
-                <button
-                    v-for="(img, idx) in productImages"
-                    :key="img"
-                    class="thumb"
-                    :class="{ 'is-active': idx === selectedIndex }"
-                    type="button"
-                    @click="selectThumbnail(idx)"
-                >
-                    <img :src="img" :alt="`Thumbnail ${idx + 1}`" />
-                </button>
-            </div>
+            <img
+                name="product-image"
+                class="product-hero"
+                :src="productHeroImage"
+                :alt="productHeroAlt"
+            />
         </div>
         <div class="product-info card">
             <div class="product-header">
