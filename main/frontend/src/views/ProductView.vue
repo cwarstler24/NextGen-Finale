@@ -160,11 +160,15 @@ const presetBurgerId = computed(() => {
 });
 
 const presetBurger = computed(() => {
-    if (product.value !== 'burger' || presetBurgerId.value === null) {
+    if (product.value !== 'burger') {
         return null;
+    } else if (presetBurgerId.value === null) {
+        return customBurger.find((burger) => burger.id === 18) ?? null;
+    } else {
+        return customBurger.find((burger) => burger.id === presetBurgerId.value) ?? null;
     }
 
-    return customBurger.find((burger) => burger.id === presetBurgerId.value) ?? null;
+
 });
 
 const productData = computed(() => {

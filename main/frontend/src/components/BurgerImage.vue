@@ -77,7 +77,7 @@ const stackCanvasHeight = computed(() => {
     }
 
     const lastItem = positionedItemStack.value[positionedItemStack.value.length - 1];
-    return Math.max(lastItem.top + lastItem.scaledHeight + (50 * scale), Math.max(220 * scale, 180));
+    return Math.max(lastItem.top + lastItem.scaledHeight + (50 * scale), Math.max(120 * scale, 50));
 });
 
 watch(
