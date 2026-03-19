@@ -109,7 +109,7 @@ describe('ProductView route changes', () => {
         await waitForOptionsToLoad(nextTick);
         await nextTick();
 
-        expect(wrapper.get('img.product-hero').attributes('src')).toContain('/images/Fries1.png');
+        expect(wrapper.get('img.product-hero').attributes('src')).toContain('/images/items/shoestring_fries.PNG');
         expect(wrapper.text()).not.toContain('added to cart.');
 
         wrapper.unmount();
