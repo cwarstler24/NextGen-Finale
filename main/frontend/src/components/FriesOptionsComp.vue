@@ -82,7 +82,7 @@ function getSelectedItem(group) {
     gap: 1.25rem;
     padding: 1.25rem;
     border-radius: 20px;
-    background: #ffffff;
+    background: linear-gradient(180deg, rgba(255, 252, 247, 0.92) 0%, rgba(248, 235, 220, 0.76) 100%);
 }
 
 .fries-options-header {
@@ -92,12 +92,12 @@ function getSelectedItem(group) {
 
 .fries-options-header h3 {
     margin: 0;
-    color: #0f172a;
+    color: var(--color-heading);
 }
 
 .fries-options-header p {
     margin: 0;
-    color: #64748b;
+    color: var(--color-text-soft);
     font-size: 0.95rem;
 }
 
@@ -110,7 +110,7 @@ function getSelectedItem(group) {
     display: grid;
     gap: 0.75rem;
     padding: 1rem 0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid rgba(113, 88, 71, 0.12);
 }
 
 .option-section:last-child {
@@ -129,11 +129,11 @@ function getSelectedItem(group) {
 .option-label {
     display: block;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--color-heading);
 }
 
 .option-helper {
-    color: #64748b;
+    color: var(--color-text-soft);
     font-size: 0.85rem;
 }
 
@@ -142,10 +142,10 @@ function getSelectedItem(group) {
     min-height: 44px;
     padding: 0.8rem 0.95rem;
     border-radius: 12px;
-    border: 1px solid #cbd5e1;
-    background: #ffffff;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 251, 245, 0.92);
     font: inherit;
-    color: #0f172a;
+    color: var(--color-heading);
     box-sizing: border-box;
 }
 
@@ -157,16 +157,16 @@ function getSelectedItem(group) {
     margin: 0;
     padding: 0.85rem 0.95rem;
     border-radius: 14px;
-    background: #f8fafc;
-    color: #475569;
+    background: rgba(244, 231, 215, 0.66);
+    color: var(--color-text-soft);
 }
 
 .selection-summary strong {
-    color: #0f172a;
+    color: var(--color-heading);
 }
 
 .selection-price {
-    color: #64748b;
+    color: var(--color-text-soft);
     font-size: 0.9rem;
     white-space: nowrap;
 }

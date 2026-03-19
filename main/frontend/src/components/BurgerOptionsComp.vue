@@ -324,7 +324,7 @@ function formatPrice(price) {
     gap: 1.25rem;
     padding: 1.25rem;
     border-radius: 20px;
-    background: #ffffff;
+    background: linear-gradient(180deg, rgba(255, 252, 247, 0.92) 0%, rgba(248, 235, 220, 0.76) 100%);
 }
 
 .burger-options-header {
@@ -334,12 +334,12 @@ function formatPrice(price) {
 
 .burger-options-header h3 {
     margin: 0;
-    color: #0f172a;
+    color: var(--color-heading);
 }
 
 .burger-options-header p {
     margin: 0;
-    color: #64748b;
+    color: var(--color-text-soft);
     font-size: 0.95rem;
 }
 
@@ -352,7 +352,7 @@ function formatPrice(price) {
     display: grid;
     gap: 0.75rem;
     padding: 1rem 0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid rgba(113, 88, 71, 0.12);
 }
 
 .option-section:last-child {
@@ -371,11 +371,11 @@ function formatPrice(price) {
 .option-label {
     display: block;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--color-heading);
 }
 
 .option-helper {
-    color: #64748b;
+    color: var(--color-text-soft);
     font-size: 0.85rem;
 }
 
@@ -384,10 +384,10 @@ function formatPrice(price) {
     min-height: 44px;
     padding: 0.8rem 0.95rem;
     border-radius: 12px;
-    border: 1px solid #cbd5e1;
-    background: #ffffff;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 251, 245, 0.92);
     font: inherit;
-    color: #0f172a;
+    color: var(--color-heading);
     box-sizing: border-box;
 }
 
@@ -409,16 +409,16 @@ function formatPrice(price) {
     align-items: center;
     gap: 1rem;
     padding: 0.85rem 0.95rem;
-    border: 1px solid #e2e8f0;
+    border: 1px solid rgba(113, 88, 71, 0.12);
     border-radius: 14px;
-    background: #ffffff;
+    background: rgba(255, 251, 245, 0.82);
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .checkbox-option-row.is-selected {
-    border-color: #38bdf8;
-    background: #f0f9ff;
-    box-shadow: 0 10px 25px rgba(56, 189, 248, 0.12);
+    border-color: rgba(201, 105, 44, 0.28);
+    background: linear-gradient(180deg, rgba(255, 245, 233, 0.96) 0%, rgba(255, 250, 244, 0.9) 100%);
+    box-shadow: 0 12px 24px rgba(169, 79, 31, 0.1);
 }
 
 .checkbox-option-row.is-disabled {
@@ -437,7 +437,7 @@ function formatPrice(price) {
     width: 1rem;
     height: 1rem;
     margin: 0;
-    accent-color: #0ea5e9;
+    accent-color: var(--color-accent);
 }
 
 .option-copy {
@@ -447,11 +447,11 @@ function formatPrice(price) {
 
 .option-name {
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-heading);
 }
 
 .option-price {
-    color: #64748b;
+    color: var(--color-text-soft);
     font-size: 0.9rem;
 }
 
@@ -461,9 +461,9 @@ function formatPrice(price) {
     gap: 0.35rem;
     padding: 0.3rem;
     border-radius: 999px;
-    border: 1px solid #cbd5e1;
-    background: #ffffff;
-    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    border: 1px solid var(--color-border);
+    background: rgba(255, 251, 245, 0.92);
+    box-shadow: inset 0 1px 2px rgba(58, 31, 17, 0.05);
 }
 
 .stepper-button {
@@ -474,8 +474,8 @@ function formatPrice(price) {
     height: 2rem;
     border: none;
     border-radius: 999px;
-    background: #e2e8f0;
-    color: #0f172a;
+    background: rgba(244, 231, 215, 0.9);
+    color: var(--color-heading);
     font: inherit;
     font-size: 1.05rem;
     font-weight: 700;
@@ -493,7 +493,7 @@ function formatPrice(price) {
     min-width: 2rem;
     text-align: center;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--color-heading);
 }
 
 @media (max-width: 640px) {
