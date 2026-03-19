@@ -36,6 +36,15 @@
     object-fit: cover;
 }
 
+.cart-item-image-preview {
+    width: 100%;
+}
+
+.cart-item-image-preview :deep(.burger-image-card) {
+    margin: 0;
+    border-radius: 0.75rem;
+}
+
 .cart-item-content,
 .cart-options,
 .cart-summary,

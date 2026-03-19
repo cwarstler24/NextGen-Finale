@@ -78,10 +78,7 @@ class DB2ConnectionPool:
         self._initialized = True
         self._pool = Queue()
         self._all_connections = []
-        # Re-entrant lock prevents deadlock during lazy init when
-        # _ensure_pool_initialized -> _initialize_pool -> _create_connection
-        # re-enters connection accounting.
-        self._connections_lock = threading.RLock()
+        self._connections_lock = threading.Lock()
         self._conn_str = None
         self._min_connections = 1  # Temporarily reduced for VPN testing
         self._max_connections = 10

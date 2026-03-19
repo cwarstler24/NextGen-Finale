@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const goToBurgerPage = () => {
-    router.push({ name: 'product' , params: { product: 'Burger' }})
+    router.push({ name: 'burger-menu' })
 }
 
 const goToFriesPage = () => {

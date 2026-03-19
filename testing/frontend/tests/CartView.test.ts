@@ -24,11 +24,18 @@ type CartEntry = {
     signature: string;
 };
 
+function createMockRef<T>(value: T) {
+    return {
+        __v_isRef: true,
+        value,
+    };
+}
+
 const { cartState, clearCartMock, removeItemMock } = vi.hoisted(() => ({
     cartState: {
-        cartCount: 0,
-        cartEntries: [] as CartEntry[],
-        cartTotal: 0,
+        cartCount: createMockRef(0),
+        cartEntries: createMockRef([] as CartEntry[]),
+        cartTotal: createMockRef(0),
     },
     clearCartMock: vi.fn(),
     removeItemMock: vi.fn(),
@@ -46,9 +53,9 @@ vi.mock('../../../main/frontend/src/composables/useCart', () => ({
 
 describe('CartView', () => {
     beforeEach(() => {
-        cartState.cartCount = 0;
-        cartState.cartEntries = [];
-        cartState.cartTotal = 0;
+        cartState.cartCount.value = 0;
+        cartState.cartEntries.value = [];
+        cartState.cartTotal.value = 0;
         clearCartMock.mockReset();
         removeItemMock.mockReset();
         pushMock.mockReset();
@@ -63,9 +70,9 @@ describe('CartView', () => {
     });
 
     it('renders cart items and supports removing, clearing, and purchasing', async () => {
-        cartState.cartCount = 2;
-        cartState.cartTotal = 9.5;
-        cartState.cartEntries = [
+        cartState.cartCount.value = 2;
+        cartState.cartTotal.value = 9.5;
+        cartState.cartEntries.value = [
             {
                 image: '/images/Burger1.png',
                 lineTotal: 9.5,
@@ -101,9 +108,9 @@ describe('CartView', () => {
     });
 
     it('renders singular checkout text and empty array options as none selected', () => {
-        cartState.cartCount = 1;
-        cartState.cartTotal = 4;
-        cartState.cartEntries = [
+        cartState.cartCount.value = 1;
+        cartState.cartTotal.value = 4;
+        cartState.cartEntries.value = [
             {
                 image: '',
                 lineTotal: 4,

@@ -5,6 +5,7 @@ import CartView from '../views/CartView.vue'
 import CheckoutView from '../views/CheckoutView.vue'
 import UserView from '../views/UserView.vue'
 import ConfirmationView from '../views/ConfirmationView.vue'
+import BurgerMenuView from '../views/BurgerMenuView.vue'
 
 const routes = [
     {
@@ -13,7 +14,7 @@ const routes = [
         component: MainView,
     },
     {
-        path: "/product/:product",
+        path: "/product/:product/:presetId?",
         name: "product",
         component: ProductView,
     },
@@ -36,7 +37,12 @@ const routes = [
         path: "/confirmation",
         name: "confirm",
         component: ConfirmationView,
-    }
+    },
+    {
+        path: "/burger-menu",
+        name: "burger-menu",
+        component: BurgerMenuView,
+    },
 ]
 
 const router = createRouter({

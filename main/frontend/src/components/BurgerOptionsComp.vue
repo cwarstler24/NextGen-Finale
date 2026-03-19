@@ -22,9 +22,22 @@ function clampQuantity(quantity, maxQuantity) {
     return Math.min(maxQuantity, Math.max(1, Number.parseInt(quantity, 10) || 1));
 }
 
+function normalizeOptionId(value) {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+
+    return String(value);
+}
+
 function getGroupItem(groupKey, itemId) {
+    const normalizedItemId = normalizeOptionId(itemId);
+    if (normalizedItemId === null) {
+        return null;
+    }
+
     const group = props.optionGroups.find((entry) => entry.key === groupKey);
-    return group?.items.find((item) => item.id === itemId) ?? null;
+    return group?.items.find((item) => normalizeOptionId(item.id) === normalizedItemId) ?? null;
 }
 
 function getMaxQuantity(groupKey, itemId) {
@@ -34,7 +47,7 @@ function getMaxQuantity(groupKey, itemId) {
 function updateSingleSelection(groupKey, value) {
     emit('update:modelValue', {
         ...props.modelValue,
-        [groupKey]: value,
+        [groupKey]: normalizeOptionId(value),
     });
 }
 
@@ -51,18 +64,19 @@ function getSingleQuantitySelection(groupKey) {
 }
 
 function updateSingleQuantitySelection(groupKey, value) {
-    const selectedItem = getGroupItem(groupKey, value);
+    const normalizedValue = normalizeOptionId(value);
+    const selectedItem = getGroupItem(groupKey, normalizedValue);
     if (!selectedItem) {
         return;
     }
 
     const currentSelection = getSingleQuantitySelection(groupKey);
-    const maxQuantity = getMaxQuantity(groupKey, value);
+    const maxQuantity = getMaxQuantity(groupKey, normalizedValue);
 
     emit('update:modelValue', {
         ...props.modelValue,
         [groupKey]: {
-            id: value,
+            id: normalizedValue,
             quantity: Math.min(currentSelection?.quantity ?? 1, maxQuantity),
         },
     });
@@ -107,20 +121,32 @@ function getMultiSelections(groupKey) {
 }
 
 function isMultiSelected(groupKey, value) {
-    return getMultiSelections(groupKey).some((selection) => selection.id === value);
+    const normalizedValue = normalizeOptionId(value);
+    return normalizedValue !== null && getMultiSelections(groupKey)
+        .some((selection) => selection.id === normalizedValue);
 }
 
 function getMultiQuantity(groupKey, value) {
-    return getMultiSelections(groupKey).find((selection) => selection.id === value)?.quantity ?? 1;
+    const normalizedValue = normalizeOptionId(value);
+    if (normalizedValue === null) {
+        return 1;
+    }
+
+    return getMultiSelections(groupKey).find((selection) => selection.id === normalizedValue)?.quantity ?? 1;
 }
 
 function toggleMultiSelection(groupKey, value, checked) {
+    const normalizedValue = normalizeOptionId(value);
+    if (normalizedValue === null) {
+        return;
+    }
+
     const currentSelections = getMultiSelections(groupKey);
     const nextSelections = checked
-        ? currentSelections.some((selection) => selection.id === value)
+        ? currentSelections.some((selection) => selection.id === normalizedValue)
             ? currentSelections
-            : [...currentSelections, { id: value, quantity: 1 }]
-        : currentSelections.filter((selection) => selection.id !== value);
+            : [...currentSelections, { id: normalizedValue, quantity: 1 }]
+        : currentSelections.filter((selection) => selection.id !== normalizedValue);
 
     emit('update:modelValue', {
         ...props.modelValue,
@@ -129,16 +155,21 @@ function toggleMultiSelection(groupKey, value, checked) {
 }
 
 function updateMultiQuantity(groupKey, value, nextQuantity) {
+    const normalizedValue = normalizeOptionId(value);
+    if (normalizedValue === null) {
+        return;
+    }
+
     emit('update:modelValue', {
         ...props.modelValue,
         [groupKey]: getMultiSelections(groupKey).map((selection) => {
-            if (selection.id !== value) {
+            if (selection.id !== normalizedValue) {
                 return selection;
             }
 
             return {
                 ...selection,
-                quantity: clampQuantity(nextQuantity, getMaxQuantity(groupKey, value)),
+                quantity: clampQuantity(nextQuantity, getMaxQuantity(groupKey, normalizedValue)),
             };
         }),
     });
@@ -149,7 +180,8 @@ function stepMultiQuantity(groupKey, value, delta) {
 }
 
 function formatPrice(price) {
-    return price > 0 ? `+$${price.toFixed(2)}` : 'Included';
+    const normalizedPrice = Number(price);
+    return normalizedPrice > 0 ? `+$${normalizedPrice.toFixed(2)}` : 'Included';
 }
 </script>
 
