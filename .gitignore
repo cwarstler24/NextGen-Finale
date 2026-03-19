@@ -47,3 +47,4 @@ node_modules/
 .vitest/
 *.tsbuildinfo
 coverage/
+credentials.json

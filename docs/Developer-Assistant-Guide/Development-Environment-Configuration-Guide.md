@@ -42,13 +42,46 @@ Follow these steps to set up your local development environment.
 ## Configuring credentials.json file
 
 !!! note "note"
-    You must have a DB2 license before creating a credentials.json file. Request a DB2 license from your supervisor if you do not have one.
+    You must have a DB2 license before creating a `credentials.json` file. Request a DB2 license from your supervisor if you do not have one. The `credentials.json` file will originally be named `credentials_template.json`. You must change the name to `credentials.json` and fill in the appropriate values for your database connection. You can find the `credentials_template.json` file in the main directory of the repository.
 
 1. Create a `credentials.json` file. This file makes a connection with the DB2 database.
 
 1. Insert appropriate values into this file regarding your specific database values and configuration.
 
-1. Install the DB2 license, `db2consv_ee.lic`. This file will go inside the directory of `/clidriver`.
+        a. Use the following template:
+
+        ```json
+        {
+            "database": "[database]",
+            "hostname": "192.168.54.250",
+            "port": "3600",
+            "protocol": "TCPIP",
+            "authentication": "SERVER",
+            "uid": "[username]",
+            "pwd": "[password]"
+        }
+        ```
+
+1. Install the DB2 license, `db2consv_ee.lic`. This file will go inside the directory of `/clidriver/license`.
+
+## Testing the database connection
+
+1. In the `database_setup.json` file, you can change the environment to **PRODUCTION** to test the database connection. You can change the environment to **TEST** to use the test database connection.
+
+    !!! note "note"
+        The `database_setup.json` file is located in the main directory of the repository. You **must** have the `credentials.json` file set up and configured correctly to test the database connection.
+
+1. This is an example of what the `database_setup.json` file should look like:
+
+        ```json
+        {
+            "environment": "PRODUCTION",
+            "schemas": {
+                "PRODUCTION": "[production_schema]",
+                "TEST": "[test_schema]"
+            }
+        }
+        ```
 
 ## Testing the backend
 
