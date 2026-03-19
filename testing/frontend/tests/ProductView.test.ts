@@ -121,13 +121,12 @@ describe('ProductView', () => {
 
         expect(wrapper.text()).toContain('Classic Burger');
         expect(wrapper.text()).toContain('$3.50');
+        expect(wrapper.find('.burger-image-card').exists()).toBe(true);
+        expect(wrapper.findAll('button.thumb')).toHaveLength(0);
 
         await wrapper.get('#buns-input').setValue('102');
         await wrapper.get('#patties-input').setValue('202');
         await wrapper.findAll('input[type="checkbox"]')[0].setValue(true);
-        await wrapper.findAll('button.thumb')[2].trigger('click');
-
-        expect(wrapper.get('img.product-hero').attributes('src')).toContain('/images/Burger3.png');
         expect(wrapper.text()).toContain('$6.00');
 
         await wrapper.get('button.primary').trigger('click');
@@ -182,7 +181,6 @@ describe('ProductView', () => {
     it('renders unknown products with fallback content and empty customization', async () => {
         const wrapper = mountProductView('Shake');
 
-        expect(wrapper.text()).toContain('Shake');
         expect(wrapper.text()).toContain('Unknown Product');
         expect(wrapper.text()).toContain('No description available.');
         expect(wrapper.text()).toContain('No customization options are available for this product.');
@@ -192,19 +190,14 @@ describe('ProductView', () => {
 
         await wrapper.get('button.primary').trigger('click');
 
-        expect(addItemMock).toHaveBeenCalledWith({
-            id: 'shake',
-            image: '/images/placeholder.png',
-            name: 'Unknown Product',
-            options: [],
-            quantity: 1,
-            unitPrice: 0,
-        });
+        expect(addItemMock).not.toHaveBeenCalled();
+        expect(wrapper.text()).toContain('Please select at least one option before adding to cart.');
     });
 
     it('clears pending feedback timers when replacing the message and unmounting', async () => {
         const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
         const wrapper = mountProductView('Burger');
+        await waitForOptionsToLoad();
 
         await wrapper.get('button.primary').trigger('click');
         await wrapper.get('button.primary').trigger('click');
