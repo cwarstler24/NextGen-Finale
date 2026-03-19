@@ -119,22 +119,22 @@ describe('ProductView', () => {
         const wrapper = mountProductView('Burger');
         await waitForOptionsToLoad();
 
-        expect(wrapper.text()).toContain('Classic Burger');
-        expect(wrapper.text()).toContain('$3.50');
+        expect(wrapper.text()).toContain('Classic Cheeseburger');
+        expect(wrapper.text()).toContain('$6.00');
         expect(wrapper.find('.burger-image-card').exists()).toBe(true);
         expect(wrapper.findAll('button.thumb')).toHaveLength(0);
 
         await wrapper.get('#buns-input').setValue('102');
         await wrapper.get('#patties-input').setValue('202');
         await wrapper.findAll('input[type="checkbox"]')[0].setValue(true);
-        expect(wrapper.text()).toContain('$6.00');
+        expect(wrapper.text()).toContain('$7.00');
 
         await wrapper.get('button.primary').trigger('click');
 
         expect(addItemMock).toHaveBeenCalledWith({
             id: 'burger',
             image: '',
-            name: 'Classic Burger',
+            name: 'Classic Cheeseburger',
             options: [
                 { id: '102', name: 'Bun', value: 'Pretzel' },
                 {
@@ -143,20 +143,26 @@ describe('ProductView', () => {
                     value: [{ id: '202', name: 'Vegan', quantity: 1 }],
                 },
                 {
-                    id: [{ id: '301', quantity: 1 }],
+                    id: [
+                        { id: '301', quantity: 1 },
+                        { id: '302', quantity: 1 },
+                    ],
                     name: 'Toppings',
-                    value: [{ id: '301', name: 'Lettuce', quantity: 1 }],
+                    value: [
+                        { id: '301', name: 'Lettuce', quantity: 1 },
+                        { id: '302', name: 'Tomato', quantity: 1 },
+                    ],
                 },
             ],
             quantity: 1,
-            unitPrice: 6,
+            unitPrice: 7,
         });
-        expect(wrapper.text()).toContain('Classic Burger added to cart.');
+        expect(wrapper.text()).toContain('Classic Cheeseburger added to cart.');
 
         vi.advanceTimersByTime(3000);
         await nextTick();
 
-        expect(wrapper.text()).not.toContain('Classic Burger added to cart.');
+        expect(wrapper.text()).not.toContain('Classic Cheeseburger added to cart.');
     });
 
     it('renders fries customization and routes back to the main page', async () => {

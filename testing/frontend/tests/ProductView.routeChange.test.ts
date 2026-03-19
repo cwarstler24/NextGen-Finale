@@ -103,7 +103,7 @@ describe('ProductView route changes', () => {
         await wrapper.get('button.primary').trigger('click');
         await nextTick();
 
-        expect(wrapper.text()).toContain('Classic Burger added to cart.');
+        expect(wrapper.text()).toContain('Classic Cheeseburger added to cart.');
 
         routeRef.value = { params: { product: 'Fries' } };
         await waitForOptionsToLoad(nextTick);
