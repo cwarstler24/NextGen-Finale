@@ -14,12 +14,13 @@ function normalizeQuantity(value) {
 export function toBurgerImageProps(burger) {
     const bunName = supportedBurgerBuns.has(burger?.bun) ? burger.bun : 'None';
     const pattyName = supportedBurgerPatties.has(burger?.patty) ? burger.patty : 'None';
+    const pattyCount = normalizeQuantity(burger?.patty_count ?? 1);
 
     return {
         selectedBun: { name: bunName },
         selectedPatty: {
             name: pattyName,
-            quantity: 1,
+            quantity: pattyCount,
         },
         selectedToppings: Array.isArray(burger?.toppings)
             ? burger.toppings

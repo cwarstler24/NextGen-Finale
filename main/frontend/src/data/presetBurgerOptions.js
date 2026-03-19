@@ -58,6 +58,10 @@ function getSingleQuantitySelection(selection) {
     };
 }
 
+function normalizeQuantity(value) {
+    return Math.max(1, Number.parseInt(value ?? 1, 10) || 1);
+}
+
 function normalizeOptionName(value) {
     return String(value ?? '').trim().toLowerCase();
 }
@@ -123,10 +127,17 @@ export function buildBurgerSelectionsFromPreset(groups, presetBurger) {
 
     const pattyItem = findAvailableGroupItemByName(pattyGroup, presetBurger.patty);
     if (pattyItem) {
+        const requestedPattyQuantity = normalizeQuantity(presetBurger.patty_count ?? 1);
+        const availablePattyQuantity = normalizeQuantity(pattyItem.quantity ?? 1);
+
         nextSelections.patties = {
             id: pattyItem.id,
-            quantity: 1,
+            quantity: Math.min(requestedPattyQuantity, availablePattyQuantity),
         };
+
+        if (availablePattyQuantity < requestedPattyQuantity) {
+            adjustedIngredients.push(`${pattyItem.name} x${availablePattyQuantity}`);
+        }
     } else if (presetBurger.patty) {
         unavailableIngredients.push(presetBurger.patty);
         unavailableCoreSelections.push(presetBurger.patty);

@@ -37,6 +37,7 @@ export const customBurger = [
         description: "Don't let the name fool you-this is an indulgent stack of pure comfort. Double smash patties, crispy bacon, and fried onions collide with creamy mac and cheese and hot honey for a sandwich that pulls absolutely no punches.",
         bun: "Pretzel",
         patty: "Smash",
+        patty_count: 2,
         toppings: [
             { type: "Cheese", qty: 2 },
             { type: "Bacon", qty: 2 },
@@ -83,6 +84,7 @@ export const customBurger = [
         description: "Triple cheese, double chicken, and a spicy-sweet kick make this burger live up to its name. A messy, melty, high-energy experience from first bite to last.",
         bun: "Pretzel",
         patty: "Chicken",
+        patty_count: 2,
         toppings: [
             { type: "Cheese", qty: 3 },
             { type: "Jalapeno Jelly", qty: 1 },
@@ -238,7 +240,20 @@ export const customBurger = [
             { type: "Mac and Cheese", qty: 1 },
             { type: "Ketchup", qty: 1 },
         ],
-    }
+    },
+    {
+        id: 21,
+        name: "Classic Double Cheeseburger",
+        description: "A timeless combination of a juicy beef patty, melted cheese, and fresh toppings, all nestled between a soft brioche bun. Simple, satisfying, and always a crowd-pleaser.",
+        bun: "Brioche",
+        patty: "Beef",
+        patty_count: 2,
+        toppings: [
+            { type: "Cheese", qty: 1 },
+            { type: "Lettuce", qty: 1 },
+            { type: "Tomato", qty: 1 },
+        ],
+    },
 ];
 
 

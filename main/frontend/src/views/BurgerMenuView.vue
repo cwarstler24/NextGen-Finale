@@ -31,8 +31,21 @@ let menuCartFeedbackTimeoutId = null;
 
 const preferredPattyOrder = ['Beef', 'Chicken', 'Fish', 'Veggie', 'Smash', 'None'];
 
-function formatPattyLabel(value) {
-    return value === 'None' ? 'No patty' : value;
+function normalizeQuantity(value) {
+    return Math.max(1, Number.parseInt(value ?? 1, 10) || 1);
+}
+
+function formatPattyLabel(value, quantity = 1) {
+    if (value === 'None') {
+        return 'No patty';
+    }
+
+    const normalizedQuantity = normalizeQuantity(quantity);
+    if (normalizedQuantity === 1) {
+        return value;
+    }
+
+    return `${value} x${normalizedQuantity}`;
 }
 
 function formatBunLabel(value) {
@@ -87,12 +100,17 @@ const burgerOptionGroups = computed(() => normalizeBurgerOptionGroups(rawBurgerO
 const mappedBurgers = computed(() => customBurger.map((burger) => {
     const imageProps = toBurgerImageProps(burger);
     const toppings = Array.isArray(burger.toppings) ? burger.toppings : [];
+    const pattyCount = normalizeQuantity(burger.patty_count ?? 1);
+    const pattyTypeLabel = formatPattyLabel(burger.patty);
+    const pattyLabel = formatPattyLabel(burger.patty, pattyCount);
 
     return {
         ...burger,
         imageProps,
         bunLabel: formatBunLabel(burger.bun),
-        pattyLabel: formatPattyLabel(burger.patty),
+        pattyCount,
+        pattyTypeLabel,
+        pattyLabel,
         toppingLabels: toppings.map(formatToppingLabel),
         toppingTypeCount: toppings.length,
         toppingCountLabel: toppings.length === 0
@@ -103,6 +121,10 @@ const mappedBurgers = computed(() => customBurger.map((burger) => {
             burger.description,
             burger.bun,
             burger.patty,
+            pattyTypeLabel,
+            pattyLabel,
+            pattyCount > 1 ? `${burger.patty} ${pattyCount}` : '',
+            pattyCount > 1 ? `${pattyCount} patties` : '',
             ...toppings.map((topping) => topping.type),
         ].join(' ').toLowerCase(),
     };
@@ -110,7 +132,7 @@ const mappedBurgers = computed(() => customBurger.map((burger) => {
 
 const totalBurgerCount = computed(() => mappedBurgers.value.length);
 const bunStyleCount = computed(() => new Set(mappedBurgers.value.map((burger) => burger.bunLabel)).size);
-const pattyStyleCount = computed(() => new Set(mappedBurgers.value.map((burger) => burger.pattyLabel)).size);
+const pattyStyleCount = computed(() => new Set(mappedBurgers.value.map((burger) => burger.pattyTypeLabel)).size);
 
 const pattyFilters = computed(() => {
     const counts = mappedBurgers.value.reduce((totals, burger) => {
