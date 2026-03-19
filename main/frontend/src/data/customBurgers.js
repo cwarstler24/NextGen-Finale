@@ -195,7 +195,19 @@ export const customBurger = [
             { type: "Honey", qty: 3 },
             { type: "Peanut Butter", qty: 1 },
         ],
-    }
+    },
+    {
+        id: 18,
+        name: "Classic Cheeseburger",
+        description: "A timeless combination of a juicy beef patty, melted cheese, and fresh toppings, all nestled between a soft brioche bun. Simple, satisfying, and always a crowd-pleaser.",
+        bun: "Brioche",
+        patty: "Beef",
+        toppings: [
+            { type: "Cheese", qty: 1 },
+            { type: "Lettuce", qty: 1 },
+            { type: "Tomato", qty: 1 },
+        ],
+    },
 ];
 
 

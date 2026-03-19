@@ -38,7 +38,9 @@ function goHome() {
 <template>
 <section v-if="orderId !== null" class="page confirmation-page">
     <div class="card confirmation-hero">
-        <div class="hero-icon">🎉</div>
+        <div class="hero-icon">
+            🎉
+        </div>
         <h1>Order Confirmed!</h1>
         <p class="hero-subtitle">
             Thanks, <strong>{{ customerName }}</strong>! Your order has been placed and is being prepared.

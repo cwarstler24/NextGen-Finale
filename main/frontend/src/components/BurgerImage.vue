@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { burgerItemImageMap } from '../data/burgerImageCatalog';
+import { classicCheeseburgerImageProps } from '../data/customBurgerImageMapper';
 
 const props = defineProps({
     selectedBun: {
@@ -15,10 +16,6 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-    fallbackImageSrc: {
-        type: String,
-        default: '/images/Burger1.png',
-    },
 });
 
 // Define the image sources and dimensions for each item type
@@ -32,6 +29,18 @@ const stackWidth = ref(0);
 const baseStackWidth = 352;
 let resizeObserver = null;
 
+const classicFallbackItemStack = buildItemStack(
+    classicCheeseburgerImageProps.selectedBun,
+    classicCheeseburgerImageProps.selectedPatty,
+    classicCheeseburgerImageProps.selectedToppings
+);
+
+const displayItemStack = computed(() => (
+    itemStack.value.length > 0
+        ? itemStack.value
+        : classicFallbackItemStack
+));
+
 const layoutScale = computed(() => {
     if (!stackWidth.value) {
         return 1;
@@ -42,10 +51,10 @@ const layoutScale = computed(() => {
 
 const positionedItemStack = computed(() => {
     let currentY = 0;
-    const totalItems = itemStack.value.length;
+    const totalItems = displayItemStack.value.length;
     const scale = layoutScale.value;
 
-    return itemStack.value.map((item, index) => {
+    return displayItemStack.value.map((item, index) => {
         const scaledHeight = item.imageHeight * scale;
         const positionedItem = {
             ...item,
@@ -74,41 +83,50 @@ const stackCanvasHeight = computed(() => {
 watch(
     () => [props.selectedBun, props.selectedPatty, props.selectedToppings],
     ([selectedBun, selectedPatty, selectedToppings]) => {
-        const stack = [];
-
-        if (selectedBun) {
-            stack.push(getBunBottom(selectedBun.name));
-        }
-
-        // temp array for reversing the order of toppings so they stack correctly
-        var reversedToppings = [];
-        var toppingCount = 0;
-        if (selectedToppings.length > 0) {
-            for (const topping of selectedToppings) {
-                for (toppingCount = 0; toppingCount < topping.quantity; toppingCount++) {
-                    let item = getTopping(topping.name);
-                    if (!item) continue;
-                    item.isFlipped = toppingCount % 2 === 1;
-                    reversedToppings.push(item);
-                }
-            }
-            stack.push(...reversedToppings.reverse());
-        }
-
-        if (selectedPatty) {
-            for (let i = 0; i < selectedPatty.quantity; i++) {
-                stack.push(getPatty(selectedPatty.name));
-            }
-        }
-
-        if (selectedBun) {
-            stack.push(getBunTop(selectedBun.name));
-        }
-
-        itemStack.value = stack.filter(Boolean);
+        itemStack.value = buildItemStack(selectedBun, selectedPatty, selectedToppings);
     },
     { immediate: true, deep: true }
 );
+
+function buildItemStack(selectedBun, selectedPatty, selectedToppings = []) {
+    const stack = [];
+
+    if (selectedBun) {
+        stack.push(getBunBottom(selectedBun.name));
+    }
+
+    const reversedToppings = [];
+    if (selectedToppings.length > 0) {
+        for (const topping of selectedToppings) {
+            const quantity = Math.max(1, Number.parseInt(topping?.quantity ?? 1, 10) || 1);
+
+            for (let toppingCount = 0; toppingCount < quantity; toppingCount++) {
+                const item = getTopping(topping.name);
+                if (!item) {
+                    continue;
+                }
+
+                item.isFlipped = toppingCount % 2 === 1;
+                reversedToppings.push(item);
+            }
+        }
+        stack.push(...reversedToppings.reverse());
+    }
+
+    if (selectedPatty) {
+        const quantity = Math.max(1, Number.parseInt(selectedPatty?.quantity ?? 1, 10) || 1);
+
+        for (let i = 0; i < quantity; i++) {
+            stack.push(getPatty(selectedPatty.name));
+        }
+    }
+
+    if (selectedBun) {
+        stack.push(getBunTop(selectedBun.name));
+    }
+
+    return stack.filter(Boolean);
+}
 
 function getBunTop(bun){
     if (!bun) return null;
@@ -187,13 +205,6 @@ onBeforeUnmount(() => {
                 :class="{ flipped: item.isFlipped }"
             />
         </div>
-
-        <img
-            v-if="positionedItemStack.length === 0"
-            class="burger-fallback-image"
-            :src="fallbackImageSrc"
-            alt="Image of burger"
-        />
     </div>
 </div>
 </template>
@@ -216,8 +227,7 @@ onBeforeUnmount(() => {
     transform: translateX(-50%);
 }
 
-.burger-layer,
-.burger-fallback-image {
+.burger-layer {
     display: block;
     width: 100%;
     height: auto;

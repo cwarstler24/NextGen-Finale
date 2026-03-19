@@ -32,10 +32,6 @@ function getStructuredOptionEntries(optionValue) {
     return optionValue.filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry));
 }
 
-function isMeaningfulBurgerPart(name) {
-    return Boolean(name) && name !== 'None';
-}
-
 function getBurgerImageProps(item) {
     if (item.id !== 'burger') {
         return null;
@@ -61,14 +57,6 @@ function getBurgerImageProps(item) {
             quantity: normalizeQuantity(entry.quantity),
         }))
         .filter((entry) => entry.name !== '');
-
-    const hasIllustratedPreview = isMeaningfulBurgerPart(selectedBun?.name)
-        || isMeaningfulBurgerPart(selectedPatty?.name)
-        || selectedToppings.some((entry) => isMeaningfulBurgerPart(entry.name));
-
-    if (!hasIllustratedPreview) {
-        return null;
-    }
 
     return {
         selectedBun,
