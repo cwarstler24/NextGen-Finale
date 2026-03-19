@@ -588,151 +588,156 @@ onBeforeUnmount(() => {
         <span class="hover" @click="goMainPage">Home</span> / <span class="current">{{ productData.name }}</span>
     </div>
 
-    <div class="product-grid">
-        <component
-            :is="BurgerImage"
-            v-if="product === 'burger'"
-            :selected-bun="selectedBurgerBun"
-            :selected-patty="selectedBurgerPatty"
-            :selected-toppings="selectedBurgerToppings"
-        />
-        <div v-else name="product-gallery" class="product-gallery card">
-            <img
-                name="product-image"
-                class="product-hero"
-                :src="productHeroImage"
-                :alt="productHeroAlt"
-            />
-        </div>
-        <div class="product-info card">
-            <div class="product-header">
-                <div>
-                    <h2>{{ productData.name }}</h2>
-                    <p class="product-description">
-                        {{ productData.description }}
+    <div class="product-layout">
+        <div class="product-main-column">
+            <div class="product-info card">
+                <div class="product-header">
+                    <div>
+                        <h2>{{ productData.name }}</h2>
+                        <p class="product-description">
+                            {{ productData.description }}
+                        </p>
+                    </div>
+                    <div class="price-tag">
+                        <span class="price">${{ totalPrice }}</span>
+                    </div>
+                </div>
+
+                <div
+                    v-if="presetLoadMessage && isPresetNoticeVisible"
+                    class="preset-status"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <span class="preset-status__message">{{ presetLoadMessage }}</span>
+                    <div class="preset-status__actions">
+                        <button
+                            v-if="product === 'burger' && presetBurger"
+                            class="secondary"
+                            type="button"
+                            @click="startFromScratch"
+                        >
+                            Start from scratch
+                        </button>
+                        <button class="secondary" type="button" @click="dismissPresetNotice">
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+
+                <div class="product-actions">
+                    <button class="primary" type="button" :disabled="isOrderingDisabled" @click="addToCart">
+                        Add to Cart
+                    </button>
+                    <label class="quantity-input-group" for="quantity">
+                        <span>Qty</span>
+                        <input
+                            id="quantity"
+                            v-model.number="quantity"
+                            class="quantity-input"
+                            type="number"
+                            min="1"
+                            :disabled="isOrderingDisabled"
+                            @blur="syncQuantityInput"
+                            @change="syncQuantityInput"
+                        />
+                    </label>
+                </div>
+
+                <div
+                    v-if="cartFeedbackMessage"
+                    class="cart-feedback"
+                    role="status"
+                    aria-live="polite"
+                >
+                    {{ cartFeedbackMessage }}
+                </div>
+
+                <div
+                    v-else-if="isLoadingOptions"
+                    class="product-status product-status--loading"
+                    role="status"
+                    aria-live="polite"
+                >
+                    Loading available options for this item...
+                </div>
+
+                <div
+                    v-else-if="isOptionsUnavailable"
+                    class="product-status product-status--error"
+                    role="alert"
+                >
+                    Ordering is temporarily unavailable while we reconnect to our product service.
+                </div>
+            </div>
+
+            <div class="customization card" name="product-customization">
+                <div
+                    v-if="isOptionsUnavailable"
+                    class="service-unavailable"
+                    role="alert"
+                >
+                    <span class="service-unavailable__eyebrow">Service update</span>
+                    <h3>We&rsquo;re having trouble loading product options right now.</h3>
+                    <p>
+                        Our ordering service is temporarily unavailable, so customization and checkout are paused for this item.
+                        Please try again in a few minutes.
+                    </p>
+                    <div class="service-unavailable__actions">
+                        <button class="secondary" type="button" @click="retryLoadingOptions">
+                            Retry
+                        </button>
+                        <button class="secondary" type="button" @click="goMainPage">
+                            Return Home
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    v-else-if="isLoadingOptions"
+                    class="service-unavailable service-unavailable--loading"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <span class="service-unavailable__eyebrow">Loading options</span>
+                    <h3>We&rsquo;re preparing your customization choices.</h3>
+                    <p>
+                        Please wait a moment while we load the latest options for this item.
                     </p>
                 </div>
-                <div class="price-tag">
-                    <span class="price">${{ totalPrice }}</span>
-                </div>
-            </div>
 
-            <div
-                v-if="presetLoadMessage && isPresetNoticeVisible"
-                class="preset-status"
-                role="status"
-                aria-live="polite"
-            >
-                <span class="preset-status__message">{{ presetLoadMessage }}</span>
-                <div class="preset-status__actions">
-                    <button
-                        v-if="product === 'burger' && presetBurger"
-                        class="secondary"
-                        type="button"
-                        @click="startFromScratch"
-                    >
-                        Start from scratch
-                    </button>
-                    <button class="secondary" type="button" @click="dismissPresetNotice">
-                        Dismiss
-                    </button>
-                </div>
+                <component
+                    :is="customizationComponent"
+                    v-else-if="customizationComponent"
+                    v-model="selectedOptions"
+                    :option-groups="optionGroups"
+                />
+                <template v-else>
+                    <h3>Customize your order</h3>
+                    <p>No customization options are available for this product.</p>
+                </template>
             </div>
+        </div>
 
-            <div class="product-actions">
-                <button class="primary" type="button" :disabled="isOrderingDisabled" @click="addToCart">
-                    Add to Cart
-                </button>
-                <label class="quantity-input-group" for="quantity">
-                    <span>Qty</span>
-                    <input
-                        id="quantity"
-                        v-model.number="quantity"
-                        class="quantity-input"
-                        type="number"
-                        min="1"
-                        :disabled="isOrderingDisabled"
-                        @blur="syncQuantityInput"
-                        @change="syncQuantityInput"
+        <aside class="product-preview-column">
+            <div class="product-preview-sticky">
+                <component
+                    :is="BurgerImage"
+                    v-if="product === 'burger'"
+                    :selected-bun="selectedBurgerBun"
+                    :selected-patty="selectedBurgerPatty"
+                    :selected-toppings="selectedBurgerToppings"
+                />
+                <div v-else name="product-gallery" class="product-gallery card">
+                    <img
+                        name="product-image"
+                        class="product-hero"
+                        :src="productHeroImage"
+                        :alt="productHeroAlt"
                     />
-                </label>
-            </div>
-
-            <div
-                v-if="cartFeedbackMessage"
-                class="cart-feedback"
-                role="status"
-                aria-live="polite"
-            >
-                {{ cartFeedbackMessage }}
-            </div>
-
-            <div
-                v-else-if="isLoadingOptions"
-                class="product-status product-status--loading"
-                role="status"
-                aria-live="polite"
-            >
-                Loading available options for this item...
-            </div>
-
-            <div
-                v-else-if="isOptionsUnavailable"
-                class="product-status product-status--error"
-                role="alert"
-            >
-                Ordering is temporarily unavailable while we reconnect to our product service.
-            </div>
-        </div>
-    </div>
-
-    <div class="details-grid" name="product-customization">
-        <div class="customization card">
-            <div
-                v-if="isOptionsUnavailable"
-                class="service-unavailable"
-                role="alert"
-            >
-                <span class="service-unavailable__eyebrow">Service update</span>
-                <h3>We&rsquo;re having trouble loading product options right now.</h3>
-                <p>
-                    Our ordering service is temporarily unavailable, so customization and checkout are paused for this item.
-                    Please try again in a few minutes.
-                </p>
-                <div class="service-unavailable__actions">
-                    <button class="secondary" type="button" @click="retryLoadingOptions">
-                        Retry
-                    </button>
-                    <button class="secondary" type="button" @click="goMainPage">
-                        Return Home
-                    </button>
                 </div>
             </div>
-
-            <div
-                v-else-if="isLoadingOptions"
-                class="service-unavailable service-unavailable--loading"
-                role="status"
-                aria-live="polite"
-            >
-                <span class="service-unavailable__eyebrow">Loading options</span>
-                <h3>We&rsquo;re preparing your customization choices.</h3>
-                <p>
-                    Please wait a moment while we load the latest options for this item.
-                </p>
-            </div>
-
-            <component
-                :is="customizationComponent"
-                v-else-if="customizationComponent"
-                v-model="selectedOptions"
-                :option-groups="optionGroups"
-            />
-            <template v-else>
-                <h3>Customize your order</h3>
-                <p>No customization options are available for this product.</p>
-            </template>
-        </div>
+        </aside>
     </div>
 </section>
 </template>
