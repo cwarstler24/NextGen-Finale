@@ -23,7 +23,7 @@ describe('customBurgerImageMapper', () => {
         });
     });
 
-    it('falls back unsupported values and filters unsupported toppings', () => {
+    it('keeps catalog-supported values and filters unsupported toppings', () => {
         const result = toBurgerImageProps({
             bun: 'Pretzel',
             patty: 'Fish',
@@ -34,10 +34,11 @@ describe('customBurgerImageMapper', () => {
             ],
         });
 
-        expect(result.selectedBun).toEqual({ name: 'None' });
-        expect(result.selectedPatty).toEqual({ name: 'None', quantity: 1 });
+        expect(result.selectedBun).toEqual({ name: 'Pretzel' });
+        expect(result.selectedPatty).toEqual({ name: 'Fish', quantity: 1 });
         expect(result.selectedToppings).toEqual([
             { name: 'Lettuce', quantity: 1 },
+            { name: 'Blue Cheese', quantity: 2 },
             { name: 'None', quantity: 1 },
         ]);
     });
