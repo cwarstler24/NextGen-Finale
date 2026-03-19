@@ -216,7 +216,7 @@
 }
 
 .burger-menu-card {
-    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+    grid-template-columns: 1fr;
     align-items: start;
     gap: 1.25rem;
     overflow: hidden;
@@ -231,7 +231,7 @@
 
 .burger-preview .card {
     width: 100%;
-    max-width: 13rem;
+    max-width: 18rem;
     padding: 0.75rem;
     border: 1px solid #e2e8f0;
     border-radius: 18px;
@@ -240,14 +240,14 @@
 }
 
 .burger-preview .burger-stack {
-    width: min(100%, 11.5rem);
+    width: min(100%, 16rem);
 }
 
 .burger-preview__fallback {
     display: grid;
     place-items: center;
     width: 100%;
-    max-width: 13rem;
+    max-width: 18rem;
     min-height: 210px;
     padding: 0.75rem;
     border: 1px solid #e2e8f0;
@@ -256,7 +256,7 @@
 }
 
 .burger-preview__fallback-image {
-    width: min(100%, 10rem);
+    width: min(100%, 14rem);
     height: auto;
     object-fit: contain;
 }
@@ -377,8 +377,7 @@
 }
 
 @media (max-width: 960px) {
-    .burger-menu-hero,
-    .burger-menu-card {
+    .burger-menu-hero {
         grid-template-columns: 1fr;
     }
 
