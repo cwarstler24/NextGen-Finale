@@ -2,6 +2,8 @@ from typing import List, Optional
 from datetime import datetime
 from contextlib import asynccontextmanager
 import sys
+import time
+import random
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
@@ -240,7 +242,7 @@ async def get_fries_items():
             {
                 "id": item["FRY_SIZE_ID"],
                 "name": f"{item['FRY_SIZE']} oz",
-                "price": float(item["PRICE"])
+                "price": round(float(item["PRICE"]), 2)
                 # Note: Fry sizes don't have stock_quantity - they're just size multipliers
             }
             for item in sizes_result.data
@@ -250,7 +252,7 @@ async def get_fries_items():
             {
                 "id": item["FRY_TYPE_ID"],
                 "name": item["FRY_TYPE_NAME"],
-                "price": float(item["PRICE"]),
+                "price": round(float(item["PRICE"]), 2),
                 "quantity": item["STOCK_QUANTITY"]
             }
             for item in types_result.data
@@ -260,7 +262,7 @@ async def get_fries_items():
             {
                 "id": item["FRY_SEASONING_ID"],
                 "name": item["FRY_SEASONING_NAME"],
-                "price": float(item["PRICE"]),
+                "price": round(float(item["PRICE"]), 2),
                 "quantity": item["STOCK_QUANTITY"]
             }
             for item in seasonings_result.data
@@ -321,7 +323,7 @@ async def get_burger_items():
             {
                 "id": item["BUN_ID"],
                 "name": item["BUN_NAME"],
-                "price": float(item["PRICE"]),
+                "price": round(float(item["PRICE"]), 2),
                 "quantity": item["STOCK_QUANTITY"]
             }
             for item in buns_result.data
@@ -331,7 +333,7 @@ async def get_burger_items():
             {
                 "id": item["PATTY_ID"],
                 "name": item["PATTY_NAME"],
-                "price": float(item["PRICE"]),
+                "price": round(float(item["PRICE"]), 2),
                 "quantity": item["STOCK_QUANTITY"]
             }
             for item in patties_result.data
@@ -341,7 +343,7 @@ async def get_burger_items():
             {
                 "id": item["TOPPING_ID"],
                 "name": item["TOPPING_NAME"],
-                "price": float(item["PRICE"]),
+                "price": round(float(item["PRICE"]), 2),
                 "quantity": item["STOCK_QUANTITY"]
             }
             for item in toppings_result.data
@@ -489,7 +491,7 @@ async def get_customer(email: str):
                     items.append({
                         "item_type": "Burger",
                         "name": burger_name,
-                        "price": float(burger["UNIT_PRICE"])
+                        "price": round(float(burger["UNIT_PRICE"]), 2)
                     })
 
                 # Process fries for this order
@@ -497,13 +499,13 @@ async def get_customer(email: str):
                     items.append({
                         "item_type": "Fries",
                         "name": f"{fry['SIZE_VALUE']}oz {fry['TYPE_NAME']} with {fry['SEASONING_NAME']}",
-                        "price": float(fry["UNIT_PRICE"])
+                        "price": round(float(fry["UNIT_PRICE"]), 2)
                     })
 
                 orders.append({
                     "order_id": order_id,
                     "date": row["PURCHASE_DATE"],
-                    "price": float(row["TOTAL_PRICE"]),
+                    "price": round(float(row["TOTAL_PRICE"]), 2),
                     "items": items
                 })
 
@@ -528,15 +530,55 @@ async def get_customer(email: str):
 # --- POST /Order/ ---
 
 
-@app.post("/Order/", response_model=OrderResponse)
-async def create_order(order: OrderRequest):
+def _execute_order_creation(order: OrderRequest, max_retries: int = 3):
     """
-    Create a new order with customer info, burgers, and fries.
-    Thread-safe operation using connection pool.
-    Handles transactions across multiple tables.
+    Execute order creation with retry logic for duplicate key errors (race conditions).
+    
+    Args:
+        order: The order request data
+        max_retries: Maximum number of retry attempts
+        
+    Returns:
+        dict: Order creation response
+        
+    Raises:
+        HTTPException: If order creation fails after all retries
+    """
+    for attempt in range(max_retries):
+        try:
+            return _create_order_internal(order)
+        except HTTPException as e:
+            # Check if this is a duplicate key error (SQL0803N)
+            if e.status_code == 500 and "SQL0803N" in str(e.detail):
+                if attempt < max_retries - 1:
+                    # Exponential backoff with jitter
+                    wait_time = (2 ** attempt) * 0.1 + random.uniform(0, 0.1)
+                    LOGGER.warning(
+                        f"Duplicate key error on attempt {attempt + 1}/{max_retries}, "
+                        f"retrying in {wait_time:.2f}s..."
+                    )
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    LOGGER.error(f"Order creation failed after {max_retries} attempts")
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Order creation failed due to high concurrent load. Please try again."
+                    )
+            # Re-raise if not a duplicate key error
+            raise
 
+
+def _create_order_internal(order: OrderRequest):
+    """
+    Internal function that performs the actual order creation logic.
+    Separated to allow retry wrapper to handle duplicate key errors.
+    
     Args:
         order (OrderRequest): Complete order information including customer, items, and date
+        
+    Returns:
+        dict: Order response with order_id, message, and total_price
     """
     try:
         LOGGER.info(
@@ -952,7 +994,7 @@ async def create_order(order: OrderRequest):
         return {
             "order_id": next_order_id,
             "message": "Order created successfully",
-            "total_price": total_price
+            "total_price": round(total_price, 2)
         }
 
     except HTTPException:
@@ -967,6 +1009,23 @@ async def create_order(order: OrderRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to create order: {str(e)}") from e
+
+
+@app.post("/Order/", response_model=OrderResponse)
+async def create_order(order: OrderRequest):
+    """
+    Create a new order with customer info, burgers, and fries.
+    Thread-safe operation using connection pool with automatic retry on race conditions.
+    Handles transactions across multiple tables.
+
+    Args:
+        order (OrderRequest): Complete order information including customer, items, and date
+        
+    Returns:
+        OrderResponse: Created order with ID and total price
+    """
+    return _execute_order_creation(order)
+
 
 # ==================== Error Handlers ====================
 

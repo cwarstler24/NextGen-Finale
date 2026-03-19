@@ -208,6 +208,37 @@ export const customBurger = [
             { type: "Tomato", qty: 1 },
         ],
     },
+    {
+        id: 19,
+        name: "The Holy Burger of Zulius",
+        description: "This burger is said to have been blessed by the great Zulius himself, granting it divine flavor and an otherworldly ability to satisfy even the most insatiable appetites. Legend has it that those who consume this burger are bestowed with unparalleled culinary enlightenment and a temporary boost in charisma.",
+        bun: "Sesame",
+        patty: "Beef",
+        patty_count: 1,
+        toppings: [
+            { type: "Cheese", qty: 1 },
+            { type: "Colby Jack", qty: 1 },
+            { type: "Mustard", qty: 1 },
+            { type: "Ketchup", qty: 1 },
+            { type: "Bacon", qty: 2 },
+            { type: "Tomato", qty: 1 },
+        ],
+    },
+    {
+        id: 20,
+        name: "The Chuggernaut",
+        description: "This burger is a behemoth of flavor and indulgence, designed to overwhelm your senses with its sheer size and audacious combination of ingredients. With a fish patty, layers of cheese, and an array of toppings that range from crispy bacon to tangy pickles, the Chuggernaut is not for the faint of heart. It's a culinary challenge that dares you to take it on and emerge victorious.",
+        bun: "Pretzel",
+        patty: "Fish",
+        patty_count: 3,
+        toppings: [
+            { type: "Cheese", qty: 2 },
+            { type: "Bacon", qty: 3 },
+            { type: "Swiss Cheese", qty: 2 },
+            { type: "Mac and Cheese", qty: 1 },
+            { type: "Ketchup", qty: 1 },
+        ],
+    }
 ];
 
 
