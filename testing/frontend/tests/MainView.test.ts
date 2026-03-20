@@ -26,8 +26,7 @@ describe('MainView', () => {
 
         await cards[0].trigger('click');
         expect(pushMock).toHaveBeenNthCalledWith(1, {
-            name: 'product',
-            params: { product: 'Burger' },
+            name: 'burger-menu',
         });
 
         await cards[1].trigger('click');

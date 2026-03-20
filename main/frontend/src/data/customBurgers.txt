@@ -1,0 +1,47 @@
+The Breakfast Benny: Brioche buns, patty, cheese, bacon x 2, and egg 
+	"’An egg on a burger couldn't be that messy,’ he said with egg yolk dripping from both elbows.”
+ 
+The Freaky Fred: Tomato, mayo x 5, tomato 
+	“This freaky little thing is for those pesky bread, meat, and cheese haters in your life; get ready for a wave of tasty to-mayo-to! If you love mayo, you are bound to love this madness-inducing entity.”
+ 
+The Jesstalt Burger: Pretzel bun, patty, peanut butter, jalapeno jelly 
+	“This burger is greater than the sum of its part! Smooth savory peanut butter combined with jalapeno jelly on an all-beef patty for those who are hankering for something more adventurous!”
+ 
+The Dirt Burger: Dirt bun, dirty patty
+	“You have to.”
+ 
+A Lil’ Blayful: Pretzel bun, smashed patty x 2, cheese x 2, bacon x 2, fried onions, mayo, lettuce, mac and cheese, hot honey 
+	“Don’t let the name fool you—this is an indulgent stack of pure comfort. Double smash patties, crispy bacon, and fried onions collide with creamy mac and cheese and hot honey for a sandwich that pulls absolutely no punches.”
+ 
+Ted’s Peanut Party: Whole wheat bun, peanut butter, pickles 
+	“It’s like a party for your mouth. This odd but delectable combination comes from the brilliant mind of Ted, a mad genius who understands this unusual duo.”
+ 
+Hot Honey Chicken Sandwich: Brioche bun, chicken patty, honey, pickles 
+	“Sweet heat drizzled over juicy chicken, balanced with tangy pickles on a soft brioche bun. Sticky, savory, and dangerously easy to devour.”
+ 
+The Bog Burger: Sesame bun, vegan patty, “Special” “Slime” “Sauce”, jalapeno jelly x 2, jalapenos, lettuce x 2, pickles x 2 
+	“Loud, green, and mysteriously delicious. This swampy stack piles heat, crunch, and tang onto a vegan base that proves plant-powered doesn’t mean boring.”
+ 
+The Jumpin’ Josh: Pretzel bun, chicken patty x 2, cheese x 3, jalapeno jelly, jalapeno, ranch 
+	“Triple cheese, double chicken, and a spicy-sweet kick make this burger live up to its name. A messy, melty, high-energy experience from first bite to last.”
+ 
+Christy’s Grilled Cheese: Brioche bun, cheese 
+	“Pure comfort in its most honest form. No distractions, no gimmicks—just warm, buttery brioche and perfectly melted cheese doing what they do best.”
+ 
+Jorni Burger: Brioche bun, patty, cheese, bacon x2, mayo, lettuce, ketchup 
+	“A familiar classic built right. Juicy beef, crispy bacon, and balanced condiments make this the dependable go‑to that never lets you down.”
+ 
+Dillon’s CHEESEburger: Sesame bun, patty, cheese, swiss cheese, cheez-wiz, mac and cheese, colby jack, blue cheese 
+	“This one isn’t messing around. A full dairy assault featuring nearly every cheese known to humankind, stacked into a gloriously gooey monument to excess.”
+ 
+Mushroom Swiss: Brioche bun, patty, swiss cheese, mushrooms, lettuce 
+	“Earthy mushrooms and nutty Swiss melt together into a rich, savory classic that’s smooth, satisfying, and effortlessly timeless.”
+ 
+Nate’s Fishstick Stack: Brioche bun, fish fillet, lettuce, onions, tomato, cheese, tartar sauce 
+	“Crispy fish and cool tartar sauce meet fresh veggies on a soft brioche bun for a sandwich that’s nostalgic, crunchy, and deceptively stacked.”
+ 
+Greenlight Cruch: Sesame bun, vegan patty, lettuce, fried onions, tomato, ranch, avocado 
+	“Our savory ranch meets creamy avocado and crunchy fried onions for a bright, layered on a vegetarian patty that’s equal parts fresh and indulgent.”
+ 
+Spencer’s Salad: Lettuce x 4, tomato x 2, ranch 
+	“This is for all the salad heads out there. Don’t like it? Take it up with Spencer...”

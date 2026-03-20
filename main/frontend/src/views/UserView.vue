@@ -1,7 +1,28 @@
 <script setup>
 import { computed, ref } from 'vue';
+import BurgerImage from '../components/BurgerImage.vue';
+import {
+    supportedBurgerBuns,
+    supportedBurgerPatties,
+    supportedBurgerToppings,
+} from '../data/burgerImageCatalog';
 
 const USER_ENDPOINT_BASE = 'http://localhost:8000/Customer';
+const FRIES_TYPE_IMAGE_MAP = {
+    shoestring: '/images/items/shoestring_fries.PNG',
+    waffle: '/images/items/waffle_fries.png',
+    curly: '/images/items/curly_fries.png',
+    steak: '/images/items/steak_fries.png',
+    'sweet potato': '/images/items/sweet_potato_fries.png',
+};
+const BURGER_NAME_SEPARATOR = ' with ';
+const BURGER_TOPPINGS_SEPARATOR = ' and ';
+const DEFAULT_FRIES_IMAGE = '/images/Fries1.png';
+const supportedBurgerBunNames = [...supportedBurgerBuns];
+const supportedBurgerPattyNames = [...supportedBurgerPatties];
+const supportedBurgerToppingNames = [...supportedBurgerToppings]
+    .filter((name) => name !== 'None')
+    .sort((left, right) => right.length - left.length);
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -36,16 +57,145 @@ function formatItemCount(count) {
     return `${count} item${count === 1 ? '' : 's'}`;
 }
 
-function normalizeOrderItem(item) {
+function normalizeQuantity(value) {
+    return Math.max(1, Number.parseInt(value ?? 1, 10) || 1);
+}
+
+function parseBurgerImageProps(name) {
+    if (typeof name !== 'string' || !name.includes(BURGER_NAME_SEPARATOR)) {
+        return null;
+    }
+
+    const separatorIndex = name.indexOf(BURGER_NAME_SEPARATOR);
+    const bunName = name.slice(0, separatorIndex).trim();
+
+    if (!supportedBurgerBunNames.includes(bunName)) {
+        return null;
+    }
+
+    const configurationText = name.slice(separatorIndex + BURGER_NAME_SEPARATOR.length).trim();
+    const toppingsSeparatorIndex = configurationText.indexOf(BURGER_TOPPINGS_SEPARATOR);
+    const pattyText = toppingsSeparatorIndex >= 0
+        ? configurationText.slice(0, toppingsSeparatorIndex).trim()
+        : configurationText;
+    const toppingsText = toppingsSeparatorIndex >= 0
+        ? configurationText.slice(toppingsSeparatorIndex + BURGER_TOPPINGS_SEPARATOR.length).trim()
+        : '';
+
+    const pattyMatch = pattyText.match(/^(\d+)\s+(.+)$/);
+    const pattyQuantity = normalizeQuantity(pattyMatch?.[1] ?? 1);
+    const pattyName = (pattyMatch?.[2] ?? pattyText).trim();
+
+    if (!supportedBurgerPattyNames.includes(pattyName)) {
+        return null;
+    }
+
+    const selectedToppings = toppingsText
+        ? toppingsText
+            .split(', ')
+            .map((entry) => entry.trim())
+            .filter((entry) => supportedBurgerToppingNames.includes(entry))
+            .map((entry) => ({ name: entry, quantity: 1 }))
+        : [];
+
     return {
-        item_type: typeof item?.item_type === 'string' && item.item_type.trim() !== ''
-            ? item.item_type
-            : 'Item',
-        name: typeof item?.name === 'string' && item.name.trim() !== ''
-            ? item.name
-            : 'Unnamed item',
-        price: Number(item?.price) || 0,
+        selectedBun: { name: bunName },
+        selectedPatty: {
+            name: pattyName,
+            quantity: pattyQuantity,
+        },
+        selectedToppings,
     };
+}
+
+function getFriesImageSource(name) {
+    if (typeof name !== 'string' || name.trim() === '') {
+        return DEFAULT_FRIES_IMAGE;
+    }
+
+    const normalizedName = name.trim().toLowerCase();
+    const friesTypeMatch = normalizedName.match(/^\d+(?:\.\d+)?oz\s+(.+?)\s+with\s+.+$/i);
+    const friesTypeName = friesTypeMatch?.[1]?.trim() ?? '';
+
+    return FRIES_TYPE_IMAGE_MAP[friesTypeName] ?? DEFAULT_FRIES_IMAGE;
+}
+
+function getOrderItemVisualData(itemType, name) {
+    const normalizedItemType = typeof itemType === 'string' ? itemType.trim().toLowerCase() : '';
+
+    if (normalizedItemType === 'burger') {
+        return {
+            burgerImageProps: parseBurgerImageProps(name),
+            imageSrc: '',
+            imageAlt: '',
+        };
+    }
+
+    if (normalizedItemType === 'fries') {
+        return {
+            burgerImageProps: null,
+            imageSrc: getFriesImageSource(name),
+            imageAlt: `${name || 'Fries'} image`,
+        };
+    }
+
+    return {
+        burgerImageProps: null,
+        imageSrc: '',
+        imageAlt: '',
+    };
+}
+
+function normalizeOrderItem(item) {
+    const itemType = typeof item?.item_type === 'string' && item.item_type.trim() !== ''
+        ? item.item_type
+        : 'Item';
+    const name = typeof item?.name === 'string' && item.name.trim() !== ''
+        ? item.name
+        : 'Unnamed item';
+    const unitPrice = Number(item?.price) || 0;
+    const visualData = getOrderItemVisualData(itemType, name);
+
+    return {
+        item_type: itemType,
+        name,
+        unitPrice,
+        price: unitPrice,
+        quantity: normalizeQuantity(item?.quantity),
+        ...visualData,
+    };
+}
+
+function getOrderItemGroupKey(item) {
+    return [
+        item.item_type.trim().toLowerCase(),
+        item.name.trim().toLowerCase(),
+        item.unitPrice.toFixed(2),
+    ].join('::');
+}
+
+function aggregateOrderItems(items) {
+    const groupedItems = new Map();
+
+    items.forEach((item) => {
+        const normalizedItem = normalizeOrderItem(item);
+        const groupKey = getOrderItemGroupKey(normalizedItem);
+        const existingItem = groupedItems.get(groupKey);
+
+        if (existingItem) {
+            existingItem.quantity += normalizedItem.quantity;
+            existingItem.price += normalizedItem.unitPrice * normalizedItem.quantity;
+            return;
+        }
+
+        groupedItems.set(groupKey, {
+            ...normalizedItem,
+            groupKey,
+            price: normalizedItem.unitPrice * normalizedItem.quantity,
+        });
+    });
+
+    return [...groupedItems.values()];
 }
 
 const orders = computed(() => {
@@ -54,7 +204,7 @@ const orders = computed(() => {
     return userOrders
         .map((order, index) => {
             const items = Array.isArray(order?.items)
-                ? order.items.map((item) => normalizeOrderItem(item))
+                ? aggregateOrderItems(order.items)
                 : [];
             const parsedDate = new Date(order?.date);
             const sortTimestamp = Number.isNaN(parsedDate.getTime()) ? 0 : parsedDate.getTime();
@@ -69,7 +219,7 @@ const orders = computed(() => {
                 displayDate: formatOrderDate(order?.date ?? ''),
                 price: Number(order?.price) || 0,
                 items,
-                itemCount: items.length,
+                itemCount: items.reduce((total, item) => total + item.quantity, 0),
                 sortTimestamp,
             };
         })
@@ -264,14 +414,34 @@ async function getUser() {
                                 <ul v-if="order.items.length > 0" class="order-items-list">
                                     <li
                                         v-for="(item, itemIndex) in order.items"
-                                        :key="`${order.orderKey}-item-${itemIndex}`"
+                                        :key="`${order.orderKey}-item-${item.groupKey}-${itemIndex}`"
                                         class="order-item-row"
                                     >
+                                        <div
+                                            v-if="item.burgerImageProps || item.imageSrc"
+                                            class="order-item-image-preview"
+                                        >
+                                            <BurgerImage
+                                                v-if="item.burgerImageProps"
+                                                v-bind="item.burgerImageProps"
+                                            />
+                                            <img
+                                                v-else-if="item.imageSrc"
+                                                :src="item.imageSrc"
+                                                :alt="item.imageAlt"
+                                                class="order-item-image"
+                                            />
+                                        </div>
                                         <div class="order-item-copy">
                                             <span class="item-type-badge">{{ item.item_type }}</span>
-                                            <p class="order-item-name">
-                                                {{ item.name }}
-                                            </p>
+                                            <div class="order-item-name-row">
+                                                <p class="order-item-name">
+                                                    {{ item.name }}
+                                                </p>
+                                                <span v-if="item.quantity > 1" class="item-quantity-badge">
+                                                    Qty {{ item.quantity }}
+                                                </span>
+                                            </div>
                                         </div>
                                         <strong class="order-item-price">{{ formatCurrency(item.price) }}</strong>
                                     </li>

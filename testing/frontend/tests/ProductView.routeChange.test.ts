@@ -33,6 +33,12 @@ async function loadProductViewWithRoute(product = 'Burger') {
     };
 }
 
+async function waitForOptionsToLoad(nextTick: () => Promise<void>) {
+    await Promise.resolve();
+    await Promise.resolve();
+    await nextTick();
+}
+
 describe('ProductView route changes', () => {
     beforeEach(() => {
         vi.useFakeTimers();
@@ -91,18 +97,19 @@ describe('ProductView route changes', () => {
                 },
             },
         });
+        await waitForOptionsToLoad(nextTick);
 
-        await wrapper.findAll('button.thumb')[2].trigger('click');
+        expect(wrapper.find('.burger-image-card').exists()).toBe(true);
         await wrapper.get('button.primary').trigger('click');
         await nextTick();
 
-        expect(wrapper.get('img.product-hero').attributes('src')).toContain('/images/Burger3.png');
-        expect(wrapper.text()).toContain('Classic Burger added to cart.');
+        expect(wrapper.text()).toContain('Classic Cheeseburger added to cart.');
 
         routeRef.value = { params: { product: 'Fries' } };
+        await waitForOptionsToLoad(nextTick);
         await nextTick();
 
-        expect(wrapper.get('img.product-hero').attributes('src')).toContain('/images/Fries1.png');
+        expect(wrapper.get('img.product-hero').attributes('src')).toContain('/images/items/shoestring_fries.PNG');
         expect(wrapper.text()).not.toContain('added to cart.');
 
         wrapper.unmount();
