@@ -1,5 +1,5 @@
 ---
-description: You must have a virtual environment established and packages installed to test The Frying Saucer application.
+description: Testing requirements and configuration for The Frying Saucer development environment.
 ---
 
 # Development Environment Configuration Guide
