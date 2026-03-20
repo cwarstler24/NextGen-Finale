@@ -4,12 +4,11 @@ description: The Frying Saucer uses CI/CD pipelines, tooling, and automated test
 
 # CI/CD Developer’s Assistant Guide
 
-The Frying Saucer uses CI/CD pipelines, tooling, and automated testing to maintain the application. Testing for The Frying Saucer has 425 automated tests that uses by GitHub Actions.
-
-!!! info "info"
-    You must be in the main directory of the repository to run tests. Tests run automatically in GitHub Actions on every push and on every branch.
+The Frying Saucer uses CI/CD pipelines, tooling, and automated testing to maintain the application. Testing for The Frying Saucer has 425+ automated tests that are run by GitHub Actions. You must be in the main directory of the repository to run tests. Tests run automatically in GitHub Actions on every push and on every branch.
 
 ## Architecture Overview
+
+The Frying Saucer application is built on a **microservices architecture**. The frontend is developed using **Vue.js**, while the backend is built with **Python** and **FastAPI**. The application relies on a **DB2 database** for data storage and retrieval. This architecture allows for modular development, scalability, and efficient testing across different layers of the application.
 
 ![TFS Architecture Diagram](../assets/images/archskyfall.png)
 
@@ -35,9 +34,6 @@ There are **5 GitHub Actions** configured in the repository:
 3. Frontend Lint  
 4. Backend Lint  
 5. Automatic Dependency Submission  
-
-!!! note "note"
-    This includes 2 lint workflows, 2 test workflows, and 1 dependency automation workflow.
 
 ## Automatic Dependency Submission
 

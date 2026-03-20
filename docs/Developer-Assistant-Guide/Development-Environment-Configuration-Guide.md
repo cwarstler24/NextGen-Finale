@@ -4,8 +4,6 @@ description: You must have a virtual environment established and packages instal
 
 # Development Environment Configuration Guide
 
-You must have a virtual environment established and packages installed to test The Frying Saucer application.
-
 **Prerequisites**  
 
 - `credentials.json` file
@@ -15,7 +13,7 @@ You must have a virtual environment established and packages installed to test T
 
 ## Setting up the virtual environment
 
-Follow these steps to set up your local development environment.
+To set up the virtual environment, you must have a requirements.txt file. In the requirements.txt file, you must have all of the pip packages such as `pylint`, `uvicorn`, and `pytest` integrated into the file.
 
 1. Create a Python Virtual Environment
 `python -m venv venv`
@@ -24,9 +22,6 @@ Follow these steps to set up your local development environment.
 `.\venv\Scripts\activate`
 
 1. Run `pip install -r .\requirements.txt`.
-
-    !!! note "note"
-        You must have a requirements.txt file. In the requirements.txt file, you must have all of the pip packages such as `pylint`, `uvicorn`, and `pytest` integrated into the file.
 
 1. You should get a **successfully installed** message your terminal.
 
@@ -41,8 +36,7 @@ Follow these steps to set up your local development environment.
 
 ## Configuring credentials.json file
 
-!!! note "note"
-    You must have a DB2 license before creating a `credentials.json` file. Request a DB2 license from your supervisor if you do not have one. The `credentials.json` file will originally be named `credentials_template.json`. You must change the name to `credentials.json` and fill in the appropriate values for your database connection. You can find the `credentials_template.json` file in the main directory of the repository.
+You must have a DB2 license before creating a `credentials.json` file. Request a DB2 license from your supervisor if you do not have one. The `credentials.json` file will originally be named `credentials_template.json`. You must change the name to `credentials.json` and fill in the appropriate values for your database connection. You can find the `credentials_template.json` file in the main directory of the repository.
 
 1. Create a `credentials.json` file. This file makes a connection with the DB2 database.
 
@@ -90,4 +84,4 @@ Follow these steps to set up your local development environment.
 1. Run `python .\main\backend\daotest.py`
 
     !!! note "note"
-        This command displays what is in your database.
+        This command displays what is in the database.

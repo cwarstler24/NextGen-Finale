@@ -1,5 +1,5 @@
 ---
-description: Local REST API for The Frying Saucer ordering system.
+description: Local REST API for The Frying Saucer ordering system. TFS API supports menu browsing, customer lookup, and order creation.
 ---
 
 # Getting Started with The Frying Saucer API
@@ -18,14 +18,13 @@ The TFS API is designed for:
 
 ## Running the API Locally
 
+You must be on Rocket's VPN to access the TFS API. The API is built using **FastAPI** and can be started with a single command. The TFS API is ran on `http://localhost:8000` by default.
+
 **Prerequisites**  
 
 - Fast API
 - Python
 - Git
-
-!!! note "note"
-    You must be on Rocket's VPN to access the TFS API.
 
 **Start the API**  
 
