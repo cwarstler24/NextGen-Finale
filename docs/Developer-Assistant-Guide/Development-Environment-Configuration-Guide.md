@@ -60,10 +60,10 @@ You must have a DB2 license before creating a `credentials.json` file. Request a
 
 ## Testing the database connection
 
-1. In the `database_setup.json` file, you can change the environment to **PRODUCTION** to test the database connection. You can change the environment to **TEST** to use the test database connection.
+1. In the `database_setup.json` file, you can change the environment to **PRODUCTION** to test the database connection. You can change the environment to **TEST** to use the test database connection. You **must** have the `credentials.json` file set up and configured correctly to test the database connection.
 
     !!! note "note"
-        The `database_setup.json` file is located in the main directory of the repository. You **must** have the `credentials.json` file set up and configured correctly to test the database connection.
+        The `database_setup.json` file is located in the main directory of the repository.
 
 1. This is an example of what the `database_setup.json` file should look like:
 
@@ -82,6 +82,3 @@ You must have a DB2 license before creating a `credentials.json` file. Request a
 1. Run `uvicorn main.backend.server:app`
 
 1. Run `python .\main\backend\daotest.py`
-
-    !!! note "note"
-        This command displays what is in the database.

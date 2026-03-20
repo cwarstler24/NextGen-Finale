@@ -6,12 +6,6 @@ description: The Frying Saucer uses CI/CD pipelines, tooling, and automated test
 
 The Frying Saucer uses CI/CD pipelines, tooling, and automated testing to maintain the application. Testing for The Frying Saucer has 425+ automated tests that are run by GitHub Actions. You must be in the main directory of the repository to run tests. Tests run automatically in GitHub Actions on every push and on every branch.
 
-## Architecture Overview
-
-The Frying Saucer application is built on a **microservices architecture**. The frontend is developed using **Vue.js**, while the backend is built with **Python** and **FastAPI**. The application relies on a **DB2 database** for data storage and retrieval. This architecture allows for modular development, scalability, and efficient testing across different layers of the application.
-
-![TFS Architecture Diagram](../assets/images/archskyfall.png)
-
 ## CI/CD Pipeline Overview
 
 The CI/CD pipeline is responsible for automatically validating code quality, running tests, and managing dependencies.  
