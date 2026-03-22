@@ -33,7 +33,7 @@ nav:
       - Developer Environment Configuration Guide: Developer-Assistant-Guide\Development-Environment-Configuration-Guide.md
       - CICD Testing Developer Guide: Developer-Assistant-Guide\CICD-testing-developer-guide.md
   - The Frying Saucer (TFS) API Guide:
-      - Getting Started with The Frying Saucer API: TFS-API-Guide\TFS-API-Administrator-Guide.md
+      - Getting Started with The Frying Saucer API: TFS-API-Guide\Getting-Started-with-The-Frying-Saucer-API.md
 
 markdown_extensions:
   - attr_list

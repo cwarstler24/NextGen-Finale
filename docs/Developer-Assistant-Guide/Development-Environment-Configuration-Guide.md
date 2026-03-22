@@ -23,8 +23,6 @@ To set up the virtual environment, you must have a requirements.txt file. In the
 
 1. Run `pip install -r .\requirements.txt`.
 
-1. You should get a **successfully installed** message your terminal.
-
 ## Testing the frontend
 
 1. Run `npm i`. This installs the front end packages.
