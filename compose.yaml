@@ -35,6 +35,10 @@ services:
     build:
       context: .
       dockerfile: docker/docs.Dockerfile
+    command: ["mkdocs", "serve", "-a", "0.0.0.0:8001", "--dirtyreload"]
+    volumes:
+      - ./docs:/app/docs
+      - ./mkdocs.yml:/app/mkdocs.yml:ro
     ports:
       - "${DOCS_HOST_PORT:-18139}:8001"
     restart: unless-stopped

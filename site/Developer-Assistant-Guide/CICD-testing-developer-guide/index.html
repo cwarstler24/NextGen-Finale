@@ -7,24 +7,24 @@
       
       
       
-        <link rel="canonical" href="https://theflyingsaucer.com/Developer-Assistant-Guide/CICD-testing-developer-guide/">
+        <link rel="canonical" href="https://thefryingsaucer.com/Developer-Assistant-Guide/CICD-testing-developer-guide/">
       
       
         <link rel="prev" href="../Development-Environment-Configuration-Guide/">
       
       
-        <link rel="next" href="../TFS-API-Administrator-Guide/">
+        <link rel="next" href="../../TFS-API-Guide/Getting-Started-with-The-Frying-Saucer-API/">
       
       
         
       
       
       <link rel="icon" href="../../assets/images/FSlogo.jpg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>CICD Testing Developer Guide - The Flying Saucer</title>
+        <title>CICD Testing Developer Guide - The Frying Saucer</title>
       
     
     
@@ -164,7 +164,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="The Flying Saucer" class="md-header__button md-logo" aria-label="The Flying Saucer" data-md-component="logo">
+    <a href="../.." title="The Frying Saucer" class="md-header__button md-logo" aria-label="The Frying Saucer" data-md-component="logo">
       
   <img src="../../assets/images/FSlogo.jpg" alt="logo">
 
@@ -177,7 +177,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            The Flying Saucer
+            The Frying Saucer
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -221,12 +221,12 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="The Flying Saucer" class="md-nav__button md-logo" aria-label="The Flying Saucer" data-md-component="logo">
+    <a href="../.." title="The Frying Saucer" class="md-nav__button md-logo" aria-label="The Frying Saucer" data-md-component="logo">
       
   <img src="../../assets/images/FSlogo.jpg" alt="logo">
 
     </a>
-    The Flying Saucer
+    The Frying Saucer
   </label>
   
   <ul class="md-nav__list" data-md-scrollfix="">
@@ -367,7 +367,7 @@
   <span class="md-ellipsis">
     
   
-    Developers Assistant Guide
+    Developer Testing Assistant Guides
   
 
     
@@ -383,7 +383,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Developers Assistant Guide
+    Developer Testing Assistant Guides
   
 
           </label>
@@ -547,6 +547,60 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Frying Saucer (TFS) API Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    The Frying Saucer (TFS) API Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
               
                 
   
@@ -554,14 +608,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../TFS-API-Administrator-Guide/" class="md-nav__link">
+      <a href="../../TFS-API-Guide/Getting-Started-with-The-Frying-Saucer-API/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    TFS API Administrator Guide
+    Getting Started with The Frying Saucer API
   
 
     
@@ -681,11 +735,7 @@
 
 
 <h1 id="cicd-developers-assistant-guide">CI/CD Developer’s Assistant Guide</h1>
-<p>The Frying Saucer uses CI/CD pipelines, tooling, and automated testing to maintain the application. Testing for The Frying Saucer has 425 automated tests that uses by GitHub Actions.</p>
-<div class="admonition info">
-<p class="admonition-title">info</p>
-<p>You must be in the main directory of the repository to run tests. Tests run automatically in GitHub Actions on every push and on every branch.</p>
-</div>
+<p>The Frying Saucer uses CI/CD pipelines, tooling, and automated testing to maintain the application. Testing for The Frying Saucer has 425+ automated tests that are run by GitHub Actions. You must be in the main directory of the repository to run tests. Tests run automatically in GitHub Actions on every push and on every branch.</p>
 <h2 id="cicd-pipeline-overview">CI/CD Pipeline Overview</h2>
 <p>The CI/CD pipeline is responsible for automatically validating code quality, running tests, and managing dependencies.  </p>
 <p><strong>CI/CD Pipeline</strong><br>
@@ -703,10 +753,6 @@ Testing in this project is split between the frontend and backend so both layers
 <li>Backend Lint  </li>
 <li>Automatic Dependency Submission  </li>
 </ol>
-<div class="admonition note">
-<p class="admonition-title">note</p>
-<p>This includes 2 lint workflows, 2 test workflows, and 1 dependency automation workflow.</p>
-</div>
 <h2 id="automatic-dependency-submission">Automatic Dependency Submission</h2>
 <p>Automatic dependency submission checks project dependencies for known issues and vulnerabilities. If a dependency issue is found a <strong>pull request is automatically created on GitHub</strong>. The pull request contains recommended dependency updates.</p>
 <p><strong>Python Dependency Automation</strong><br>

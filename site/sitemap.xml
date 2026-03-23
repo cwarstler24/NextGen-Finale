@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://theflyingsaucer.com/</loc>
-         <lastmod>2026-03-18</lastmod>
+         <loc>https://thefryingsaucer.com/</loc>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
-         <loc>https://theflyingsaucer.com/Developer-Assistant-Guide/CICD-testing-developer-guide/</loc>
-         <lastmod>2026-03-18</lastmod>
+         <loc>https://thefryingsaucer.com/Developer-Assistant-Guide/CICD-testing-developer-guide/</loc>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
-         <loc>https://theflyingsaucer.com/Developer-Assistant-Guide/Development-Environment-Configuration-Guide/</loc>
-         <lastmod>2026-03-18</lastmod>
+         <loc>https://thefryingsaucer.com/Developer-Assistant-Guide/Development-Environment-Configuration-Guide/</loc>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
-         <loc>https://theflyingsaucer.com/Developer-Assistant-Guide/TFS-API-Administrator-Guide/</loc>
-         <lastmod>2026-03-18</lastmod>
+         <loc>https://thefryingsaucer.com/Release-Notes/v-0.0.1/</loc>
+         <lastmod>2026-03-23</lastmod>
     </url>
     <url>
-         <loc>https://theflyingsaucer.com/Release-Notes/v-0.0.1/</loc>
-         <lastmod>2026-03-18</lastmod>
+         <loc>https://thefryingsaucer.com/TFS-API-Guide/Getting-Started-with-The-Frying-Saucer-API/</loc>
+         <lastmod>2026-03-23</lastmod>
     </url>
 </urlset>
