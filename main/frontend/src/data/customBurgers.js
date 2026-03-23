@@ -254,45 +254,6 @@ export const customBurger = [
             { type: "Tomato", qty: 1 },
         ],
     },
-    {
-        id: 22,
-        name: "Clayton's Classic",
-        description: "Sometimes you just want the classics, and this one delivers. Double beef, double cheese, and crispy bacon come together with tangy pickles and ketchup for a timeless burger experience that hits all the right notes.",
-        bun: "Brioche",
-        patty: "Beef",
-        patty_count: 2,
-        toppings: [
-            { type: "Cheese", qty: 2 },
-            { type: "Bacon", qty: 2 },
-            { type: "Pickles", qty: 2 },
-            { type: "Ketchup", qty: 1 },
-        ],
-    },
-    {
-        id: 23,
-        name: "Kassidilla Chicken Delight",
-        description: "Crispy chicken paired with creamy Swiss cheese on a soft sesame bun. It’s a simple yet satisfying sandwich that’s perfect for any occasion.",
-        bun: "Sesame",
-        patty: "Chicken",
-        patty_count: 1,
-        toppings: [
-            { type: "Swiss Cheese", qty: 1 },
-            { type: "Mayo", qty: 1 },
-        ],
-    },
-    {
-        id: 24,
-        name: "The Travvy Patty",
-        description: "Stacked, saucy, and dangerously close to bread. Built for maximum flavor and minimum wheat, because Travvy and gluten have a long-standing restraining order.",
-        bun: "None",
-        patty: "Beef",
-        patty_count: 1,
-        toppings: [
-            { type: "Egg", qty: 1 },
-            { type: "Bacon", qty: 2 },
-            { type: "Jalapeno Jelly", qty: 1 },
-        ],
-    },
 ];
 
 
