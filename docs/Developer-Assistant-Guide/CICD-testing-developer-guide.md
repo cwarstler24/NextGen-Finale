@@ -4,14 +4,7 @@ description: The Frying Saucer uses CI/CD pipelines, tooling, and automated test
 
 # CI/CD Developer’s Assistant Guide
 
-The Frying Saucer uses CI/CD pipelines, tooling, and automated testing to maintain the application. Testing for The Frying Saucer has 425 automated tests that uses by GitHub Actions.
-
-!!! info "info"
-    You must be in the main directory of the repository to run tests. Tests run automatically in GitHub Actions on every push and on every branch.
-
-## Architecture Overview
-
-![TFS Architecture Diagram](../assets/images/archskyfall.png)
+The Frying Saucer uses CI/CD pipelines, tooling, and automated testing to maintain the application. Testing for The Frying Saucer has 425+ automated tests that are run by GitHub Actions. You must be in the main directory of the repository to run tests. Tests run automatically in GitHub Actions on every push and on every branch.
 
 ## CI/CD Pipeline Overview
 
@@ -35,9 +28,6 @@ There are **5 GitHub Actions** configured in the repository:
 3. Frontend Lint  
 4. Backend Lint  
 5. Automatic Dependency Submission  
-
-!!! note "note"
-    This includes 2 lint workflows, 2 test workflows, and 1 dependency automation workflow.
 
 ## Automatic Dependency Submission
 
