@@ -365,8 +365,8 @@ class DatabaseAccessObject(ABC):
     @db2_safe
     def create_records_batch(self, entries: list[dict[str, Any]], cursor=None) -> ResponseCode:
         '''
-        Create multiple records in a single executemany call.
-        Much more efficient than calling create_record in a loop.
+        Create multiple records using individual execute() calls.
+        Note: Using execute() in a loop instead of executemany() due to DB2 cursor state issues.
 
         Args:
             entries (list[dict[str, Any]]): List of dictionaries of field names and values
@@ -382,15 +382,14 @@ class DatabaseAccessObject(ABC):
         self._logger.debug(
             f"Batch creating {len(prepared)} {self.__class__.__name__} records.")
 
-        # Build SQL from the first entry (all entries must have the same structure)
-        insert_sql, _ = self._build_insert_sql(prepared[0])
-
-        # Build the values list for all entries
-        all_values = [self._build_insert_sql(entry)[1] for entry in prepared]
-
         with self._cursor_context(cursor) as cur:
-            cur.executemany(insert_sql, all_values)
-            return {"inserted_count": len(prepared)}
+            inserted_count = 0
+            for entry in prepared:
+                # Build SQL and values for each entry
+                insert_sql, values = self._build_insert_sql(entry)
+                cur.execute(insert_sql, values)
+                inserted_count += 1
+            return {"inserted_count": inserted_count}
 
     @db2_safe
     def batch_update_field_by_delta(self, deltas: dict[Any, int], field_name: str, cursor=None) -> ResponseCode:
@@ -481,7 +480,7 @@ class DatabaseAccessObject(ABC):
             ResponseCode: ResponseCode with the max ID value, or 0 if table is empty
         '''
         self._logger.debug(f"Getting max {self._primary_key} from {self.__class__.__name__}.")
-        
+
         with self._cursor_context(cursor) as cur:
             sql = f"SELECT MAX({self._primary_key}) as MAX_ID FROM {self._table_name}"
             cur.execute(sql)
@@ -505,7 +504,7 @@ class DatabaseAccessObject(ABC):
             ResponseCode: ResponseCode with success status
         '''
         self._logger.debug(f"Updating {field_name} by {delta} for {self.__class__.__name__} with {self._primary_key}={key_value}.")
-        
+
         with self._cursor_context(cursor) as cur:
             sql = f"UPDATE {self._table_name} SET {field_name} = {field_name} + ? WHERE {self._primary_key} = ?"
             cur.execute(sql, (delta, key_value))

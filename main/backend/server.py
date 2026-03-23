@@ -2,6 +2,8 @@ from typing import List, Optional
 from datetime import datetime
 from contextlib import asynccontextmanager
 import sys
+import time
+import random
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
@@ -72,7 +74,7 @@ class FrySizeItem(BaseModel):
     id: int
     name: str
     price: float
-    quantity: int
+    # Note: No quantity field - sizes are multipliers, not inventory
 
 
 class FryTypeItem(BaseModel):
@@ -162,8 +164,8 @@ class ToppingSelection(BaseModel):
 
 
 class BurgerOrder(BaseModel):
-    bun_id: int
-    patty_id: int
+    bun_id: Optional[int] = None
+    patty_id: Optional[int] = None
     patty_count: int = 1
     toppings: List[ToppingSelection] = Field(default_factory=list)
     topping_ids: Optional[List[int]] = None
@@ -240,8 +242,8 @@ async def get_fries_items():
             {
                 "id": item["FRY_SIZE_ID"],
                 "name": f"{item['FRY_SIZE']} oz",
-                "price": float(item["PRICE"]),
-                "quantity": item.get("STOCK_QUANTITY", 0)
+                "price": round(float(item["PRICE"]), 2)
+                # Note: Fry sizes don't have stock_quantity - they're just size multipliers
             }
             for item in sizes_result.data
         ]
@@ -250,7 +252,7 @@ async def get_fries_items():
             {
                 "id": item["FRY_TYPE_ID"],
                 "name": item["FRY_TYPE_NAME"],
-                "price": float(item["PRICE"]),
+                "price": round(float(item["PRICE"]), 2),
                 "quantity": item["STOCK_QUANTITY"]
             }
             for item in types_result.data
@@ -260,7 +262,7 @@ async def get_fries_items():
             {
                 "id": item["FRY_SEASONING_ID"],
                 "name": item["FRY_SEASONING_NAME"],
-                "price": float(item["PRICE"]),
+                "price": round(float(item["PRICE"]), 2),
                 "quantity": item["STOCK_QUANTITY"]
             }
             for item in seasonings_result.data
@@ -321,7 +323,7 @@ async def get_burger_items():
             {
                 "id": item["BUN_ID"],
                 "name": item["BUN_NAME"],
-                "price": float(item["PRICE"]),
+                "price": round(float(item["PRICE"]), 2),
                 "quantity": item["STOCK_QUANTITY"]
             }
             for item in buns_result.data
@@ -331,7 +333,7 @@ async def get_burger_items():
             {
                 "id": item["PATTY_ID"],
                 "name": item["PATTY_NAME"],
-                "price": float(item["PRICE"]),
+                "price": round(float(item["PRICE"]), 2),
                 "quantity": item["STOCK_QUANTITY"]
             }
             for item in patties_result.data
@@ -341,7 +343,7 @@ async def get_burger_items():
             {
                 "id": item["TOPPING_ID"],
                 "name": item["TOPPING_NAME"],
-                "price": float(item["PRICE"]),
+                "price": round(float(item["PRICE"]), 2),
                 "quantity": item["STOCK_QUANTITY"]
             }
             for item in toppings_result.data
@@ -489,7 +491,7 @@ async def get_customer(email: str):
                     items.append({
                         "item_type": "Burger",
                         "name": burger_name,
-                        "price": float(burger["UNIT_PRICE"])
+                        "price": round(float(burger["UNIT_PRICE"]), 2)
                     })
 
                 # Process fries for this order
@@ -497,13 +499,13 @@ async def get_customer(email: str):
                     items.append({
                         "item_type": "Fries",
                         "name": f"{fry['SIZE_VALUE']}oz {fry['TYPE_NAME']} with {fry['SEASONING_NAME']}",
-                        "price": float(fry["UNIT_PRICE"])
+                        "price": round(float(fry["UNIT_PRICE"]), 2)
                     })
 
                 orders.append({
                     "order_id": order_id,
                     "date": row["PURCHASE_DATE"],
-                    "price": float(row["TOTAL_PRICE"]),
+                    "price": round(float(row["TOTAL_PRICE"]), 2),
                     "items": items
                 })
 
@@ -528,15 +530,55 @@ async def get_customer(email: str):
 # --- POST /Order/ ---
 
 
-@app.post("/Order/", response_model=OrderResponse)
-async def create_order(order: OrderRequest):
+def _execute_order_creation(order: OrderRequest, max_retries: int = 3):
     """
-    Create a new order with customer info, burgers, and fries.
-    Thread-safe operation using connection pool.
-    Handles transactions across multiple tables.
+    Execute order creation with retry logic for duplicate key errors (race conditions).
+    
+    Args:
+        order: The order request data
+        max_retries: Maximum number of retry attempts
+        
+    Returns:
+        dict: Order creation response
+        
+    Raises:
+        HTTPException: If order creation fails after all retries
+    """
+    for attempt in range(max_retries):
+        try:
+            return _create_order_internal(order)
+        except HTTPException as e:
+            # Check if this is a duplicate key error (SQL0803N)
+            if e.status_code == 500 and "SQL0803N" in str(e.detail):
+                if attempt < max_retries - 1:
+                    # Exponential backoff with jitter
+                    wait_time = (2 ** attempt) * 0.1 + random.uniform(0, 0.1)
+                    LOGGER.warning(
+                        f"Duplicate key error on attempt {attempt + 1}/{max_retries}, "
+                        f"retrying in {wait_time:.2f}s..."
+                    )
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    LOGGER.error(f"Order creation failed after {max_retries} attempts")
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Order creation failed due to high concurrent load. Please try again."
+                    )
+            # Re-raise if not a duplicate key error
+            raise
 
+
+def _create_order_internal(order: OrderRequest):
+    """
+    Internal function that performs the actual order creation logic.
+    Separated to allow retry wrapper to handle duplicate key errors.
+    
     Args:
         order (OrderRequest): Complete order information including customer, items, and date
+        
+    Returns:
+        dict: Order response with order_id, message, and total_price
     """
     try:
         LOGGER.info(
@@ -630,8 +672,9 @@ async def create_order(order: OrderRequest):
             burger_items_to_create = []
 
             # Batch-fetch all unique buns, patties, and toppings in 3 queries
-            bun_ids = list(set(b["bun_id"] for b in sanitized_burgers))
-            patty_ids = list(set(b["patty_id"] for b in sanitized_burgers))
+            # Filter out None and 0 (sentinel for None) since buns and patties are now optional
+            bun_ids = list(set(b["bun_id"] for b in sanitized_burgers if b.get("bun_id") not in (None, 0)))
+            patty_ids = list(set(b["patty_id"] for b in sanitized_burgers if b.get("patty_id") not in (None, 0)))
             topping_ids = list(set(
                 t["topping_id"]
                 for b in sanitized_burgers
@@ -666,35 +709,39 @@ async def create_order(order: OrderRequest):
             topping_lookup = _build_lookup(topping_dao, topping_ids, "TOPPING_ID")
 
             for burger in sanitized_burgers:
-                bun_data = bun_lookup.get(burger["bun_id"])
-                patty_data = patty_lookup.get(burger["patty_id"])
-
-                if not bun_data:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Invalid bun ID: {burger['bun_id']}")
-                if not patty_data:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Invalid patty ID: {burger['patty_id']}")
-
-                # Check inventory availability
+                burger_price = 0.0
+                
+                # Handle optional bun (0 = None sentinel value)
+                bun_id = burger.get("bun_id")
+                if bun_id is not None and bun_id != 0:
+                    bun_data = bun_lookup.get(bun_id)
+                    if not bun_data:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Invalid bun ID: {bun_id}")
+                    bun_stock = bun_data.get("STOCK_QUANTITY", float("inf"))
+                    if bun_stock < 1:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Insufficient stock for bun ID {bun_id}")
+                    burger_price += float(bun_data["PRICE"])
+                
+                # Handle optional patty (0 = None sentinel value)
+                patty_id = burger.get("patty_id")
                 patty_count = burger.get("patty_count", 1)
-                bun_stock = bun_data.get("STOCK_QUANTITY", float("inf"))
-                patty_stock = patty_data.get("STOCK_QUANTITY", float("inf"))
-                if bun_stock < 1:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Insufficient stock for bun ID {burger['bun_id']}")
-                if patty_stock < patty_count:
-                    raise HTTPException(
-                        status_code=400, detail=f"Insufficient stock for patty ID {
-                            burger['patty_id']} (need {patty_count}, have {
-                            patty_stock})")
-
-                bun_price = float(bun_data["PRICE"])
-                patty_price = float(patty_data["PRICE"])
-                burger_price = bun_price + patty_price
+                if patty_id is not None and patty_id != 0:
+                    patty_data = patty_lookup.get(patty_id)
+                    if not patty_data:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Invalid patty ID: {patty_id}")
+                    patty_stock = patty_data.get("STOCK_QUANTITY", float("inf"))
+                    if patty_stock < patty_count:
+                        raise HTTPException(
+                            status_code=400, detail=f"Insufficient stock for patty ID {
+                                patty_id} (need {patty_count}, have {
+                                patty_stock})")
+                    burger_price += float(patty_data["PRICE"]) * patty_count
 
                 # Validate and add topping prices
                 for topping in burger["toppings"]:
@@ -819,8 +866,8 @@ async def create_order(order: OrderRequest):
                 all_burger_items.append({
                     "BURGER_ID": next_burger_id,
                     "ORDER_ITEM_ID": next_order_item_id,
-                    "BUN_TYPE": burger["bun_id"],
-                    "PATTY_TYPE": burger["patty_id"],
+                    "BUN_TYPE": burger.get("bun_id") or 0,  # Use 0 for None to avoid DB NULL constraint
+                    "PATTY_TYPE": burger.get("patty_id") or 0,  # Use 0 for None to avoid DB NULL constraint
                     "PATTY_COUNT": burger.get("patty_count", 1)
                 })
 
@@ -885,13 +932,17 @@ async def create_order(order: OrderRequest):
 
             for burger_item_data in burger_items_to_create:
                 burger = burger_item_data["burger_data"]
-                patty_count = burger.get("patty_count", 1)
+                
+                # Only decrement if bun is present (buns are optional, 0 = None sentinel)
+                bun_id = burger.get("bun_id")
+                if bun_id is not None and bun_id != 0:
+                    bun_decrements[bun_id] = bun_decrements.get(bun_id, 0) - 1
 
-                bun_id = burger["bun_id"]
-                bun_decrements[bun_id] = bun_decrements.get(bun_id, 0) - 1
-
-                patty_id = burger["patty_id"]
-                patty_decrements[patty_id] = patty_decrements.get(patty_id, 0) - patty_count
+                # Only decrement if patty is present (patties are optional, 0 = None sentinel)
+                patty_id = burger.get("patty_id")
+                if patty_id is not None and patty_id != 0:
+                    patty_count = burger.get("patty_count", 1)
+                    patty_decrements[patty_id] = patty_decrements.get(patty_id, 0) - patty_count
 
                 for topping in burger["toppings"]:
                     tid = topping["topping_id"]
@@ -943,7 +994,7 @@ async def create_order(order: OrderRequest):
         return {
             "order_id": next_order_id,
             "message": "Order created successfully",
-            "total_price": total_price
+            "total_price": round(total_price, 2)
         }
 
     except HTTPException:
@@ -958,6 +1009,23 @@ async def create_order(order: OrderRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to create order: {str(e)}") from e
+
+
+@app.post("/Order/", response_model=OrderResponse)
+async def create_order(order: OrderRequest):
+    """
+    Create a new order with customer info, burgers, and fries.
+    Thread-safe operation using connection pool with automatic retry on race conditions.
+    Handles transactions across multiple tables.
+
+    Args:
+        order (OrderRequest): Complete order information including customer, items, and date
+        
+    Returns:
+        OrderResponse: Created order with ID and total price
+    """
+    return _execute_order_creation(order)
+
 
 # ==================== Error Handlers ====================
 

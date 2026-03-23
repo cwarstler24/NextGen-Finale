@@ -32,6 +32,7 @@ ENV/
 # Build and packaging
 dist/
 build/
+site/
 
 # Logs
 *.log

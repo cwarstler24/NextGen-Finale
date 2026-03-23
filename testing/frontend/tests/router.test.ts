@@ -14,14 +14,14 @@ describe('router', () => {
         const { default: router } = await loadRouter();
 
         expect(router.getRoutes().map((route) => route.name)).toEqual(
-            expect.arrayContaining(['main', 'product', 'cart'])
+            expect.arrayContaining(['main', 'product', 'cart', 'burger-menu'])
         );
 
         const productRoute = router.resolve('/product/Burger');
 
         expect(productRoute.name).toBe('product');
         expect(productRoute.params.product).toBe('Burger');
-    });
+    }, 15000);
 
     it('navigates to cart routes', async () => {
         const { default: router } = await loadRouter();

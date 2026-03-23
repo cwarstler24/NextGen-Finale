@@ -143,6 +143,82 @@ def test_order_item_dao_combines_with_empty_lists_on_partial_failures():
     assert result.data == {"burgers": [], "fries": [{"ID": 2}]}
 
 
+def test_order_item_dao_get_burgers_for_orders_returns_empty_on_empty_input():
+    dao = OrderItemDAO()
+    dao.execute_join_query = MagicMock()
+
+    result = dao.get_burgers_for_orders([])
+
+    assert result.success is True
+    assert result.data == []
+    dao.execute_join_query.assert_not_called()
+
+
+def test_order_item_dao_get_fries_for_orders_returns_empty_on_empty_input():
+    dao = OrderItemDAO()
+    dao.execute_join_query = MagicMock()
+
+    result = dao.get_fries_for_orders([])
+
+    assert result.success is True
+    assert result.data == []
+    dao.execute_join_query.assert_not_called()
+
+
+def test_order_item_dao_get_burgers_for_orders_delegates_join_query():
+    dao = OrderItemDAO()
+    expected = ResponseCode("SUCCESS", [{"ORDER_ID": 10, "ITEM_TYPE": "BURGER"}])
+    execute_join_query = MagicMock(return_value=expected)
+    dao.execute_join_query = execute_join_query
+
+    result = dao.get_burgers_for_orders([10, 11])
+
+    assert result is expected
+    execute_join_query.assert_called_once_with(
+        select_clause="""
+                oi.ORDER_ITEM_ID, oi.ORDER_ID, oi.ITEM_TYPE, oi.UNIT_PRICE,
+                b.BURGER_ID, b.PATTY_COUNT,
+                bt.BUN_NAME, bt.PRICE AS BUN_PRICE,
+                pt.PATTY_NAME, pt.PRICE AS PATTY_PRICE
+            """,
+        join_clauses=[
+            "INNER JOIN TBBURGER_ITEMS b ON oi.ORDER_ITEM_ID = b.ORDER_ITEM_ID",
+            "INNER JOIN TBBUN_TYPES bt ON b.BUN_TYPE = bt.BUN_ID",
+            "INNER JOIN TBPATTY_TYPES pt ON b.PATTY_TYPE = pt.PATTY_ID",
+        ],
+        where_clause="oi.ORDER_ID IN (?, ?) AND oi.ITEM_TYPE = 'BURGER'",
+        parameters=[10, 11],
+    )
+
+
+def test_order_item_dao_get_fries_for_orders_delegates_join_query():
+    dao = OrderItemDAO()
+    expected = ResponseCode("SUCCESS", [{"ORDER_ID": 10, "ITEM_TYPE": "FRIES"}])
+    execute_join_query = MagicMock(return_value=expected)
+    dao.execute_join_query = execute_join_query
+
+    result = dao.get_fries_for_orders([10, 11])
+
+    assert result is expected
+    execute_join_query.assert_called_once_with(
+        select_clause="""
+                oi.ORDER_ITEM_ID, oi.ORDER_ID, oi.ITEM_TYPE, oi.UNIT_PRICE,
+                f.FRY_ID,
+                ft.FRY_TYPE_NAME AS TYPE_NAME, ft.PRICE AS TYPE_PRICE,
+                fs.FRY_SIZE AS SIZE_VALUE, fs.PRICE AS SIZE_PRICE,
+                fse.FRY_SEASONING_NAME AS SEASONING_NAME, fse.PRICE AS SEASONING_PRICE
+            """,
+        join_clauses=[
+            "INNER JOIN TBFRY_ITEMS f ON oi.ORDER_ITEM_ID = f.ORDER_ITEM_ID",
+            "INNER JOIN TBFRY_TYPES ft ON f.FRY_TYPE = ft.FRY_TYPE_ID",
+            "INNER JOIN TBFRY_SIZES fs ON f.FRY_SIZE = fs.FRY_SIZE_ID",
+            "INNER JOIN TBFRY_SEASONINGS fse ON f.FRY_SEASONING = fse.FRY_SEASONING_ID",
+        ],
+        where_clause="oi.ORDER_ID IN (?, ?) AND oi.ITEM_TYPE = 'FRIES'",
+        parameters=[10, 11],
+    )
+
+
 def test_fry_item_dao_get_fry_with_details_delegates_join_query():
     dao = FryItemDAO()
     expected = ResponseCode("SUCCESS", [{"FRY_ID": 1}])

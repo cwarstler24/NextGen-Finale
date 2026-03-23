@@ -38,7 +38,8 @@ class BurgerItemToppingDAO(DatabaseAccessObject):
         '''
         return {
             "TOPPING_ID": row[0],
-            "BURGER_ORDER_ID": row[1]
+            "BURGER_ORDER_ID": row[1],
+            "TOPPING_COUNT": row[2]
         }
 
     def _build_insert_sql(self, entry: dict[str, Any]) -> tuple[str, list]:
@@ -53,12 +54,13 @@ class BurgerItemToppingDAO(DatabaseAccessObject):
         '''
         sql = f"""
             INSERT INTO {self._table_name}
-            (TOPPING_ID, BURGER_ORDER_ID) 
-            VALUES (?, ?)
+            (TOPPING_ID, BURGER_ORDER_ID, TOPPING_COUNT) 
+            VALUES (?, ?, ?)
         """
         values = [
             entry.get("TOPPING_ID"),
-            entry.get("BURGER_ORDER_ID")
+            entry.get("BURGER_ORDER_ID"),
+            entry.get("TOPPING_COUNT", 1)
         ]
         return (sql, values)
 

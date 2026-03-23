@@ -1,10 +1,11 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import BurgerImage from '../components/BurgerImage.vue'
 
 const router = useRouter()
 
 const goToBurgerPage = () => {
-    router.push({ name: 'product' , params: { product: 'Burger' }})
+    router.push({ name: 'burger-menu' })
 }
 
 const goToFriesPage = () => {
@@ -16,7 +17,7 @@ const goToFriesPage = () => {
 <section class="page">
     <div class="products-row">
         <div class="card product-card" @click="goToBurgerPage">
-            <img src="/images/Burger1.png" alt="Burger" class="product-image" />
+            <BurgerImage class="product-image-illustration" />
             <div>Burger</div>
         </div>
         <div class="card product-card" @click="goToFriesPage">
