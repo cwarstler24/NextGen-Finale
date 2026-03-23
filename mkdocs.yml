@@ -29,10 +29,11 @@ nav:
   - Home: index.md
   - Release Notes: 
       - v 0.0.1: Release-Notes/v-0.0.1.md
-  - Developers Assistant Guide:
+  - Developer Testing Assistant Guides:
       - Developer Environment Configuration Guide: Developer-Assistant-Guide\Development-Environment-Configuration-Guide.md
       - CICD Testing Developer Guide: Developer-Assistant-Guide\CICD-testing-developer-guide.md
-      - TFS API Administrator Guide: Developer-Assistant-Guide\TFS-API-Administrator-Guide.md
+  - The Frying Saucer (TFS) API Guide:
+      - Getting Started with The Frying Saucer API: TFS-API-Guide\Getting-Started-with-The-Frying-Saucer-API.md
 
 markdown_extensions:
   - attr_list
