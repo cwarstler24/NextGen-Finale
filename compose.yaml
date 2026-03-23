@@ -1,0 +1,40 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      DB_DATABASE: ${DB_DATABASE}
+      DB_HOSTNAME: ${DB_HOSTNAME}
+      DB_PORT: ${DB_PORT}
+      DB_PROTOCOL: ${DB_PROTOCOL}
+      DB_AUTHENTICATION: ${DB_AUTHENTICATION}
+      DB_UID: ${DB_UID}
+      DB_PWD: ${DB_PWD}
+      DB_ENVIRONMENT: ${DB_ENVIRONMENT:-PRODUCTION}
+      DB_SCHEMA: ${DB_SCHEMA}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:${FRONTEND_PORT:-5173},http://127.0.0.1:${FRONTEND_PORT:-5173}}
+    ports:
+      - "${BACKEND_HOST_PORT:-18137}:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:18137}
+        VITE_DOCS_BASE_URL: ${VITE_DOCS_BASE_URL:-http://localhost:18139}
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    restart: unless-stopped
+
+  docs:
+    build:
+      context: .
+      dockerfile: docker/docs.Dockerfile
+    ports:
+      - "${DOCS_HOST_PORT:-18139}:8001"
+    restart: unless-stopped

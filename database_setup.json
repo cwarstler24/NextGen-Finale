@@ -1,5 +1,5 @@
 {
-  "environment": "TEST",
+  "environment": "PRODUCTION",
   "schemas": {
     "PRODUCTION": "SKYFAL",
     "TEST": "TSTFAL"

@@ -6,8 +6,9 @@ import {
     supportedBurgerPatties,
     supportedBurgerToppings,
 } from '../data/burgerImageCatalog';
+import { buildApiUrl } from '../config/runtimeConfig';
 
-const USER_ENDPOINT_BASE = 'http://localhost:8000/Customer';
+const USER_ENDPOINT_BASE = buildApiUrl('/Customer');
 const FRIES_TYPE_IMAGE_MAP = {
     shoestring: '/images/items/shoestring_fries.PNG',
     waffle: '/images/items/waffle_fries.png',

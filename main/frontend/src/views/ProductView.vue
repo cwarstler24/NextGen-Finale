@@ -7,6 +7,7 @@ import BurgerImage from '../components/BurgerImage.vue';
 import { useCart } from '../composables/useCart';
 import customBurger from '../data/customBurgers.js';
 import { buildBurgerSelectionsFromPreset } from '../data/presetBurgerOptions.js';
+import { buildApiUrl } from '../config/runtimeConfig';
 
 const OPTION_GROUP_METADATA = {
     burger: {
@@ -22,8 +23,8 @@ const OPTION_GROUP_METADATA = {
 };
 
 const PRODUCT_OPTIONS_ENDPOINTS = {
-    burger: 'http://localhost:8000/Items/Burger',
-    fries: 'http://localhost:8000/Items/Fries',
+    burger: buildApiUrl('/Items/Burger'),
+    fries: buildApiUrl('/Items/Fries'),
 };
 
 const FRIES_TYPE_IMAGE_MAP = {

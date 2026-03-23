@@ -36,6 +36,16 @@ def _configure_windows_db2_client_path() -> None:
 
 _configure_windows_db2_client_path()
 
+DB_CREDENTIAL_ENV_MAPPING = {
+    "database": "DB_DATABASE",
+    "hostname": "DB_HOSTNAME",
+    "port": "DB_PORT",
+    "protocol": "DB_PROTOCOL",
+    "authentication": "DB_AUTHENTICATION",
+    "uid": "DB_UID",
+    "pwd": "DB_PWD",
+}
+
 try:
     import ibm_db
     import ibm_db_dbi
@@ -104,12 +114,14 @@ class DB2ConnectionPool:
     def _load_database_setup(self):
         """Load database setup configuration from database_setup.json"""
         setup_path = project_root / "database_setup.json"
-        with open(setup_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
+        config = {}
+        if setup_path.exists():
+            with open(setup_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
 
-        self._environment = config.get("environment", "PRODUCTION")
+        self._environment = os.getenv("DB_ENVIRONMENT", config.get("environment", "PRODUCTION"))
         schemas = config.get("schemas", {})
-        self._schema = schemas.get(self._environment, "TSTFAL")
+        self._schema = os.getenv("DB_SCHEMA", schemas.get(self._environment, "TSTFAL"))
         self._test_data = config.get("test_data", {})
 
         self.logger.info(
@@ -119,8 +131,24 @@ class DB2ConnectionPool:
     def _load_credentials(self):
         """Load database credentials from credentials.json"""
         credentials_path = project_root / "credentials.json"
-        with open(credentials_path, "r", encoding="utf-8") as f:
-            credentials = json.load(f)
+        credentials = {}
+
+        if credentials_path.exists():
+            with open(credentials_path, "r", encoding="utf-8") as f:
+                credentials = json.load(f)
+
+        for key, env_var in DB_CREDENTIAL_ENV_MAPPING.items():
+            env_value = os.getenv(env_var)
+            if env_value:
+                credentials[key] = env_value
+
+        missing_keys = [key for key in DB_CREDENTIAL_ENV_MAPPING if not credentials.get(key)]
+        if missing_keys:
+            missing_env_vars = [DB_CREDENTIAL_ENV_MAPPING[key] for key in missing_keys]
+            raise RuntimeError(
+                "Database credentials are incomplete. Provide credentials.json or set environment variables: "
+                + ", ".join(missing_env_vars)
+            )
 
         self._conn_str = (
             f"DATABASE={credentials['database']};"

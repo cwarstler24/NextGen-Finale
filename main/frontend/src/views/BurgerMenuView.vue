@@ -11,8 +11,9 @@ import {
     normalizeBurgerOptionGroups,
 } from '../data/presetBurgerOptions.js';
 import BurgerImage from '../components/BurgerImage.vue';
+import { buildApiUrl } from '../config/runtimeConfig';
 
-const BURGER_OPTIONS_ENDPOINT = 'http://localhost:8000/Items/Burger';
+const BURGER_OPTIONS_ENDPOINT = buildApiUrl('/Items/Burger');
 const router = useRouter();
 const { addItem } = useCart();
 

@@ -1,11 +1,12 @@
 <script setup>
 import { useCart } from './composables/useCart';
+import { docsBaseUrl } from './config/runtimeConfig';
 
 const { cartCount } = useCart();
 const currentYear = new Date().getFullYear();
 
 const documentation = () => {
-    window.location.href = "http://127.0.0.1:8001"
+    window.location.href = docsBaseUrl;
 };
 </script>
 

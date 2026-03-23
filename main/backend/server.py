@@ -1,6 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
 from contextlib import asynccontextmanager
+import os
 import sys
 import time
 import random
@@ -24,6 +25,17 @@ from main.backend.db_pool import get_db_cursor
 LOGGER = LoggerFactory.get_general_logger()
 
 from fastapi.middleware.cors import CORSMiddleware
+
+DEFAULT_CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+
+def get_cors_allowed_origins() -> list[str]:
+    configured_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+    parsed_origins = [origin.strip() for origin in configured_origins.split(",") if origin.strip()]
+    return parsed_origins or DEFAULT_CORS_ALLOWED_ORIGINS
 
 # ==================== Lifespan Event Handler ====================
 
@@ -56,10 +68,7 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=get_cors_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

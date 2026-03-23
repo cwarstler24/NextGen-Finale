@@ -2,8 +2,9 @@
 import { reactive, ref, watch } from 'vue';
 import { useCart } from '../composables/useCart';
 import { useRouter } from 'vue-router';
+import { buildApiUrl } from '../config/runtimeConfig';
 
-const ORDER_ENDPOINT = 'http://localhost:8000/Order/';
+const ORDER_ENDPOINT = buildApiUrl('/Order/');
 
 const router = useRouter();
 const { cartEntries, cartTotal, clearCart } = useCart();
